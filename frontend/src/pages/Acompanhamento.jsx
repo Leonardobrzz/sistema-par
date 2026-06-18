@@ -1,0 +1,303 @@
+﻿import { useState, useEffect } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
+import api from '../utils/api'
+
+const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0)
+const fmtN = (v, dec = 1) => Number(v || 0).toFixed(dec)
+
+function DesvioTag({ value, inv = false }) {
+  if (value === null || value === undefined) return <span style={{ color: '#94A3B8', fontSize: 12 }}>—</span>
+  const bad = inv ? value > 0 : value < 0
+  const neutral = Math.abs(value) < 2
+  const color = neutral ? '#64748B' : bad ? '#DC2626' : '#15803D'
+  const bg = neutral ? '#F1F5F9' : bad ? '#FEE2E2' : '#DCFCE7'
+  return (
+    <span style={{ fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: bg, color }}>
+      {value > 0 ? '+' : ''}{fmtN(value)}%
+    </span>
+  )
+}
+
+function BurnBar({ label, planejado, real, unit = 'h', danger }) {
+  const max = Math.max(planejado, real, 1)
+  const percP = Math.min((planejado / max) * 100, 100)
+  const percR = Math.min((real / max) * 100, 100)
+  const over = real > planejado
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#475569' }}>{label}</span>
+        <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
+          <span style={{ color: '#94A3B8' }}>Planejado: <strong style={{ color: '#475569' }}>{fmtN(planejado, 0)}{unit}</strong></span>
+          <span style={{ color: over && danger ? '#DC2626' : '#15803D' }}>Real: <strong>{fmtN(real, 0)}{unit}</strong></span>
+        </div>
+      </div>
+      <div style={{ position: 'relative', height: 12, background: '#F1F5F9', borderRadius: 8 }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${percP}%`, background: '#C4B5FD', borderRadius: 8 }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${percR}%`, background: over && danger ? 'rgba(239,68,68,0.8)' : 'rgba(34,197,94,0.8)', borderRadius: 8 }} />
+      </div>
+      <div style={{ display: 'flex', gap: 16, marginTop: 4, fontSize: 11, color: '#94A3B8' }}>
+        <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: '#C4B5FD', marginRight: 4 }} />Planejado</span>
+        <span><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: over && danger ? 'rgba(239,68,68,0.8)' : 'rgba(34,197,94,0.8)', marginRight: 4 }} />Realizado</span>
+        {over && danger && <span style={{ color: '#DC2626', fontWeight: 700 }}>+{fmtN(real - planejado, 0)}{unit} acima</span>}
+      </div>
+    </div>
+  )
+}
+
+function KpiCard({ label, value, sub, color = '#7C3AED' }) {
+  return (
+    <div style={{ background: '#fff', borderRadius: 14, padding: '18px 20px', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 26, fontWeight: 900, color }}>{value}</div>
+      {sub && <div style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>{sub}</div>}
+    </div>
+  )
+}
+
+export default function Acompanhamento() {
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const [projetos, setProjetos] = useState([])
+  const [projetoId, setProjetoId] = useState(searchParams.get('projeto') || '')
+  const [comparativo, setComparativo] = useState(null)
+  const [extrato, setExtrato] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [loadingProjetos, setLoadingProjetos] = useState(true)
+
+  useEffect(() => {
+    api.get('/projetos')
+      .then(r => setProjetos(r.data?.projetos || r.data || []))
+      .catch(() => setProjetos([]))
+      .finally(() => setLoadingProjetos(false))
+  }, [])
+
+  useEffect(() => {
+    if (!projetoId) return
+    setLoading(true)
+    setComparativo(null)
+    setExtrato(null)
+    Promise.allSettled([
+      api.get(`/planejamento/${projetoId}/comparativo`),
+      api.get(`/opp/extrato/${projetoId}`),
+    ]).then(([comp, ext]) => {
+      setComparativo(comp.status === 'fulfilled' ? comp.value.data : null)
+      setExtrato(ext.status === 'fulfilled' ? ext.value.data : null)
+    }).finally(() => setLoading(false))
+  }, [projetoId])
+
+  const medicoesPercReal = (() => {
+    if (!comparativo?.medicoes?.length) return 0
+    return (comparativo.medicoes.filter(m => m.statusFisico === 'Concluido' || m.statusFisico === 'Concluída').length / comparativo.medicoes.length) * 100
+  })()
+
+  const medicoesPercFin = (() => {
+    if (!comparativo?.medicoes?.length) return 0
+    return (comparativo.medicoes.filter(m => m.statusFinanceiro === 'Recebido').length / comparativo.medicoes.length) * 100
+  })()
+
+  return (
+    <div style={{ padding: '28px 32px', maxWidth: 1280, margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{ marginBottom: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#0F172A' }}>Acompanhamento Real vs. Planejado</h1>
+          <p style={{ margin: '6px 0 0', fontSize: 13, color: '#64748B' }}>Comparativo detalhado de horas, medições e financeiro</p>
+        </div>
+        <button
+          onClick={() => navigate('/relatorio-final' + (projetoId ? `?projeto=${projetoId}` : ''))}
+          style={{ padding: '10px 18px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #0F172A, #1E293B)', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+        >
+          Relatório Final
+        </button>
+      </div>
+
+      {/* Seletor de projeto */}
+      <div style={{ background: '#fff', borderRadius: 14, padding: '20px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 10px rgba(0,0,0,0.04)', marginBottom: 24 }}>
+        <label style={{ fontWeight: 700, fontSize: 13, color: '#0F172A', display: 'block', marginBottom: 8 }}>Selecionar Projeto</label>
+        <select
+          value={projetoId}
+          onChange={e => setProjetoId(e.target.value)}
+          disabled={loadingProjetos}
+          style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid #E2E8F0', fontSize: 14, color: '#0F172A', fontFamily: 'inherit', outline: 'none', background: '#fff' }}
+        >
+          <option value="">— Selecione um projeto —</option>
+          {projetos.map(p => (
+            <option key={p.ID_Projeto} value={p.ID_Projeto}>
+              {p.Nome} {p.Cliente ? `· ${p.Cliente}` : ''} [{p.Status}]
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {loading && <div style={{ textAlign: 'center', padding: 60, color: '#94A3B8', fontSize: 14 }}>Carregando comparativo...</div>}
+
+      {!loading && !comparativo && projetoId && (
+        <div style={{ textAlign: 'center', padding: 60, color: '#94A3B8', fontSize: 14 }}>Nenhum planejamento encontrado para este projeto.</div>
+      )}
+
+      {!projetoId && !loading && (
+        <div style={{ textAlign: 'center', padding: 60, background: '#F8FAFC', borderRadius: 16, border: '2px dashed #E2E8F0', color: '#94A3B8' }}>
+          <div style={{ fontWeight: 700, fontSize: 16, color: '#475569', marginBottom: 6 }}>Selecione um projeto acima</div>
+          <div style={{ fontSize: 13 }}>para visualizar o comparativo Real vs. Planejado</div>
+        </div>
+      )}
+
+      {/* Extrato OPP — aparece independente de ter planejamento */}
+      {extrato && projetoId && (
+        <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', marginBottom: 20 }}>
+          <div style={{ padding: '18px 24px', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>Extrato Financeiro OPP</div>
+            <div style={{ display: 'flex', gap: 16, fontSize: 13 }}>
+              <span style={{ color: '#15803D', fontWeight: 700 }}>Receitas: {fmt(extrato.resumo?.totalReceitas)}</span>
+              <span style={{ color: '#DC2626', fontWeight: 700 }}>Despesas: {fmt(extrato.resumo?.totalDespesas)}</span>
+              <span style={{ color: extrato.resumo?.saldo >= 0 ? '#15803D' : '#DC2626', fontWeight: 800 }}>Saldo: {fmt(extrato.resumo?.saldo)}</span>
+            </div>
+          </div>
+          {extrato.receitas?.length > 0 && (
+            <>
+              <div style={{ padding: '10px 24px 4px', fontSize: 11, fontWeight: 700, color: '#15803D', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Receitas ({extrato.receitas.length})</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead><tr style={{ background: '#F0FDF4' }}>{['Descricao','Valor','Vencimento','Situacao','Cliente'].map(h => <th key={h} style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {extrato.receitas.map((r, i) => (
+                    <tr key={i} style={{ borderTop: '1px solid #F1F5F9' }}>
+                      <td style={{ padding: '10px 16px', fontSize: 13, color: '#0F172A' }}>{r.Descricao || '—'}</td>
+                      <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 700, color: '#15803D' }}>{fmt(r.Valor)}</td>
+                      <td style={{ padding: '10px 16px', fontSize: 12, color: '#64748B' }}>{r.Data_Vencimento || '—'}</td>
+                      <td style={{ padding: '10px 16px' }}><span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: r.Situacao === 'Liquidado' ? '#DCFCE7' : '#FEF9C3', color: r.Situacao === 'Liquidado' ? '#15803D' : '#92400E' }}>{r.Situacao || '—'}</span></td>
+                      <td style={{ padding: '10px 16px', fontSize: 12, color: '#475569' }}>{r.Nome_Cliente || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+          {extrato.despesas?.length > 0 && (
+            <>
+              <div style={{ padding: '10px 24px 4px', fontSize: 11, fontWeight: 700, color: '#DC2626', textTransform: 'uppercase', letterSpacing: '0.06em', borderTop: '1px solid #F1F5F9' }}>Despesas ({extrato.despesas.length})</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead><tr style={{ background: '#FEF2F2' }}>{['Descricao','Valor','Vencimento','Situacao','Fornecedor'].map(h => <th key={h} style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {extrato.despesas.map((d, i) => (
+                    <tr key={i} style={{ borderTop: '1px solid #F1F5F9' }}>
+                      <td style={{ padding: '10px 16px', fontSize: 13, color: '#0F172A' }}>{d.Descricao || '—'}</td>
+                      <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 700, color: '#DC2626' }}>{fmt(d.Valor)}</td>
+                      <td style={{ padding: '10px 16px', fontSize: 12, color: '#64748B' }}>{d.Data_Vencimento || '—'}</td>
+                      <td style={{ padding: '10px 16px' }}><span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: d.Situacao === 'Liquidado' ? '#DCFCE7' : '#FEF9C3', color: d.Situacao === 'Liquidado' ? '#15803D' : '#92400E' }}>{d.Situacao || '—'}</span></td>
+                      <td style={{ padding: '10px 16px', fontSize: 12, color: '#475569' }}>{d.Nome_Cliente || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+          {!extrato.receitas?.length && !extrato.despesas?.length && (
+            <div style={{ padding: '32px 24px', textAlign: 'center', color: '#94A3B8', fontSize: 13 }}>
+              Nenhum lançamento OPP encontrado para este projeto. Execute o Sync OPP para atualizar.
+            </div>
+          )}
+        </div>
+      )}
+
+      {comparativo && (
+        <>
+          {/* Aviso sem baseline */}
+          {!comparativo.baseline && (
+            <div style={{ padding: '14px 18px', borderRadius: 12, marginBottom: 20, background: '#FFFBEB', border: '1.5px solid #FCD34D', display: 'flex', gap: 12, alignItems: 'center' }}>
+              <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#92400E' }}>
+                Nenhum baseline travado — comparativo exibido sem referência de versão congelada.
+              </div>
+              <button onClick={() => navigate('/aprovacao')} style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: '#D97706', color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+                Travar Baseline
+              </button>
+            </div>
+          )}
+
+          {/* KPI cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+            <KpiCard label="Horas Planejadas" value={`${fmtN(comparativo.horas?.planejadas || 0, 0)}h`} sub="total da equipe" color="#7C3AED" />
+            <KpiCard label="Horas Rastreadas" value={`${fmtN(comparativo.horas?.rastreadas || 0, 0)}h`}
+              sub={`desvio: ${comparativo.horas?.desvioPerc > 0 ? '+' : ''}${fmtN(comparativo.horas?.desvioPerc || 0)}%`}
+              color={Math.abs(comparativo.horas?.desvioPerc || 0) < 10 ? '#15803D' : '#DC2626'} />
+            <KpiCard label="Avanco Fisico" value={`${fmtN(medicoesPercReal)}%`} sub="medicoes concluidas" color="#0EA5E9" />
+            <KpiCard label="Recebimento" value={`${fmtN(medicoesPercFin)}%`} sub="medicoes recebidas" color="#16A34A" />
+          </div>
+
+          {/* Horas por colaborador */}
+          {comparativo.horas?.porColaborador?.length > 0 && (
+            <div style={{ background: '#fff', borderRadius: 16, padding: '22px 24px', border: '1px solid #E2E8F0', marginBottom: 20 }}>
+              <div style={{ fontWeight: 800, fontSize: 15, color: '#0F172A', marginBottom: 16 }}>Horas por Colaborador</div>
+              {comparativo.horas.porColaborador.map((c, i) => (
+                <BurnBar key={i} label={c.nome} planejado={c.horasEstimadas} real={c.horasLogadas} danger />
+              ))}
+            </div>
+          )}
+
+          {/* Medicoes */}
+          {comparativo.medicoes?.length > 0 && (
+            <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', marginBottom: 20 }}>
+              <div style={{ padding: '18px 24px', borderBottom: '1px solid #F1F5F9', fontWeight: 800, fontSize: 15, color: '#0F172A' }}>
+                Medicoes ({comparativo.medicoes.length})
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: '#F8FAFC' }}>
+                      {['Descricao', 'Previsto', 'Valor', 'Status Fisico', 'Status Financeiro', 'Atraso'].map(h => (
+                        <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {comparativo.medicoes.map((m, i) => (
+                      <tr key={i} style={{ borderTop: '1px solid #F1F5F9', background: m.atrasoDias > 0 ? '#FEF2F250' : '#fff' }}>
+                        <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600, color: '#0F172A' }}>{m.descricao || '—'}</td>
+                        <td style={{ padding: '12px 16px', fontSize: 12, color: '#64748B' }}>{m.dataPrevista || '—'}</td>
+                        <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, color: '#7C3AED' }}>{fmt(m.valor)}</td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
+                            background: m.statusFisico === 'Concluída' ? '#DCFCE7' : m.statusFisico === 'Cancelada' ? '#F1F5F9' : '#EFF6FF',
+                            color: m.statusFisico === 'Concluída' ? '#15803D' : m.statusFisico === 'Cancelada' ? '#64748B' : '#2563EB',
+                          }}>{m.statusFisico || '—'}</span>
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
+                            background: m.statusFinanceiro === 'Recebido' ? '#DCFCE7' : m.statusFinanceiro === 'NF Emitida' ? '#EFF6FF' : '#F1F5F9',
+                            color: m.statusFinanceiro === 'Recebido' ? '#15803D' : m.statusFinanceiro === 'NF Emitida' ? '#2563EB' : '#64748B',
+                          }}>{m.statusFinanceiro || 'Pendente'}</span>
+                        </td>
+                        <td style={{ padding: '12px 16px', fontSize: 12, color: m.atrasoDias > 0 ? '#DC2626' : '#15803D', fontWeight: 700 }}>
+                          {m.atrasoDias > 0 ? `${m.atrasoDias}d atrasado` : 'Em dia'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Datas planejadas vs reais */}
+          {comparativo.datas && (
+            <div style={{ background: '#fff', borderRadius: 16, padding: '22px 24px', border: '1px solid #E2E8F0', marginBottom: 20 }}>
+              <div style={{ fontWeight: 800, fontSize: 15, color: '#0F172A', marginBottom: 16 }}>Datas Planejadas vs. Atuais</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
+                {Object.entries(comparativo.datas).map(([k, v]) => {
+                  const atrasado = v.atual && v.planejado && new Date(v.atual) > new Date(v.planejado)
+                  return (
+                    <div key={k} style={{ padding: '12px 16px', borderRadius: 10, background: atrasado ? '#FEF2F2' : '#F8FAFC', border: `1px solid ${atrasado ? '#FECACA' : '#E2E8F0'}` }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', marginBottom: 6 }}>{k}</div>
+                      <div style={{ fontSize: 13, color: '#475569' }}>Planejado: <strong>{v.planejado || '—'}</strong></div>
+                      <div style={{ fontSize: 13, color: atrasado ? '#DC2626' : '#15803D' }}>Atual: <strong>{v.atual || '—'}</strong></div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}

@@ -1,0 +1,29 @@
+
+<--- Last few GCs --->
+
+[22400:0000015F429B9000]  1693712 ms: Scavenge (interleaved) 2044.2 (2083.2) -> 2042.6 (2083.2) MB, pooled: 0 MB, 2.60 / 0.00 ms  (average mu = 0.536, current mu = 0.345) task; 
+[22400:0000015F429B9000]  1695570 ms: Mark-Compact 2049.0 (2087.5) -> 2048.4 (2089.0) MB, pooled: 0 MB, 906.24 / 0.01 ms  (average mu = 0.551, current mu = 0.559) allocation failure; scavenge might not succeed
+
+
+<--- JS stacktrace --->
+
+FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory
+----- Native stack trace -----
+
+ 1: 00007FF69C3AA2ED node::SetCppgcReference+17725
+ 2: 00007FF69C311EA8 v8::base::CPU::num_virtual_address_bits+92328
+ 3: 00007FF69CE92EE1 v8::Isolate::ReportExternalAllocationLimitReached+65
+ 4: 00007FF69CE7FB66 v8::Function::Experimental_IsNopFunction+2870
+ 5: 00007FF69CCCCDC0 v8::internal::StrongRootAllocatorBase::StrongRootAllocatorBase+31456
+ 6: 00007FF69CCC9E2A v8::internal::StrongRootAllocatorBase::StrongRootAllocatorBase+19274
+ 7: 00007FF69CCDF681 v8::Isolate::GetHeapProfiler+7793
+ 8: 00007FF69CCDFF28 v8::Isolate::GetHeapProfiler+10008
+ 9: 00007FF69CCEB191 v8::Isolate::GetHeapProfiler+55681
+10: 00007FF69CCFACD2 v8::Isolate::GetHeapProfiler+120002
+11: 00007FF69CCFFCB8 v8::Isolate::GetHeapProfiler+140456
+12: 00007FF69CBF726B v8::Message::GetIsolate+372267
+13: 00007FF69CBF4167 v8::Message::GetIsolate+359719
+14: 00007FF69CBF75A4 v8::Message::GetIsolate+373092
+15: 00007FF69CE34505 v8::SharedValueConveyor::SharedValueConveyor+267989
+16: 00007FF69CE34780 v8::SharedValueConveyor::SharedValueConveyor+268624
+17: 00007FF63CF2D3FA 

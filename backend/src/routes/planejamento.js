@@ -1,0 +1,624 @@
+﻿const express = require('express');
+const { v4: uuidv4 } = require('uuid');
+const db = process.env.USE_POSTGRES === 'true' ? require('../services/postgresService') : require('../services/googleSheetsService');
+const { authMiddleware } = require('../middleware/auth');
+
+// ── Constantes hardcoded PAR (Metodologia Jota Barros) ───────────────────────
+const MARGEM_MINIMA_PERC      = 23;    // ⚠️ HARDCODE — nunca pode ser menor
+const TETO_TERCEIROS_PERC     = 25;    // ⚠️ Limite sem bypass de diretoria
+const TETO_CUSTO_PRODUCAO     = 30;    // ⚠️ Equipe Interna + Terceirizados ≤ 30%
+const CUSTO_HORA_INTERNA      = 36.40; // R$/hora — equipe técnica interna
+const MAX_HORAS_TAREFA        = 16;    // horas — acima disso exige particionamento
+const PRAZO_MAX_PLANEJAMENTO  = 7;     // dias — máximo para sair do status "A PLANEJAR"
+
+const router = express.Router();
+router.use(authMiddleware);
+
+// Calcula os totais financeiros de um planejamento
+// Aceita vírgula ou ponto como separador decimal (formato BR ou EN)
+const parseBR = (v) => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0;
+
+function calcularTotais(dados) {
+  const V = parseBR(dados.valorContrato);
+
+  // Taxas ajustáveis — com mínimos protegidos
+  const ip = Math.max(parseFloat(dados.impostosPerc || 20), 16.33);  // min 16.33%
+  const ta = Math.max(parseFloat(dados.taxaAdmPerc  || 12),  5);     // min 5%
+  const co = 7.50;                                                     // FIXO — não ajustável
+
+  const impostos = V * ip / 100;
+  const taxaAdm  = V * ta / 100;
+  const comissao = V * co / 100;
+  const totalDevolutivas = impostos + taxaAdm + comissao;
+  const receitaLiquida = V - totalDevolutivas;
+
+  const medicoes       = dados.medicoes       || [];
+  const terceirizados  = dados.terceirizados  || [];
+  const equipe         = dados.equipe         || [];
+  const despesas       = dados.despesas       || [];
+
+  const totalMedicoes  = medicoes.reduce((s, m) => s + parseBR(m.valor), 0);
+  const totalTerceiros = terceirizados.reduce((s, t) => s + parseBR(t.custo), 0);
+  const totalEquipe    = equipe.reduce((s, e) => {
+    const hh = parseBR(e.horas);
+    const hr = parseBR(e.mediaHora) || CUSTO_HORA_INTERNA;
+    return s + (hh * hr);
+  }, 0);
+  const totalDespesas  = despesas.reduce((s, d) => s + parseBR(d.valor), 0);
+  const totalCustos    = totalTerceiros + totalEquipe + totalDespesas;
+
+  // Custo de Produção = Equipe Interna + Terceirizados (sem despesas gerais)
+  const custoProducao     = totalEquipe + totalTerceiros;
+  const custoProducaoPerc = V > 0 ? (custoProducao / V) * 100 : 0;
+
+  const lucroEstimado = receitaLiquida - totalCustos;
+  const lucroPerc     = V > 0 ? (lucroEstimado / V) * 100 : 0;
+  const breakEven     = totalCustos + totalDevolutivas;
+
+  // ── Validações das regras PAR ────────────────────────────────────────────────
+  const percTerceiros = V > 0 ? (totalTerceiros / V) * 100 : 0;
+
+  // Teto terceirizados (25% hardcode)
+  const terceirosUltrapassouTeto = percTerceiros > TETO_TERCEIROS_PERC;
+
+  // Custo de produção (30% hardcode)
+  const custoProducaoUltrapassou = custoProducaoPerc > TETO_CUSTO_PRODUCAO;
+
+  // Margem mínima (23% hardcode)
+  const margemAbaixoMinimo = lucroPerc < MARGEM_MINIMA_PERC;
+
+  // Terceirizados sem vínculo com item do contrato
+  const tercSemVinculo = terceirizados.filter(t => !t.vinculo || String(t.vinculo).trim() === '');
+
+  return {
+    V, ip, ta, co,
+    impostos, taxaAdm, comissao, totalDevolutivas, receitaLiquida,
+    totalMedicoes, totalTerceiros, totalEquipe, totalDespesas, totalCustos,
+    custoProducao, custoProducaoPerc,
+    lucroEstimado, lucroPerc, breakEven, percTerceiros,
+
+    // Flags de validação PAR
+    terceirosUltrapassouTeto,
+    custoProducaoUltrapassou,
+    margemAbaixoMinimo,
+    tercSemVinculo: tercSemVinculo.length,
+
+    // Nível de alerta terceiros
+    alertaTerceiros: percTerceiros > TETO_TERCEIROS_PERC
+      ? 'bloqueio'
+      : percTerceiros >= 20 ? 'aviso' : null,
+
+    // Limites para referência no frontend
+    limites: {
+      margemMinima: MARGEM_MINIMA_PERC,
+      tetoTerceiros: TETO_TERCEIROS_PERC,
+      tetoCustoProducao: TETO_CUSTO_PRODUCAO,
+      custoHoraInterna: CUSTO_HORA_INTERNA,
+    },
+  };
+}
+
+
+// GET /api/planejamento — lista todos os planejamentos
+router.get('/', async (req, res, next) => {
+  try {
+    const planejamentos = await db.readSheet('Planejamentos');
+    res.json(planejamentos);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/planejamento/:id — detalhe de um planejamento
+router.get('/:id', async (req, res, next) => {
+  try {
+    const plan = await db.findOne('Planejamentos', (p) => p.ID === req.params.id || p.ID_Projeto === req.params.id);
+    if (!plan) return res.status(404).json({ error: 'Planejamento não encontrado.' });
+
+    // Desserializa o JSON de dados completos
+    let dadosCompletos = {};
+    try { dadosCompletos = JSON.parse(plan.Dados_JSON || '{}'); } catch {}
+
+    const totais = calcularTotais(dadosCompletos);
+
+    res.json({ ...plan, dadosCompletos, totais });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/planejamento — cria ou salva rascunho de planejamento
+router.post('/', async (req, res, next) => {
+  try {
+    const dados = req.body;
+    const totais = calcularTotais(dados);
+
+    // Valida se medições somam 100%
+    const medicoes = dados.medicoes || [];
+    const somaMedicoes = medicoes.reduce((s, m) => s + parseFloat(m.percentual || 0), 0);
+    const status = dados.status || 'Rascunho';
+
+    // ── Validações que só bloqueiam ao submeter para aprovação ───────────────
+    if (status !== 'Rascunho') {
+      if (Math.abs(somaMedicoes - 100) > 0.01 && medicoes.length > 0) {
+        return res.status(400).json({
+          error: `A soma das medições deve ser exatamente 100%. Atual: ${somaMedicoes.toFixed(2)}%`,
+          codigo: 'MEDICOES_SEM_100',
+        });
+      }
+
+      if (totais.margemAbaixoMinimo) {
+        return res.status(400).json({
+          error: `Margem de lucro (${totais.lucroPerc.toFixed(1)}%) está abaixo do mínimo obrigatório de ${MARGEM_MINIMA_PERC}%. Ajuste os custos antes de enviar para aprovação.`,
+          codigo: 'MARGEM_ABAIXO_MINIMO',
+          margemAtual: totais.lucroPerc,
+          margemMinima: MARGEM_MINIMA_PERC,
+        });
+      }
+
+      if (totais.custoProducaoUltrapassou) {
+        return res.status(400).json({
+          error: `Custo de produção (${totais.custoProducaoPerc.toFixed(1)}%) ultrapassa o teto de ${TETO_CUSTO_PRODUCAO}%. Revise equipe e terceirizados.`,
+          codigo: 'CUSTO_PRODUCAO_ULTRAPASSOU',
+          custoAtual: totais.custoProducaoPerc,
+          tetoPermitido: TETO_CUSTO_PRODUCAO,
+        });
+      }
+
+      if (totais.terceirosUltrapassouTeto) {
+        const bypasAutorizado = dados.bypassDiretoria === true;
+        const ehDiretoria = ['Admin', 'Diretoria'].includes(req.user.perfil);
+        if (!bypasAutorizado || !ehDiretoria) {
+          return res.status(400).json({
+            error: `Terceirizados em ${totais.percTerceiros.toFixed(1)}% (limite: ${TETO_TERCEIROS_PERC}%). Requer autorização da Diretoria com justificativa.`,
+            codigo: 'TERCEIROS_REQUER_BYPASS',
+            percAtual: totais.percTerceiros,
+            tetoPermitido: TETO_TERCEIROS_PERC,
+            requerBypass: true,
+          });
+        }
+        if (!dados.justificativaBypass || dados.justificativaBypass.trim().length < 20) {
+          return res.status(400).json({
+            error: 'Justificativa de bypass obrigatória (mínimo 20 caracteres).',
+            codigo: 'BYPASS_SEM_JUSTIFICATIVA',
+          });
+        }
+      }
+    }
+
+    // Verifica se já existe planejamento para o projeto
+    const existing = await db.findOne('Planejamentos', (p) => p.ID_Projeto === dados.idProjeto);
+    const planData = {
+      ID: existing?.ID || uuidv4(),
+      ID_Projeto: dados.idProjeto || '',
+      Nome_Projeto: dados.nomeProjeto || '',
+      Cliente: dados.cliente || '',
+      Nr_Contrato_OS: dados.nrContratoOS || '',
+      Nr_OS_OPP: dados.nrOsOpp || '',
+      Resp_Planejamento: dados.respPlanejamento || '',
+      Resp_Aprovacao: dados.respAprovacao || '',
+      Setor: dados.setor || '',
+      Tipologia: dados.tipologia || '',
+      Empresa: dados.empresa || '',
+      Link_ClickUp: dados.linkClickUp || '',
+      Valor_Contrato: String(dados.valorContrato || 0),
+      Impostos_Perc: String(dados.impostosPerc || 16.33),
+      Taxa_Adm_Perc: String(dados.taxaAdmPerc || 12),
+      Comissao_Perc: String(dados.comissaoPerc || 7.50),
+      Data_Inicio_OS: dados.dataInicioOS || '',
+      Data_OS_Externa: dados.dataOsExterna || '',
+      Data_Entrega_Contrato: dados.dataEntregaContrato || '',
+      Data_Entrega_Planejada: dados.dataEntregaPlanejada || '',
+      Status: status,
+      Justificativa: dados.justificativa || '',
+      Criado_Por: req.user.id,
+      Criado_Em: existing?.Criado_Em || new Date().toISOString(),
+      Aprovado_Por: existing?.Aprovado_Por || '',
+      Aprovado_Em: existing?.Aprovado_Em || '',
+      Dados_JSON: JSON.stringify(dados),
+    };
+
+    if (existing) {
+      await db.updateRowById('Planejamentos', 'ID', existing.ID, planData);
+    } else {
+      await db.insertRow('Planejamentos', planData);
+    }
+
+    // Atualiza status do projeto
+    if (dados.idProjeto) {
+      const project = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === dados.idProjeto);
+      if (project) {
+        await db.updateRowById('Projetos_Contratos', 'ID_Projeto', dados.idProjeto, {
+          ...project,
+          Status: status === 'Aprovado' ? 'Planejado' : project.Status,
+          Valor_Global: String(dados.valorContrato || project.Valor_Global),
+          Atualizado_Em: new Date().toISOString(),
+        });
+      }
+    }
+
+    res.status(existing ? 200 : 201).json({ ...planData, totais });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/planejamento/:id/aprovar — aprova ou rejeita um planejamento
+router.post('/:id/aprovar', async (req, res, next) => {
+  try {
+    const plan = await db.findOne('Planejamentos', (p) => p.ID === req.params.id);
+    if (!plan) return res.status(404).json({ error: 'Planejamento não encontrado.' });
+
+    if (!['Coordenador', 'Admin', 'Diretoria'].includes(req.user.perfil)) {
+      return res.status(403).json({ error: 'Somente Coordenador ou Diretoria pode aprovar planejamentos.' });
+    }
+
+    if (plan.Status !== 'Pendente Aprovação') {
+      return res.status(409).json({ error: `Planejamento está em status "${plan.Status}". Somente "Pendente Aprovação" pode ser aprovado.` });
+    }
+
+    const { acao, comentario } = req.body; // acao: 'aprovar' | 'rejeitar'
+    if (!['aprovar', 'rejeitar'].includes(acao)) {
+      return res.status(400).json({ error: 'Campo "acao" deve ser "aprovar" ou "rejeitar".' });
+    }
+
+    const novoStatus = acao === 'aprovar' ? 'Aprovado' : 'Rejeitado';
+    const updated = {
+      ...plan,
+      Status: novoStatus,
+      Aprovado_Por: req.user.nome,
+      Aprovado_Em: new Date().toISOString(),
+      Comentario_Aprovacao: comentario || '',
+    };
+
+    await db.updateRowById('Planejamentos', 'ID', plan.ID, updated);
+
+    // Atualiza status do projeto se aprovado
+    if (acao === 'aprovar' && plan.ID_Projeto) {
+      const project = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === plan.ID_Projeto);
+      if (project) {
+        await db.updateRowById('Projetos_Contratos', 'ID_Projeto', plan.ID_Projeto, {
+          ...project, Status: 'Planejado', Atualizado_Em: new Date().toISOString(),
+        });
+      }
+
+      // ── Cria O.S. no OPP automaticamente ao aprovar ────────────────────
+      try {
+        const opp = require('../services/oppService');
+        const projeto = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === plan.ID_Projeto);
+        const osResult = await opp.criarOSDoPlano(plan, projeto);
+        const osId = osResult?.id_os || osResult?.id || osResult?.codigo_os || '';
+        if (osId) {
+          // Salva o ID da O.S. no planejamento
+          await db.updateRowById('Planejamentos', 'ID', plan.ID, {
+            ...updated,
+            Nr_OS_OPP: String(osId),
+          });
+          console.log(`[Aprovação] O.S. OPP #${osId} criada para ${plan.Nome_Projeto}`);
+        }
+      } catch (errOpp) {
+        // Não bloqueia a aprovação se o OPP falhar — só registra
+        console.error('[Aprovação] Falha ao criar O.S. no OPP (não bloqueante):', errOpp.message);
+      }
+    }
+
+    console.log(`[Aprovação] Planejamento ${plan.ID} ${novoStatus} por ${req.user.nome}`);
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/planejamento/pendentes — planejamentos aguardando aprovação
+router.get('/pendentes/lista', async (req, res, next) => {
+  try {
+    if (!['Coordenador', 'Admin', 'Diretoria'].includes(req.user.perfil)) {
+      return res.status(403).json({ error: 'Sem permissão.' });
+    }
+    const all = await db.readSheet('Planejamentos');
+    const pendentes = all.filter(p => p.Status === 'Pendente Aprovação');
+    res.json(pendentes);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── POST /api/planejamento/:id/checar-integridade ───────────────────────────
+// Checklist de integridade antes de mover para baseline / aprovação
+router.get('/:id/checar-integridade', async (req, res, next) => {
+  try {
+    const plan = await db.findOne('Planejamentos', (p) => p.ID === req.params.id || p.ID_Projeto === req.params.id);
+    if (!plan) return res.status(404).json({ error: 'Planejamento não encontrado.' });
+
+    let dados = {};
+    try { dados = JSON.parse(plan.Dados_JSON || '{}'); } catch {}
+
+    const totais = calcularTotais(dados);
+    const medicoes = dados.medicoes || [];
+    const equipe = dados.equipe || [];
+    const terceirizados = dados.terceirizados || [];
+
+    const somaMedicoes = medicoes.reduce((s, m) => s + parseFloat(m.percentual || 0), 0);
+    const temDataInicio = !!(dados.dataInicioOS || plan.Data_Inicio_OS);
+    const temDataEntrega = !!(dados.dataEntregaContrato || plan.Data_Entrega_Contrato);
+    const tarefasGrandes = equipe.filter(e => parseFloat(e.horas || 0) > MAX_HORAS_TAREFA);
+
+    const checklist = [
+      { item: 'Margem de lucro ≥ 23%',           ok: !totais.margemAbaixoMinimo,         valor: `${totais.lucroPerc.toFixed(1)}%`,         critico: true  },
+      { item: 'Terceirizados ≤ 25%',              ok: !totais.terceirosUltrapassouTeto,   valor: `${totais.percTerceiros.toFixed(1)}%`,     critico: true  },
+      { item: 'Custo de produção ≤ 30%',          ok: !totais.custoProducaoUltrapassou,   valor: `${totais.custoProducaoPerc.toFixed(1)}%`, critico: true  },
+      { item: 'Medições somam 100%',              ok: Math.abs(somaMedicoes - 100) < 0.01, valor: `${somaMedicoes.toFixed(2)}%`,            critico: true  },
+      { item: 'Data de início definida',          ok: temDataInicio,                       valor: dados.dataInicioOS || '—',                critico: false },
+      { item: 'Data de entrega definida',         ok: temDataEntrega,                      valor: dados.dataEntregaContrato || '—',         critico: false },
+      { item: 'Equipe cadastrada',                ok: equipe.length > 0,                   valor: `${equipe.length} membro(s)`,             critico: false },
+      { item: 'Sem tarefas > 16h (particionadas)',ok: tarefasGrandes.length === 0,         valor: `${tarefasGrandes.length} pendente(s)`,  critico: false },
+      { item: 'Terceirizados com vínculo',        ok: totais.tercSemVinculo === 0,         valor: `${totais.tercSemVinculo} sem vínculo`,  critico: false },
+    ];
+
+    const podeAprovar = checklist.filter(c => c.critico).every(c => c.ok);
+    const criticosFalhando = checklist.filter(c => c.critico && !c.ok);
+
+    res.json({ podeAprovar, criticosFalhando, checklist, totais });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── POST /api/planejamento/:id/baseline ──────────────────────────────────────
+// Trava o baseline PAR com versionamento (Versão 1, Versão 2...)
+router.post('/:id/baseline', async (req, res, next) => {
+  try {
+    const plan = await db.findOne('Planejamentos', (p) => p.ID === req.params.id);
+    if (!plan) return res.status(404).json({ error: 'Planejamento não encontrado.' });
+
+    // Somente PO, Coordenador, Admin ou Diretoria podem travar
+    if (!['PO', 'Coordenador', 'Admin', 'Diretoria'].includes(req.user.perfil)) {
+      return res.status(403).json({ error: 'Sem permissão para travar o baseline.' });
+    }
+
+    let dados = {};
+    try { dados = JSON.parse(plan.Dados_JSON || '{}'); } catch {}
+
+    // Verifica se já existe baseline travado
+    if (dados._baseline && dados._baseline.travado) {
+      return res.status(409).json({
+        error: 'Baseline já travado em ' + new Date(dados._baseline.travadoEm).toLocaleString('pt-BR') +
+          ' por ' + dados._baseline.travadoPor + '. Um baseline só pode ser travado uma vez.',
+      });
+    }
+
+    const equipe = dados.equipe || [];
+    const medicoes = dados.medicoes || [];
+
+    // Monta o snapshot imutável do planejado
+    const baseline = {
+      travado: true,
+      travadoEm: new Date().toISOString(),
+      travadoPor: req.user.nome,
+      travadoPorId: req.user.id,
+
+      // Datas planejadas
+      dataInicioOS: dados.dataInicioOS || plan.Data_Inicio_OS || '',
+      dataEntregaContrato: dados.dataEntregaContrato || plan.Data_Entrega_Contrato || '',
+      dataEntregaPlanejada: dados.dataEntregaPlanejada || plan.Data_Entrega_Planejada || '',
+
+      // Horas estimadas por colaborador
+      horasPorColaborador: equipe.map((e) => ({
+        colaborador: e.colaborador || e.nome || '',
+        horasEstimadas: parseFloat(e.horas || e.horas_estimadas || 0),
+        mediaHora: parseFloat(e.mediaHora || e.valor_hora || 0),
+        custoEstimado: parseFloat(e.mediaHora || 0) * parseFloat(e.horas || 0),
+      })),
+
+      // Total de horas estimadas
+      totalHorasEstimadas: equipe.reduce((s, e) => s + parseFloat(e.horas || e.horas_estimadas || 0), 0),
+      totalCustoEquipe: equipe.reduce((s, e) => s + (parseFloat(e.mediaHora || 0) * parseFloat(e.horas || 0)), 0),
+
+      // Cronograma de medições planejado
+      medicoes: medicoes.map((m) => ({
+        etapa: m.etapa || m.nome || '',
+        percentual: parseFloat(m.percentual || 0),
+        valor: parseFloat(m.valor || 0),
+        dataPrevisao: m.dataPrevisao || m.data_previsao || '',
+      })),
+
+      // Resumo financeiro planejado
+      valorContrato: parseFloat(dados.valorContrato || plan.Valor_Contrato || 0),
+      impostosPerc: parseFloat(dados.impostosPerc || plan.Impostos_Perc || 16.33),
+      taxaAdmPerc: parseFloat(dados.taxaAdmPerc || plan.Taxa_Adm_Perc || 12),
+      comissaoPerc: parseFloat(dados.comissaoPerc || plan.Comissao_Perc || 7.5),
+    };
+
+    // ── Versionamento de Baseline ─────────────────────────────────────────────
+    // Se já existe baseline travado, não bloqueia — cria uma nova versão
+    const versaoAnterior = dados._baseline?.versao || 0;
+    const versaoNova = versaoAnterior + 1;
+    baseline.versao = versaoNova;
+    baseline.versaoLabel = `Versão ${versaoNova}`;
+
+    // Guarda histórico de versões anteriores
+    const historicoBaselines = dados._historicoBaselines || [];
+    if (dados._baseline) {
+      historicoBaselines.push({ ...dados._baseline, arquivadoEm: new Date().toISOString() });
+    }
+
+    const dadosAtualizados = { ...dados, _baseline: baseline, _historicoBaselines: historicoBaselines };
+
+    await db.updateRowById('Planejamentos', 'ID', plan.ID, {
+      ...plan,
+      Dados_JSON: JSON.stringify(dadosAtualizados),
+    });
+
+    console.log(`[Baseline] ${baseline.versaoLabel} travada por ${req.user.nome} para ${plan.Nome_Projeto}`);
+
+    res.json({
+      message: `${baseline.versaoLabel} do baseline PAR travada com sucesso!`,
+      baseline,
+      versaoAnterior: versaoAnterior > 0 ? versaoAnterior : null,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── GET /api/planejamento/:id/comparativo ────────────────────────────────────
+// Retorna lado a lado: planejado (baseline) vs executado (Log_Horas do ClickUp)
+router.get('/:id/comparativo', async (req, res, next) => {
+  try {
+    // Aceita tanto o ID do planejamento quanto o ID do projeto
+    const plan = await db.findOne('Planejamentos', (p) => p.ID === req.params.id || p.ID_Projeto === req.params.id);
+    if (!plan) return res.status(404).json({ error: 'Planejamento não encontrado.' });
+
+    let dados = {};
+    try { dados = JSON.parse(plan.Dados_JSON || '{}'); } catch {}
+
+    const baseline = dados._baseline || null;
+
+    // Horas realmente rastreadas (Log_Horas — sincronizado do ClickUp)
+    const logHoras = await db.findRows('Log_Horas', (l) => l.ID_Projeto === plan.ID_Projeto);
+
+    // Agrupa horas rastreadas por colaborador
+    const horasReaisPorColab = {};
+    for (const entry of logHoras) {
+      const colab = entry.Colaborador || 'Não identificado';
+      if (!horasReaisPorColab[colab]) horasReaisPorColab[colab] = 0;
+      horasReaisPorColab[colab] += parseFloat(entry.Horas_Logadas || 0);
+    }
+    const totalHorasRastreadas = Object.values(horasReaisPorColab).reduce((s, h) => s + h, 0);
+
+    // Medições reais registradas no sistema
+    const medicoesReais = await db.findRows('Medicoes', (m) => m.ID_Projeto === plan.ID_Projeto);
+
+    // Projeto atual
+    const projeto = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === plan.ID_Projeto);
+
+    // ── Monta o comparativo ──
+    const comparativo = {
+      temBaseline: !!baseline,
+      planejamento: {
+        id: plan.ID,
+        nome: plan.Nome_Projeto,
+        status: plan.Status,
+      },
+
+      // Datas: planejado vs atual
+      datas: {
+        planejado: {
+          dataInicioOS: baseline?.dataInicioOS || plan.Data_Inicio_OS || '',
+          dataEntregaContrato: baseline?.dataEntregaContrato || plan.Data_Entrega_Contrato || '',
+          dataEntregaPlanejada: baseline?.dataEntregaPlanejada || plan.Data_Entrega_Planejada || '',
+        },
+        atual: {
+          dataInicioOS: plan.Data_Inicio_OS || '',
+          dataEntregaContrato: projeto?.Data_Entrega_Contrato || plan.Data_Entrega_Contrato || '',
+          dataEntregaPlanejada: projeto?.Data_Entrega_Planejada || plan.Data_Entrega_Planejada || '',
+        },
+      },
+
+      // Horas: planejado vs rastreado
+      horas: {
+        totalPlanejado: baseline?.totalHorasEstimadas || 0,
+        totalRastreado: parseFloat(totalHorasRastreadas.toFixed(2)),
+        desvioAbsoluto: parseFloat((totalHorasRastreadas - (baseline?.totalHorasEstimadas || 0)).toFixed(2)),
+        desvioPerc: baseline?.totalHorasEstimadas > 0
+          ? parseFloat(((totalHorasRastreadas / baseline.totalHorasEstimadas - 1) * 100).toFixed(1))
+          : null,
+
+        // Detalhamento por colaborador
+        porColaborador: (() => {
+          const planejados = baseline?.horasPorColaborador || [];
+          const todos = new Set([
+            ...planejados.map((p) => p.colaborador),
+            ...Object.keys(horasReaisPorColab),
+          ]);
+          return [...todos].map((colab) => {
+            const plan = planejados.find((p) => p.colaborador === colab);
+            const rastreado = parseFloat((horasReaisPorColab[colab] || 0).toFixed(2));
+            const planejadoH = plan?.horasEstimadas || 0;
+            const desvio = rastreado - planejadoH;
+            const desvioPerc = planejadoH > 0 ? ((rastreado / planejadoH - 1) * 100) : null;
+            return {
+              colaborador: colab,
+              horasPlanejadas: planejadoH,
+              horasRastreadas: rastreado,
+              desvioAbsoluto: parseFloat(desvio.toFixed(2)),
+              desvioPerc: desvioPerc !== null ? parseFloat(desvioPerc.toFixed(1)) : null,
+              custoEstimado: plan?.custoEstimado || 0,
+            };
+          }).sort((a, b) => Math.abs(b.desvioAbsoluto) - Math.abs(a.desvioAbsoluto));
+        })(),
+      },
+
+      // Medições: cronograma planejado vs realizado
+      medicoes: (() => {
+        const planejadas = baseline?.medicoes || [];
+        return planejadas.map((mp, i) => {
+          const realizada = medicoesReais.find((mr) =>
+            mr.Descricao?.toLowerCase() === mp.etapa?.toLowerCase() || i === medicoesReais.indexOf(medicoesReais[i])
+          );
+          const dataP = mp.dataPrevisao ? new Date(mp.dataPrevisao) : null;
+          const dataR = realizada?.Data_Realizacao ? new Date(realizada.Data_Realizacao) : null;
+          const atrasoDias = dataP && dataR
+            ? Math.round((dataR - dataP) / (1000 * 60 * 60 * 24))
+            : null;
+          return {
+            etapa: mp.etapa,
+            percentual: mp.percentual,
+            valorPlanejado: mp.valor,
+            dataPrevisaoPlanejada: mp.dataPrevisao,
+            dataRealizacao: realizada?.Data_Realizacao || null,
+            statusFinanceiro: realizada?.Status_Financeiro || 'Pendente',
+            statusFisico: realizada?.Status_Fisico || 'Não iniciado',
+            atrasoDias,
+            valorRealizado: parseFloat(realizada?.Valor_Medicao || 0),
+          };
+        });
+      })(),
+
+      // Info do baseline
+      baseline: baseline ? {
+        travadoEm: baseline.travadoEm,
+        travadoPor: baseline.travadoPor,
+      } : null,
+    };
+
+    res.json(comparativo);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/planejamento/calcular — calcula totais sem salvar (preview)
+router.post('/calcular', async (req, res, next) => {
+  try {
+    const totais = calcularTotais(req.body);
+    res.json(totais);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/planejamento/:id/travar — trava o vínculo OPP pelo Nome do Centro de Custo
+router.post('/:id/travar', async (req, res, next) => {
+  try {
+    const plan = await db.findOne('Planejamentos', p => p.ID_Projeto === req.params.id);
+    if (!plan) return res.status(404).json({ error: 'Planejamento não encontrado.' });
+    if (plan.Travado) return res.status(400).json({ error: 'Planejamento já está travado.' });
+    if (!plan.Nr_Contrato_OS) return res.status(400).json({ error: 'Preencha o Nome do Centro de Custo antes de travar.' });
+
+    await db.updateRowById('Planejamentos', 'ID', plan.ID, {
+      ...plan,
+      Travado: true,
+      Travado_Em: new Date().toISOString(),
+      Travado_Por: req.user.nome || req.user.id,
+    });
+
+    res.json({
+      ok: true,
+      centroCusto: plan.Nr_Contrato_OS,
+      message: `Vínculo travado. PAR vai buscar "${plan.Nr_Contrato_OS}" no OPP a partir de agora.`,
+    });
+  } catch (err) { next(err); }
+});
+
+module.exports = router;
