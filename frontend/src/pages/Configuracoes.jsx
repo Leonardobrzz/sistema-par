@@ -1,7 +1,9 @@
 ﻿import { useState, useEffect } from "react"
 import { toast } from "react-hot-toast"
-import { Settings, RefreshCw, Database, Bell, Link, CheckCircle, AlertTriangle } from "lucide-react"
+import { Settings, RefreshCw, Database, Bell, Link, CheckCircle, AlertTriangle, Users } from "lucide-react"
 import api from "../utils/api"
+
+const PERFIS = ['Admin', 'PO', 'Coordenador', 'Comercial', 'Financeiro', 'Diretoria', 'Visualizador']
 
 function Section({ title, icon: Icon, children }) {
   return (
@@ -32,10 +34,42 @@ export default function Configuracoes() {
   const [health, setHealth] = useState(null)
   const [syncing, setSyncing] = useState(false)
   const [syncingVH, setSyncingVH] = useState(false)
+  const [usuarios, setUsuarios] = useState([])
+  const [novoUser, setNovoUser] = useState({ nome: "", email: "", senha: "", perfil: "Visualizador" })
+  const [salvandoUser, setSalvandoUser] = useState(false)
+  const [mostrarFormUser, setMostrarFormUser] = useState(false)
+  const userAtual = JSON.parse(localStorage.getItem("par_user") || "{}")
 
   useEffect(() => {
     api.get("/health").then(r => setHealth(r.data)).catch(() => setHealth(null))
+    if (userAtual.perfil === "Admin") {
+      api.get("/auth/usuarios").then(r => setUsuarios(r.data)).catch(() => {})
+    }
   }, [])
+
+  async function criarUsuario(e) {
+    e.preventDefault()
+    setSalvandoUser(true)
+    try {
+      await api.post("/auth/usuarios", novoUser)
+      toast.success(`Usuário ${novoUser.nome} criado com sucesso!`)
+      setNovoUser({ nome: "", email: "", senha: "", perfil: "Visualizador" })
+      setMostrarFormUser(false)
+      const r = await api.get("/auth/usuarios")
+      setUsuarios(r.data)
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Erro ao criar usuário")
+    } finally { setSalvandoUser(false) }
+  }
+
+  async function toggleAtivo(user) {
+    try {
+      await api.put(`/auth/usuarios/${user.id}`, { ativo: user.ativo !== "true" })
+      toast.success(`Usuário ${user.ativo === "true" ? "desativado" : "ativado"}`)
+      const r = await api.get("/auth/usuarios")
+      setUsuarios(r.data)
+    } catch { toast.error("Erro ao atualizar usuário") }
+  }
 
   async function syncClickUp() {
     setSyncing(true)
@@ -108,6 +142,50 @@ export default function Configuracoes() {
         <InfoRow label="Verificacao diaria" value="08h (seg-sex)" status="ok" />
         <InfoRow label="Tipos de alerta" value="Prazo, Margem PAR, Custo" />
       </Section>
+
+      {userAtual.perfil === "Admin" && (
+        <Section title="Gestão de Usuários" icon={Users}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <span style={{ fontSize: 13, color: "#94a3b8" }}>{usuarios.length} usuário(s) cadastrado(s)</span>
+            <button onClick={() => setMostrarFormUser(!mostrarFormUser)} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#7C3AED", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+              {mostrarFormUser ? "Cancelar" : "+ Novo Usuário"}
+            </button>
+          </div>
+
+          {mostrarFormUser && (
+            <form onSubmit={criarUsuario} style={{ background: "rgba(124,58,237,0.08)", borderRadius: 10, padding: 16, marginBottom: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <input required placeholder="Nome completo" value={novoUser.nome} onChange={e => setNovoUser(p => ({...p, nome: e.target.value}))} style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "#e2e8f0", fontSize: 13 }} />
+              <input required type="email" placeholder="E-mail" value={novoUser.email} onChange={e => setNovoUser(p => ({...p, email: e.target.value}))} style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "#e2e8f0", fontSize: 13 }} />
+              <input required type="password" placeholder="Senha" value={novoUser.senha} onChange={e => setNovoUser(p => ({...p, senha: e.target.value}))} style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "#e2e8f0", fontSize: 13 }} />
+              <select value={novoUser.perfil} onChange={e => setNovoUser(p => ({...p, perfil: e.target.value}))} style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "#1e293b", color: "#e2e8f0", fontSize: 13 }}>
+                {PERFIS.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+              <button type="submit" disabled={salvandoUser} style={{ gridColumn: "1/-1", padding: "10px", borderRadius: 8, border: "none", background: "#7C3AED", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                {salvandoUser ? "Criando..." : "Criar Usuário"}
+              </button>
+            </form>
+          )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {usuarios.map(u => (
+              <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "rgba(255,255,255,0.03)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0" }}>{u.nome}</div>
+                  <div style={{ fontSize: 12, color: "#64748b" }}>{u.email} · {u.perfil}</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: u.ativo === "true" ? "#DCFCE7" : "#FEE2E2", color: u.ativo === "true" ? "#15803D" : "#DC2626" }}>
+                    {u.ativo === "true" ? "Ativo" : "Inativo"}
+                  </span>
+                  <button onClick={() => toggleAtivo(u)} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#94a3b8", cursor: "pointer" }}>
+                    {u.ativo === "true" ? "Desativar" : "Ativar"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
 
       <Section title="Regras PAR" icon={CheckCircle}>
         <InfoRow label="Margem minima de lucro" value=">= 23%" status="ok" />

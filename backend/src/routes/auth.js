@@ -116,4 +116,47 @@ router.get('/me', require('../middleware/auth').authMiddleware, (req, res) => {
   res.json({ user: req.user });
 });
 
+// GET /api/auth/usuarios — lista todos os usuários (só Admin)
+router.get('/usuarios', require('../middleware/auth').authMiddleware, async (req, res, next) => {
+  try {
+    if (!['Admin'].includes(req.user.perfil)) return res.status(403).json({ error: 'Sem permissão.' });
+    const users = await db.readSheet('USER');
+    res.json(users.map(u => ({ id: u.ID, nome: u.Nome, email: u.Email, perfil: u.Perfil, ativo: u.Ativo, criado_em: u.Criado_Em, ultimo_login: u.Ultimo_Login })));
+  } catch (err) { next(err); }
+});
+
+// POST /api/auth/usuarios — Admin cria novo usuário
+router.post('/usuarios', require('../middleware/auth').authMiddleware, async (req, res, next) => {
+  try {
+    if (!['Admin'].includes(req.user.perfil)) return res.status(403).json({ error: 'Sem permissão.' });
+    const { nome, email, senha, perfil } = req.body;
+    if (!nome || !email || !senha || !perfil) return res.status(400).json({ error: 'Nome, e-mail, senha e perfil são obrigatórios.' });
+
+    const existe = await db.findOne('USER', u => (u.Email || '').toLowerCase() === email.toLowerCase().trim());
+    if (existe) return res.status(400).json({ error: 'E-mail já cadastrado.' });
+
+    const PERFIS = ['Admin', 'PO', 'Coordenador', 'Comercial', 'Financeiro', 'Diretoria', 'Visualizador'];
+    if (!PERFIS.includes(perfil)) return res.status(400).json({ error: 'Perfil inválido.' });
+
+    const senhaHash = await bcrypt.hash(senha, 12);
+    const user = { ID: uuidv4(), Nome: nome, Email: email.toLowerCase().trim(), Senha_Hash: senhaHash, Perfil: perfil, Empresa: 'Jota Barros Projetos', Ativo: 'true', Criado_Em: new Date().toISOString(), Ultimo_Login: '' };
+    await db.insertRow('USER', user);
+    res.status(201).json({ message: 'Usuário criado com sucesso.', id: user.ID });
+  } catch (err) { next(err); }
+});
+
+// PUT /api/auth/usuarios/:id — Admin atualiza usuário
+router.put('/usuarios/:id', require('../middleware/auth').authMiddleware, async (req, res, next) => {
+  try {
+    if (!['Admin'].includes(req.user.perfil)) return res.status(403).json({ error: 'Sem permissão.' });
+    const user = await db.findOne('USER', u => u.ID === req.params.id);
+    if (!user) return res.status(404).json({ error: 'Usuário não encontrado.' });
+    const { nome, perfil, ativo, senha } = req.body;
+    const updated = { ...user, Nome: nome || user.Nome, Perfil: perfil || user.Perfil, Ativo: ativo !== undefined ? String(ativo) : user.Ativo };
+    if (senha) updated.Senha_Hash = await bcrypt.hash(senha, 12);
+    await db.updateRowById('USER', 'ID', req.params.id, updated);
+    res.json({ message: 'Usuário atualizado.' });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
