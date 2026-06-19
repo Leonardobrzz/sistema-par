@@ -548,9 +548,18 @@ async function _doSync() {
   // 3. Recarregar projetos após import
   const projetos = await db.readSheet('Projetos_Contratos');
 
-  // 1b. FASE 2: buscar tarefas de TODAS as listas que existem no sistema
-  // Isso garante que nenhuma tarefa fique fora do radar, independente de regras de pasta
-  const listasParaBuscarTasks = allLists.filter(i => !i._isFolder);
+  // 1b. FASE 2: buscar tarefas APENAS das listas que têm projeto cadastrado no sistema
+  // Evita carregar todas as 700+ listas na memória (causa OOM)
+  const projetoClickUpIds = new Set(projetos.map(p => p.ID_ClickUp).filter(Boolean));
+  const projetoFolderIds = new Set(projetos.map(p => p._folderId).filter(Boolean));
+  const listasParaBuscarTasks = allLists.filter(i =>
+    !i._isFolder && (
+      projetoClickUpIds.has(i.id) ||
+      (i._folderId && projetoClickUpIds.has(i._folderId)) ||
+      projetoFolderIds.has(i._folderId)
+    )
+  );
+  console.log(`[ClickUp] Buscando tarefas de ${listasParaBuscarTasks.length}/${allLists.filter(i=>!i._isFolder).length} listas com projeto cadastrado.`);
 
   for (const item of listasParaBuscarTasks) {
     try {
