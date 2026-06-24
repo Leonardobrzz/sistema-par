@@ -6,6 +6,8 @@ const db = process.env.USE_POSTGRES === 'true'
 const { broadcast } = require('./websocketService');
 
 const BASE_URL = 'https://api.clickup.com/api/v2';
+// Limite de 50MB por resposta para evitar OOM no parse de JSON grandes
+const axiosClickUp = axios.create({ maxContentLength: 50 * 1024 * 1024, maxBodyLength: 50 * 1024 * 1024 });
 
 function getHeaders() {
   return { Authorization: process.env.CLICKUP_API_TOKEN };
@@ -34,12 +36,12 @@ async function getFolderlessLists(spaceId) {
 }
 
 async function getTasks(listId, page = 0) {
-  const res = await axios.get(`${BASE_URL}/list/${listId}/task`, {
+  const res = await axiosClickUp.get(`${BASE_URL}/list/${listId}/task`, {
     headers: getHeaders(),
     params: {
       archived: false,
       include_closed: true,
-      subtasks: true,
+      subtasks: false,
       page,
     },
   });
