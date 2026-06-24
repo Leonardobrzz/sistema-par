@@ -529,7 +529,6 @@ async function _doSync() {
   }
 
   const allLists = [];
-  const allTasks = [];
 
   // 1a. FASE 1: coletar estrutura (pastas + listas) de todos os spaces → importar projetos
   // Isso é rápido (apenas folders/lists, sem tasks) e garante que os projetos existam mesmo
