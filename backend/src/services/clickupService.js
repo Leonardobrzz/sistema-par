@@ -545,42 +545,43 @@ async function _doSync() {
   // 2. Auto-importar novas pastas/listas como projetos (ANTES de buscar tasks)
   await autoImportProjects(allLists);
 
-  // 3. Recarregar projetos após import
-  const projetos = await db.readSheet('Projetos_Contratos');
-
-  // 1b. FASE 2: buscar tarefas APENAS das listas que têm projeto cadastrado no sistema
-  // Evita carregar todas as 700+ listas na memória (causa OOM)
-  const projetoClickUpIds = new Set(projetos.map(p => p.ID_ClickUp).filter(Boolean));
-  const projetoFolderIds = new Set(projetos.map(p => p._folderId).filter(Boolean));
-  const listasParaBuscarTasks = allLists.filter(i =>
-    !i._isFolder && (
-      projetoClickUpIds.has(i.id) ||
-      (i._folderId && projetoClickUpIds.has(i._folderId)) ||
-      projetoFolderIds.has(i._folderId)
-    )
+  // 3. Recarregar projetos após import — apenas ATIVOS para economizar memória
+  const todosProjectos = await db.readSheet('Projetos_Contratos');
+  const STATUS_ATIVOS = ['Em Andamento', 'Em Andamento (Atrasado)', 'Backlog', 'A Planejar'];
+  const projetos = todosProjectos.filter(p =>
+    p.ID_ClickUp && STATUS_ATIVOS.includes(p.Status)
   );
-  console.log(`[ClickUp] Buscando tarefas de ${listasParaBuscarTasks.length}/${allLists.filter(i=>!i._isFolder).length} listas com projeto cadastrado.`);
+  console.log(`[ClickUp] Sincronizando ${projetos.length}/${todosProjectos.length} projetos ativos.`);
 
-  for (const item of listasParaBuscarTasks) {
+  // 1b. FASE 2: processar tarefas projeto a projeto (sem acumular tudo na memória)
+  const allTasks = []; // mantém apenas tarefas para alertas (limpas a cada projeto)
+  const projetoClickUpIds = new Set(projetos.map(p => p.ID_ClickUp).filter(Boolean));
+  const listasAtivas = allLists.filter(i =>
+    !i._isFolder && projetoClickUpIds.has(i.id)
+  );
+  console.log(`[ClickUp] Buscando tarefas de ${listasAtivas.length} listas ativas.`);
+
+  for (const item of listasAtivas) {
     try {
       const tasks = await getTasks(item.id);
-      allTasks.push(...tasks.map((t) => ({
+      const mapped = tasks.map((t) => ({
         ...t,
         _listId: item.id,
         _listName: item.name,
         _folderId: item._folderId || null,
         _folderName: item._folderName || null,
         _spaceId: item._spaceId,
-      })));
+      }));
+      // Processa status deste projeto imediatamente, sem acumular na memória
+      const projeto = projetos.find(p => p.ID_ClickUp === item.id);
+      if (projeto) {
+        await syncProjectStatuses(mapped, [projeto], [item]);
+      }
+      allTasks.push(...mapped);
     } catch (err) {
       console.error(`[ClickUp] Erro ao buscar tarefas da lista ${item.name}:`, err.message);
     }
   }
-
-
-
-  // 4. Atualizar status/progresso dos projetos (e backfill de Cliente/Vencimento)
-  await syncProjectStatuses(allTasks, projetos, allLists);
 
   // 4a. Sincronizar campo "OS Cliente" das listas → Centro_Custo_OPP nos projetos
   await syncOsCliente(allLists, projetos);
