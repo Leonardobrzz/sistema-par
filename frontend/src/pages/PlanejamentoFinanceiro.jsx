@@ -110,6 +110,8 @@ export default function PlanejamentoFinanceiro() {
   const [planTravado, setPlanTravado] = useState(false)
   const [travandoOPP, setTravandoOPP] = useState(false)
   const [baseline, setBaseline] = useState(null)
+  const [historicoBaselines, setHistoricoBaselines] = useState([])
+  const [baselineViewing, setBaselineViewing] = useState(null) // versão sendo visualizada
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [lockingBaseline, setLockingBaseline] = useState(false)
@@ -146,6 +148,7 @@ export default function PlanejamentoFinanceiro() {
       setPlanStatus(p.Status || null)
       setPlanTravado(!!(p.Travado))
       setBaseline(d._baseline || null)
+      setHistoricoBaselines(d._historicoBaselines || [])
       setForm({
         nomeProjeto:       p.Nome_Projeto       || d.nomeProjeto       || proj.Nome     || "",
         cliente:           p.Cliente            || d.cliente           || proj.Cliente  || "",
@@ -171,7 +174,7 @@ export default function PlanejamentoFinanceiro() {
         despesas:      Array.isArray(d.despesas)       ? d.despesas      : [],
       })
     } catch {
-      setPlanId(null); setPlanStatus(null); setBaseline(null)
+      setPlanId(null); setPlanStatus(null); setBaseline(null); setHistoricoBaselines([])
       setForm({ ...FORM0, nomeProjeto: proj.Nome || "", cliente: proj.Cliente || "", setor: proj.Setor || "", linkClickUp: proj.Link_ClickUp || "", dataEntregaContrato: proj.Data_Entrega_Contrato || "", valorContrato: proj.Valor_Global || "" })
     }
     setLoading(false)
@@ -325,6 +328,7 @@ export default function PlanejamentoFinanceiro() {
     "Rejeitado":           { bg: "#FEE2E2", color: "#DC2626", border: "#FECACA" },
   }
   const sc = statusCfg[planStatus] || statusCfg["Rascunho"]
+  const fmtCur = (v) => Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 
   return (
     <div style={{ paddingBottom: 60 }}>
@@ -362,23 +366,37 @@ export default function PlanejamentoFinanceiro() {
               {planStatus}
             </span>
           )}
+          {/* Versões anteriores do baseline */}
+          {historicoBaselines.map(b => (
+            <button key={b.versao} onClick={() => setBaselineViewing(b)}
+              style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#64748B", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+              <Lock size={11} /> {b.versaoLabel}
+            </button>
+          ))}
+
+          {/* Baseline atual */}
           {baseline && (
-            <span style={{ fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 8, border: "1.5px solid #BBF7D0", background: "#F0FDF4", color: "#15803D", display: "flex", alignItems: "center", gap: 4 }}>
-              <Lock size={12} /> Baseline {baseline.versaoLabel}
-            </span>
+            <button onClick={() => setBaselineViewing(baseline)}
+              style={{ fontSize: 12, fontWeight: 700, padding: "6px 12px", borderRadius: 8, border: "1.5px solid #BBF7D0", background: "#F0FDF4", color: "#15803D", display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+              <Lock size={11} /> {baseline.versaoLabel} (atual)
+            </button>
           )}
+
           {planId && (
             <button onClick={travarBaseline} disabled={lockingBaseline}
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1.5px solid #C7D2FE", background: "#EEF2FF", color: "#4338CA", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
               <Lock size={14} /> {lockingBaseline ? "Travando..." : "Baseline"}
             </button>
           )}
-          {planId && (
+
+          {/* Excel só disponível após aprovação */}
+          {planId && planStatus === "Aprovado" && (
             <button onClick={downloadExcel}
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1.5px solid #BBF7D0", background: "#F0FDF4", color: "#15803D", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
               <FileSpreadsheet size={14} /> Excel
             </button>
           )}
+
           {planId && planStatus === "Pendente Aprovação" && (
             <button onClick={aprovar} disabled={approving}
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 16px", borderRadius: 8, border: "none", background: "#22C55E", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
@@ -906,6 +924,108 @@ export default function PlanejamentoFinanceiro() {
         )}
 
       </>)}
+
+      {/* ── Modal de visualização de baseline ── */}
+      {baselineViewing && (
+        <div onClick={() => setBaselineViewing(null)} style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000,
+          display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: "#fff", borderRadius: 18, width: "100%", maxWidth: 680,
+            maxHeight: "85vh", overflow: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.2)",
+          }}>
+            {/* Header */}
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "#fff", zIndex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <Lock size={16} color="#7C3AED" />
+                <span style={{ fontWeight: 800, fontSize: 16, color: "#0F172A" }}>
+                  Baseline {baselineViewing.versaoLabel}
+                </span>
+                <span style={{ fontSize: 11, color: "#64748B", fontWeight: 600 }}>
+                  Travado em {new Date(baselineViewing.travadoEm).toLocaleDateString("pt-BR")} por {baselineViewing.travadoPor}
+                </span>
+              </div>
+              <button onClick={() => setBaselineViewing(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", fontSize: 20, lineHeight: 1 }}>✕</button>
+            </div>
+
+            <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
+              {/* Financeiro */}
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Financeiro</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                  {[
+                    { label: "Valor do Contrato", val: fmtCur(baselineViewing.valorContrato) },
+                    { label: "Impostos", val: `${baselineViewing.impostosPerc}%` },
+                    { label: "Taxa Adm", val: `${baselineViewing.taxaAdmPerc}%` },
+                  ].map(i => (
+                    <div key={i.label} style={{ background: "#F8FAFC", borderRadius: 10, padding: "12px 14px", border: "1px solid #E2E8F0" }}>
+                      <div style={{ fontSize: 11, color: "#94A3B8", fontWeight: 600 }}>{i.label}</div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "#0F172A", marginTop: 4 }}>{i.val}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Datas */}
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Datas Planejadas</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                  {[
+                    { label: "Início OS", val: baselineViewing.dataInicioOS ? new Date(baselineViewing.dataInicioOS).toLocaleDateString("pt-BR") : "—" },
+                    { label: "Entrega Contrato", val: baselineViewing.dataEntregaContrato ? new Date(baselineViewing.dataEntregaContrato).toLocaleDateString("pt-BR") : "—" },
+                    { label: "Entrega Planejada", val: baselineViewing.dataEntregaPlanejada ? new Date(baselineViewing.dataEntregaPlanejada).toLocaleDateString("pt-BR") : "—" },
+                  ].map(i => (
+                    <div key={i.label} style={{ background: "#F8FAFC", borderRadius: 10, padding: "12px 14px", border: "1px solid #E2E8F0" }}>
+                      <div style={{ fontSize: 11, color: "#94A3B8", fontWeight: 600 }}>{i.label}</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A", marginTop: 4 }}>{i.val}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Equipe */}
+              {baselineViewing.horasPorColaborador?.length > 0 && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
+                    Equipe — {Number(baselineViewing.totalHorasEstimadas || 0).toFixed(0)}h estimadas
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {baselineViewing.horasPorColaborador.map((c, i) => (
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "#F8FAFC", borderRadius: 8, border: "1px solid #E2E8F0" }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "#0F172A" }}>{c.colaborador || "—"}</span>
+                        <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#64748B" }}>
+                          <span>{Number(c.horasEstimadas || 0).toFixed(0)}h</span>
+                          <span style={{ fontWeight: 700, color: "#7C3AED" }}>{fmtCur(c.custoEstimado)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Medições */}
+              {baselineViewing.medicoes?.length > 0 && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Medições Planejadas</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {baselineViewing.medicoes.map((m, i) => (
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "#F8FAFC", borderRadius: 8, border: "1px solid #E2E8F0" }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "#0F172A" }}>{m.etapa || `Medição ${i+1}`}</span>
+                        <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#64748B" }}>
+                          <span>{m.percentual}%</span>
+                          {m.dataPrevisao && <span>{new Date(m.dataPrevisao).toLocaleDateString("pt-BR")}</span>}
+                          <span style={{ fontWeight: 700, color: "#15803D" }}>{fmtCur(m.valor)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
