@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS "Planejamentos" (
   "Criado_Em"              TEXT,
   "Aprovado_Por"           TEXT,
   "Aprovado_Em"            TEXT,
+  "Comentario_Aprovacao"   TEXT,
   "Dados_JSON"             TEXT
 );
 
