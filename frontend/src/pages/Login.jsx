@@ -16,12 +16,13 @@ export default function Login() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [lembrar, setLembrar] = useState(false)
   const { register, handleSubmit, formState: { errors } } = useForm()
 
   async function onSubmit({ email, senha }) {
     setLoading(true)
     try {
-      await login(email, senha)
+      await login(email, senha, lembrar)
       navigate('/dashboard')
     } catch (err) {
       toast.error(err.response?.data?.error || 'Credenciais inválidas')
@@ -219,6 +220,17 @@ export default function Login() {
                 <p style={{ color: '#DC2626', fontSize: 11, marginTop: 4, fontWeight: 600 }}>{errors.senha.message}</p>
               )}
             </div>
+
+            {/* Lembrar de mim */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}>
+              <input
+                type="checkbox"
+                checked={lembrar}
+                onChange={e => setLembrar(e.target.checked)}
+                style={{ width: 16, height: 16, accentColor: '#1E3A5F', cursor: 'pointer' }}
+              />
+              <span style={{ fontSize: 13, color: '#64748B', fontWeight: 500 }}>Lembrar de mim</span>
+            </label>
 
             {/* Botão login */}
             <button

@@ -143,12 +143,12 @@ export default function Aprovacao() {
                 {pendentes.map(p => (
                   <div key={p.ID} onClick={() => { setSelected(p); setSuccessMsg(""); setJustificativa("") }}
                     style={{ padding: "12px 14px", borderRadius: 10, marginBottom: 6, cursor: "pointer",
-                      background: selected?.ID === p.ID ? "rgba(99,102,241,0.15)" : "rgba(255,255,255,0.04)",
-                      border: `1px solid ${selected?.ID === p.ID ? "rgba(99,102,241,0.4)" : "rgba(255,255,255,0.06)"}`,
+                      background: selected?.ID === p.ID ? "rgba(99,102,241,0.12)" : "#F8FAFC",
+                      border: `1px solid ${selected?.ID === p.ID ? "rgba(99,102,241,0.4)" : "#E2E8F0"}`,
                       transition: "all 0.18s" }}>
-                    <div style={{ fontWeight: 700, fontSize: 13, color: "#e2e8f0" }}>{p.Nome_Projeto || p.ID_Projeto}</div>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: "#0F172A" }}>{p.Nome_Projeto || p.ID_Projeto}</div>
                     <div style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>{p.Resp_Planejamento} · {p.Setor}</div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#a78bfa", marginTop: 4 }}>{fmt(p.Valor_Contrato)}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#7C3AED", marginTop: 4 }}>{fmt(p.Valor_Contrato)}</div>
                   </div>
                 ))}
               </div>
@@ -222,12 +222,12 @@ export default function Aprovacao() {
                 {aprovados.map(p => (
                   <div key={p.ID} onClick={() => { setSelected(p); setBaselineMsg("") }}
                     style={{ padding: "12px 14px", borderRadius: 10, marginBottom: 6, cursor: "pointer",
-                      background: selected?.ID === p.ID ? "rgba(99,102,241,0.15)" : "rgba(255,255,255,0.04)",
-                      border: `1px solid ${selected?.ID === p.ID ? "rgba(99,102,241,0.4)" : "rgba(255,255,255,0.06)"}`,
+                      background: selected?.ID === p.ID ? "rgba(99,102,241,0.12)" : "#F8FAFC",
+                      border: `1px solid ${selected?.ID === p.ID ? "rgba(99,102,241,0.4)" : "#E2E8F0"}`,
                       transition: "all 0.18s" }}>
-                    <div style={{ fontWeight: 700, fontSize: 13, color: "#e2e8f0" }}>{p.Nome_Projeto || p.ID_Projeto}</div>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: "#0F172A" }}>{p.Nome_Projeto || p.ID_Projeto}</div>
                     <div style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>{p.Setor}</div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#4ade80", marginTop: 4 }}>{fmt(p.Valor_Contrato)}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#15803D", marginTop: 4 }}>{fmt(p.Valor_Contrato)}</div>
                   </div>
                 ))}
               </div>

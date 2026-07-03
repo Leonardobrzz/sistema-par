@@ -539,29 +539,7 @@ export default function PlanejamentoFinanceiro() {
               <Field label="Resp. Planejamento"><input value={form.respPlanejamento} onChange={e => f("respPlanejamento", e.target.value)} style={INPUT} /></Field>
               <Field label="Resp. Aprovação"><input value={form.respAprovacao} onChange={e => f("respAprovacao", e.target.value)} style={INPUT} /></Field>
               <Field label="Link ClickUp">
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <input value={form.linkClickUp} onChange={e => f("linkClickUp", e.target.value)} style={{ ...INPUT, flex: 1 }} placeholder="https://app.clickup.com/36936702/v/li/..." />
-                  <button type="button" onClick={async () => {
-                    if (!form.linkClickUp) return
-                    try {
-                      const r = await api.get('/clickup/lista-info', { params: { url: form.linkClickUp } })
-                      const d = r.data
-                      setForm(prev => ({
-                        ...prev,
-                        nomeProjeto: prev.nomeProjeto || d.nomeProjeto,
-                        cliente: prev.cliente || d.cliente,
-                        setor: prev.setor || d.setor,
-                        dataEntregaContrato: prev.dataEntregaContrato || d.dataEntregaContrato,
-                        dataEntregaPlanejada: prev.dataEntregaPlanejada || d.dataEntregaContrato,
-                      }))
-                      toast.success('Dados preenchidos a partir do ClickUp!')
-                    } catch (e) {
-                      toast.error(e.response?.data?.error || 'Erro ao buscar lista no ClickUp')
-                    }
-                  }} style={{ padding: '8px 12px', borderRadius: 8, border: '1.5px solid #C7D2FE', background: '#EEF2FF', color: '#4338CA', fontWeight: 700, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                    Puxar dados
-                  </button>
-                </div>
+                <input value={form.linkClickUp} onChange={e => f("linkClickUp", e.target.value)} style={INPUT} placeholder="https://app.clickup.com/36936702/v/li/..." />
               </Field>
             </div>
           </Section>

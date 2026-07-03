@@ -20,6 +20,9 @@ api.interceptors.response.use(
     if (err.response?.status === 401) {
       localStorage.removeItem('par_token')
       localStorage.removeItem('par_user')
+      sessionStorage.removeItem('par_token')
+      sessionStorage.removeItem('par_user')
+      localStorage.removeItem('par_lembrar')
       window.location.href = '/login'
     }
     return Promise.reject(err)

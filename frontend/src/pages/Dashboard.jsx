@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -8,6 +8,7 @@ import {
   FolderOpen, Briefcase, CheckCircle2, Clock, Shield, Bell,
   TrendingUp, Target, Calendar, AlertTriangle, Activity,
   ArrowRight, BarChart2, PieChart as PieIcon, BadgeDollarSign,
+  SlidersHorizontal, X, Check,
 } from 'lucide-react'
 import api from '../utils/api'
 import PaineisClickUp from '../components/PaineisClickUp'
@@ -33,6 +34,32 @@ const STATUS_BG = {
   'Planejado':              { bg: '#EDE9FE', color: '#7C3AED' },
   'Concluído':              { bg: '#E0F2FE', color: '#0369A1' },
   'Pausado':                { bg: '#F1F5F9', color: '#64748B' },
+}
+
+// Definição de todas as seções disponíveis
+const SECOES_DISPONIVEIS = [
+  { id: 'kpis',        label: 'Cards KPI',              desc: 'Projetos em andamento, carteira, recebido, a receber' },
+  { id: 'financeiro',  label: 'Gráfico de Faturamento', desc: 'Faturamento previsto vs recebido (6 meses)' },
+  { id: 'par',         label: 'Regras PAR',              desc: 'Margem de lucro, terceirizados, custo de produção' },
+  { id: 'pizza',       label: 'Projetos por Status',     desc: 'Distribuição dos projetos por status' },
+  { id: 'medicoes',    label: 'Próximas Medições',       desc: 'Medições vencendo nos próximos 30 dias' },
+  { id: 'saude',       label: 'Saúde dos Projetos',      desc: 'Semáforo de risco por projeto' },
+  { id: 'clickup',     label: 'Projetos ClickUp',        desc: 'Projetos por setor sincronizados do ClickUp' },
+  { id: 'paineis',     label: 'Painéis ClickUp',         desc: 'Painéis de tarefas do ClickUp' },
+]
+
+const SECOES_DEFAULT = SECOES_DISPONIVEIS.map(s => s.id)
+
+function loadPrefs() {
+  try {
+    const s = localStorage.getItem('par_dashboard_secoes')
+    if (s) return JSON.parse(s)
+  } catch {}
+  return SECOES_DEFAULT
+}
+
+function savePrefs(secoes) {
+  localStorage.setItem('par_dashboard_secoes', JSON.stringify(secoes))
 }
 
 function calcKpisFromPlan(plan) {
@@ -95,7 +122,6 @@ function avaliarSaude(p) {
   const alertas = []
   const hoje = Date.now()
 
-  // Projetos com 100% de progresso são OK independente da data
   if (perc >= 100) return { nivel: 'ok', alertas: [] }
 
   if (!p.Data_Entrega_Contrato) {
@@ -162,16 +188,6 @@ function SemafProjeto({ projeto, onClick }) {
   )
 }
 
-function MiniTag({ label, ok, danger }) {
-  return (
-    <span style={{
-      fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 5,
-      background: danger ? '#FEE2E2' : ok ? '#DCFCE7' : '#FEF3C7',
-      color: danger ? '#DC2626' : ok ? '#15803D' : '#D97706',
-    }}>{label}</span>
-  )
-}
-
 function PARGauge({ label, value, min, max, limitOk, limitWarn, unit = '%', invert = false }) {
   const perc = Math.min(Math.max((value / max) * 100, 0), 100)
   const ok = invert ? value >= limitOk : value <= limitOk
@@ -190,10 +206,9 @@ function PARGauge({ label, value, min, max, limitOk, limitWarn, unit = '%', inve
       </div>
       <div style={{ position: 'relative', height: 10, background: '#F1F5F9', borderRadius: 99, overflow: 'visible' }}>
         <div style={{ height: '100%', width: `${perc}%`, background: color, borderRadius: 99, transition: 'width 0.7s cubic-bezier(.4,0,.2,1)' }} />
-        {/* Linha de limite */}
         <div style={{
           position: 'absolute', top: -4, bottom: -4,
-          left: `${((invert ? limitOk : limitOk) / max) * 100}%`,
+          left: `${(limitOk / max) * 100}%`,
           width: 2, background: '#94A3B8', borderRadius: 1,
         }} />
       </div>
@@ -218,6 +233,78 @@ const CustomTooltipBar = ({ active, payload, label }) => {
   )
 }
 
+// ── Painel de personalização ─────────────────────────────────────────────────
+
+function PainelPersonalizar({ secoes, onChange, onClose }) {
+  const ref = useRef(null)
+
+  useEffect(() => {
+    function handler(e) {
+      if (ref.current && !ref.current.contains(e.target)) onClose()
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [onClose])
+
+  function toggle(id) {
+    if (secoes.includes(id)) {
+      onChange(secoes.filter(s => s !== id))
+    } else {
+      // Mantém ordem original
+      onChange(SECOES_DISPONIVEIS.map(s => s.id).filter(s => [...secoes, id].includes(s)))
+    }
+  }
+
+  return (
+    <div ref={ref} style={{
+      position: 'absolute', top: '100%', right: 0, marginTop: 8, zIndex: 100,
+      background: '#fff', borderRadius: 16, border: '1.5px solid #E2E8F0',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.12)', width: 320, padding: 16,
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <span style={{ fontWeight: 800, fontSize: 14, color: '#0F172A' }}>Personalizar Dashboard</span>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', display: 'flex', alignItems: 'center' }}>
+          <X size={16} />
+        </button>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {SECOES_DISPONIVEIS.map(s => {
+          const ativo = secoes.includes(s.id)
+          return (
+            <div key={s.id} onClick={() => toggle(s.id)} style={{
+              display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
+              borderRadius: 10, cursor: 'pointer',
+              background: ativo ? '#F5F3FF' : '#F8FAFC',
+              border: `1.5px solid ${ativo ? '#C4B5FD' : '#E2E8F0'}`,
+              transition: 'all 0.15s',
+            }}>
+              <div style={{
+                width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+                background: ativo ? '#7C3AED' : '#E2E8F0',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.15s',
+              }}>
+                {ativo && <Check size={12} color="#fff" strokeWidth={3} />}
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: ativo ? '#5B21B6' : '#374151' }}>{s.label}</div>
+                <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 1 }}>{s.desc}</div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <button onClick={() => onChange(SECOES_DEFAULT)} style={{
+        width: '100%', marginTop: 12, padding: '8px 0', borderRadius: 8,
+        border: '1.5px solid #E2E8F0', background: '#F8FAFC',
+        fontSize: 12, fontWeight: 700, color: '#64748B', cursor: 'pointer',
+      }}>
+        Restaurar padrão
+      </button>
+    </div>
+  )
+}
+
 // ── Dashboard principal ──────────────────────────────────────────────────────
 
 export default function Dashboard() {
@@ -229,6 +316,9 @@ export default function Dashboard() {
   const [oppStatus, setOppStatus] = useState(null)
   const [loading, setLoading] = useState(true)
   const [mostrarTodosSaude, setMostrarTodosSaude] = useState(false)
+  const [filtroSetor, setFiltroSetor] = useState('')
+  const [secoesVisiveis, setSecoesVisiveis] = useState(loadPrefs)
+  const [mostrarPersonalizar, setMostrarPersonalizar] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -248,14 +338,32 @@ export default function Dashboard() {
     load()
   }, [])
 
-  // ── Cálculos ──
-  const aprovados = planejamentos.filter(p => p.Status === 'Aprovado')
-  const pendentesAprov = planejamentos.filter(p => p.Status === 'Pendente Aprovação')
-  const emAndamento = projetos.filter(p => p.Status?.includes('Em Andamento'))
-  const aPlanejar = projetos.filter(p => p.Status === 'A Planejar')
-  const concluidos = projetos.filter(p => p.Status === 'Concluído')
+  function handleSetSecoes(novas) {
+    setSecoesVisiveis(novas)
+    savePrefs(novas)
+  }
 
-  // KPIs PAR ponderados
+  const vis = (id) => secoesVisiveis.includes(id)
+
+  // Setores disponíveis extraídos dos projetos
+  const setoresDisponiveis = [...new Set(projetos.map(p => p.Setor).filter(Boolean))].sort()
+
+  // Aplica filtro de setor nos projetos
+  const projetosFiltrados = filtroSetor ? projetos.filter(p => p.Setor === filtroSetor) : projetos
+  const medicoesFiltradas = filtroSetor
+    ? medicoes.filter(m => {
+        const proj = projetos.find(p => p.ID_Projeto === m.ID_Projeto)
+        return proj?.Setor === filtroSetor
+      })
+    : medicoes
+
+  // ── Cálculos ──
+  const aprovados = planejamentos.filter(p => p.Status === 'Aprovado' && (!filtroSetor || p.Setor === filtroSetor))
+  const pendentesAprov = planejamentos.filter(p => p.Status === 'Pendente Aprovação')
+  const emAndamento = projetosFiltrados.filter(p => p.Status?.includes('Em Andamento'))
+  const aPlanejar = projetosFiltrados.filter(p => p.Status === 'A Planejar')
+  const concluidos = projetosFiltrados.filter(p => p.Status === 'Concluído')
+
   const kpisReais = (() => {
     const plans = aprovados.map(calcKpisFromPlan).filter(Boolean)
     if (!plans.length) return null
@@ -270,14 +378,13 @@ export default function Dashboard() {
   })()
 
   const totalContrato = aprovados.reduce((s, p) => s + parseFloat(p.Valor_Contrato || 0), 0)
-  const totalRecebido = medicoes.filter(m => m.Status_Financeiro === 'Recebido').reduce((s, m) => s + parseFloat(m.Valor_Medicao || 0), 0)
-  const totalAReceber = medicoes.filter(m => m.Status_Financeiro !== 'Recebido' && m.Status !== 'Cancelada').reduce((s, m) => s + parseFloat(m.Valor_Medicao || 0), 0)
+  const totalRecebido = medicoesFiltradas.filter(m => m.Status_Financeiro === 'Recebido').reduce((s, m) => s + parseFloat(m.Valor_Medicao || 0), 0)
+  const totalAReceber = medicoesFiltradas.filter(m => m.Status_Financeiro !== 'Recebido' && m.Status !== 'Cancelada').reduce((s, m) => s + parseFloat(m.Valor_Medicao || 0), 0)
   const alertasCriticos = alertas.filter(a => a.Nivel === 'error')
 
-  // Dados para gráfico de distribuição por status (apenas ativos)
   const STATUS_VISIVEIS_GRAFICO = ['Backlog', 'A Planejar', 'Em Andamento', 'Em Andamento (Atrasado)', 'Paralisado', 'Pausado']
   const statusData = Object.entries(
-    projetos
+    projetosFiltrados
       .filter(p => STATUS_VISIVEIS_GRAFICO.includes(p.Status))
       .reduce((acc, p) => {
         const s = p.Status || 'Outros'
@@ -286,10 +393,9 @@ export default function Dashboard() {
       }, {})
   ).map(([name, value]) => ({ name, value }))
 
-  // Dados para gráfico financeiro (últimas medições por mês)
   const medicoesPorMes = (() => {
     const meses = {}
-    medicoes.forEach(m => {
+    medicoesFiltradas.forEach(m => {
       const d = m.Data_Prevista || m.Data_Emissao_NF
       if (!d) return
       const key = d.slice(0, 7)
@@ -303,10 +409,9 @@ export default function Dashboard() {
     }))
   })()
 
-  // Próximas medições (30 dias)
   const hoje = new Date()
   const daqui30 = new Date(hoje); daqui30.setDate(daqui30.getDate() + 30)
-  const proximasMedicoes = medicoes
+  const proximasMedicoes = medicoesFiltradas
     .filter(m => {
       const d = m.Data_Prevista ? new Date(m.Data_Prevista) : null
       return d && d >= hoje && d <= daqui30 && m.Status !== 'Cancelada' && m.Status !== 'Concluída'
@@ -314,9 +419,8 @@ export default function Dashboard() {
     .sort((a, b) => new Date(a.Data_Prevista) - new Date(b.Data_Prevista))
     .slice(0, 5)
 
-  // Projetos enriquecidos com KPIs e dias sem atualizar, ordenados por risco
   const NIVEL_ORD = { danger: 0, caution: 1, ok: 2 }
-  const projetosRicos = projetos
+  const projetosRicos = projetosFiltrados
     .map(p => {
       const plan = aprovados.find(pl => pl.ID_Projeto === p.ID_Projeto)
       const kpis = plan ? calcKpisFromPlan(plan) : null
@@ -334,7 +438,7 @@ export default function Dashboard() {
     <div style={{ padding: '28px 32px', maxWidth: 1400, margin: '0 auto', background: '#F8FAFC', minHeight: '100vh' }}>
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em' }}>Dashboard PAR</h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748B' }}>
@@ -361,8 +465,64 @@ export default function Dashboard() {
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: oppStatus?.ok ? '#22C55E' : oppStatus?.ok === false ? '#EF4444' : '#94A3B8', display: 'inline-block' }} />
             OPP {oppStatus?.ok ? 'Online' : oppStatus?.ok === false ? 'Offline' : '...'}
           </div>
+          {/* Botão personalizar */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setMostrarPersonalizar(v => !v)}
+              style={{
+                padding: '8px 14px', borderRadius: 10, cursor: 'pointer',
+                border: mostrarPersonalizar ? '1.5px solid #C4B5FD' : '1.5px solid #E2E8F0',
+                background: mostrarPersonalizar ? '#F5F3FF' : '#fff',
+                color: mostrarPersonalizar ? '#7C3AED' : '#475569',
+                fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <SlidersHorizontal size={14} /> Personalizar
+            </button>
+            {mostrarPersonalizar && (
+              <PainelPersonalizar
+                secoes={secoesVisiveis}
+                onChange={handleSetSecoes}
+                onClose={() => setMostrarPersonalizar(false)}
+              />
+            )}
+          </div>
         </div>
       </div>
+
+      {/* ── Filtro por Setor ── */}
+      {setoresDisponiveis.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20, alignItems: 'center' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', marginRight: 4 }}>SETOR:</span>
+          <button
+            onClick={() => setFiltroSetor('')}
+            style={{
+              padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              border: `1.5px solid ${!filtroSetor ? '#7C3AED' : '#E2E8F0'}`,
+              background: !filtroSetor ? '#EDE9FE' : '#fff',
+              color: !filtroSetor ? '#7C3AED' : '#64748B',
+              transition: 'all 0.15s',
+            }}
+          >
+            Todos ({projetos.length})
+          </button>
+          {setoresDisponiveis.map(s => (
+            <button
+              key={s}
+              onClick={() => setFiltroSetor(filtroSetor === s ? '' : s)}
+              style={{
+                padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                border: `1.5px solid ${filtroSetor === s ? '#7C3AED' : '#E2E8F0'}`,
+                background: filtroSetor === s ? '#EDE9FE' : '#fff',
+                color: filtroSetor === s ? '#7C3AED' : '#64748B',
+                transition: 'all 0.15s',
+              }}
+            >
+              {s} ({projetos.filter(p => p.Setor === s).length})
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Banners de urgência ── */}
       {pendentesAprov.length > 0 && (
@@ -377,203 +537,218 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── 4 KPI Cards financeiros ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-        <StatCard label="Projetos em Andamento" value={emAndamento.length} sub={`${projetos.length} total · ${concluidos.length} concluídos`} icon={<FolderOpen size={20} />} color="#0EA5E9" onClick={() => navigate('/projetos')} />
-        <StatCard label="Carteira Aprovada" value={fmt(totalContrato)} sub={`${aprovados.length} planejamento(s) aprovado(s)`} icon={<Briefcase size={20} />} color="#7C3AED" />
-        <StatCard label="Total Recebido" value={fmt(totalRecebido)} sub="medições com status Recebido" icon={<CheckCircle2 size={20} />} color="#16A34A" />
-        <StatCard label="A Receber" value={fmt(totalAReceber)} sub="medições pendentes/em andamento" icon={<BadgeDollarSign size={20} />} color="#D97706"
-          warn={totalAReceber > 0 ? 'caution' : null} onClick={() => navigate('/medicoes')} />
-      </div>
+      {/* ── 4 KPI Cards ── */}
+      {vis('kpis') && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+          <StatCard label="Projetos em Andamento" value={emAndamento.length} sub={`${projetosFiltrados.length} total · ${concluidos.length} concluídos`} icon={<FolderOpen size={20} />} color="#0EA5E9" onClick={() => navigate('/projetos')} />
+          <StatCard label="Carteira Aprovada" value={fmt(totalContrato)} sub={`${aprovados.length} planejamento(s) aprovado(s)`} icon={<Briefcase size={20} />} color="#7C3AED" />
+          <StatCard label="Total Recebido" value={fmt(totalRecebido)} sub="medições com status Recebido" icon={<CheckCircle2 size={20} />} color="#16A34A" />
+          <StatCard label="A Receber" value={fmt(totalAReceber)} sub="medições pendentes/em andamento" icon={<BadgeDollarSign size={20} />} color="#D97706"
+            warn={totalAReceber > 0 ? 'caution' : null} onClick={() => navigate('/medicoes')} />
+        </div>
+      )}
 
       {/* ── Linha 2: Gráfico financeiro + KPIs PAR ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 20, marginBottom: 20 }}>
-
-        {/* Gráfico de barras — Medições por mês */}
-        <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <BadgeDollarSign size={16} style={{ color: '#7C3AED' }} />
-            <span style={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>Faturamento Previsto vs. Recebido</span>
-          </div>
-          <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 20 }}>Últimos 6 meses · medições</div>
-          {medicoesPorMes.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: 13 }}>
-              Nenhuma medição com data registrada ainda
+      {(vis('financeiro') || vis('par')) && (
+        <div style={{ display: 'grid', gridTemplateColumns: vis('financeiro') && vis('par') ? '1.6fr 1fr' : '1fr', gap: 20, marginBottom: 20 }}>
+          {vis('financeiro') && (
+            <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <BadgeDollarSign size={16} style={{ color: '#7C3AED' }} />
+                <span style={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>Faturamento Previsto vs. Recebido</span>
+              </div>
+              <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 20 }}>Últimos 6 meses · medições{filtroSetor ? ` · ${filtroSetor}` : ''}</div>
+              {medicoesPorMes.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: 13 }}>Nenhuma medição com data registrada ainda</div>
+              ) : (
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={medicoesPorMes} barGap={4} barCategoryGap="30%">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#94A3B8', fontWeight: 600 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={v => fmt(v)} width={70} />
+                    <Tooltip content={<CustomTooltipBar />} />
+                    <Bar dataKey="previsto" name="Previsto" fill="#C4B5FD" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="recebido" name="Recebido" fill="#7C3AED" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={medicoesPorMes} barGap={4} barCategoryGap="30%">
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#94A3B8', fontWeight: 600 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={v => fmt(v)} width={70} />
-                <Tooltip content={<CustomTooltipBar />} />
-                <Bar dataKey="previsto" name="Previsto" fill="#C4B5FD" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="recebido" name="Recebido" fill="#7C3AED" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          )}
+          {vis('par') && (
+            <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <Target size={16} style={{ color: '#7C3AED' }} />
+                <span style={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>Regras PAR</span>
+              </div>
+              <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 20 }}>
+                {kpisReais ? `Média de ${kpisReais.count} plano(s) aprovado(s)` : 'Sem planejamentos aprovados'}
+                {filtroSetor ? ` · ${filtroSetor}` : ''}
+              </div>
+              {!kpisReais ? (
+                <div style={{ textAlign: 'center', padding: '30px 0', color: '#94A3B8', fontSize: 13 }}>Aprove um planejamento para ver os KPIs</div>
+              ) : (
+                <>
+                  <PARGauge label="Margem de Lucro" value={kpisReais.lucroPerc} max={50} limitOk={23} limitWarn={15} invert />
+                  <PARGauge label="% Terceirizados" value={kpisReais.tercPerc} max={40} limitOk={25} limitWarn={30} />
+                  <PARGauge label="Custo de Produção" value={kpisReais.prodPerc} max={50} limitOk={30} limitWarn={35} />
+                </>
+              )}
+            </div>
           )}
         </div>
-
-        {/* KPIs PAR com gauge */}
-        <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <Target size={16} style={{ color: '#7C3AED' }} />
-            <span style={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>Regras PAR</span>
-          </div>
-          <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 20 }}>
-            {kpisReais ? `Média de ${kpisReais.count} plano(s) aprovado(s)` : 'Sem planejamentos aprovados'}
-          </div>
-          {!kpisReais ? (
-            <div style={{ textAlign: 'center', padding: '30px 0', color: '#94A3B8', fontSize: 13 }}>
-              Aprove um planejamento para ver os KPIs
-            </div>
-          ) : (
-            <>
-              <PARGauge label="Margem de Lucro" value={kpisReais.lucroPerc} max={50} limitOk={23} limitWarn={15} invert />
-              <PARGauge label="% Terceirizados" value={kpisReais.tercPerc} max={40} limitOk={25} limitWarn={30} />
-              <PARGauge label="Custo de Produção" value={kpisReais.prodPerc} max={50} limitOk={30} limitWarn={35} />
-            </>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* ── Linha 3: Pizza status + Próximas medições ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 20, marginBottom: 20 }}>
-
-        {/* Pizza de status dos projetos */}
-        <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <PieIcon size={16} style={{ color: '#7C3AED' }} />
-            <span style={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>Projetos por Status</span>
-          </div>
-          <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 8 }}>{projetos.length} projetos no total</div>
-          {projetos.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: 13 }}>Nenhum projeto cadastrado</div>
-          ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie data={statusData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value">
-                  {statusData.map((entry, i) => (
-                    <Cell key={i} fill={STATUS_COLORS[entry.name] || '#94A3B8'} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(v, n) => [v, n]} />
-                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, fontWeight: 600 }} />
-              </PieChart>
-            </ResponsiveContainer>
+      {(vis('pizza') || vis('medicoes')) && (
+        <div style={{ display: 'grid', gridTemplateColumns: vis('pizza') && vis('medicoes') ? '1fr 1.4fr' : '1fr', gap: 20, marginBottom: 20 }}>
+          {vis('pizza') && (
+            <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <PieIcon size={16} style={{ color: '#7C3AED' }} />
+                <span style={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>Projetos por Status</span>
+              </div>
+              <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 8 }}>
+                {projetosFiltrados.length} projetos{filtroSetor ? ` · ${filtroSetor}` : ' no total'}
+              </div>
+              {projetosFiltrados.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: 13 }}>Nenhum projeto</div>
+              ) : (
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie data={statusData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value">
+                      {statusData.map((entry, i) => (
+                        <Cell key={i} fill={STATUS_COLORS[entry.name] || '#94A3B8'} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v, n) => [v, n]} />
+                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, fontWeight: 600 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          )}
+          {vis('medicoes') && (
+            <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Calendar size={16} style={{ color: '#7C3AED' }} />
+                    <span style={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>Próximas Medições</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>
+                    Vencendo nos próximos 30 dias{filtroSetor ? ` · ${filtroSetor}` : ''}
+                  </div>
+                </div>
+                <button onClick={() => navigate('/medicoes')} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC', fontSize: 11, fontWeight: 700, color: '#475569', cursor: 'pointer' }}>
+                  Ver todas →
+                </button>
+              </div>
+              {proximasMedicoes.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '30px 0', color: '#94A3B8', fontSize: 13, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                  <CheckCircle2 size={28} style={{ color: '#22C55E', opacity: 0.7 }} />
+                  Nenhuma medição vencendo nos próximos 30 dias
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {proximasMedicoes.map((m, i) => {
+                    const dias = Math.ceil((new Date(m.Data_Prevista) - hoje) / 86400000)
+                    const urgente = dias <= 7
+                    return (
+                      <div key={i} style={{
+                        display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+                        borderRadius: 10, background: urgente ? '#FEF2F2' : '#F8FAFC',
+                        border: `1px solid ${urgente ? '#FECACA' : '#E2E8F0'}`,
+                      }}>
+                        <div style={{
+                          width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                          background: urgente ? '#EF444420' : '#7C3AED18',
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          <span style={{ fontSize: 14, fontWeight: 900, color: urgente ? '#EF4444' : '#7C3AED', lineHeight: 1 }}>{dias}</span>
+                          <span style={{ fontSize: 8, color: '#94A3B8', fontWeight: 600 }}>dias</span>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {m.nomeProjeto || m.ID_Projeto}
+                          </div>
+                          <div style={{ fontSize: 11, color: '#64748B', marginTop: 1 }}>{m.Descricao || '—'}</div>
+                        </div>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: '#7C3AED' }}>
+                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(m.Valor_Medicao || 0)}
+                          </div>
+                          <div style={{ fontSize: 10, color: '#94A3B8' }}>
+                            {new Date(m.Data_Prevista).toLocaleDateString('pt-BR')}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           )}
         </div>
+      )}
 
-        {/* Próximas medições */}
-        <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+      {/* ── Semáforo de projetos ── */}
+      {vis('saude') && (
+        <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Calendar size={16} style={{ color: '#7C3AED' }} />
-              <span style={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>Próximas Medições</span>
+                <Activity size={16} style={{ color: '#7C3AED' }} />
+                <span style={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>
+                  Saúde dos Projetos{filtroSetor ? ` · ${filtroSetor}` : ''}
+                </span>
+              </div>
+              <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 4, display: 'flex', gap: 12, alignItems: 'center' }}>
+                <span style={{ color: '#22C55E', fontWeight: 700 }}>● OK {projetosRicos.length - countDanger - countCaution}</span>
+                <span style={{ color: '#F59E0B', fontWeight: 700 }}>● Atenção {countCaution}</span>
+                <span style={{ color: '#EF4444', fontWeight: 700 }}>● Risco {countDanger}</span>
+              </div>
             </div>
-              <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>Vencendo nos próximos 30 dias</div>
-            </div>
-            <button onClick={() => navigate('/medicoes')} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC', fontSize: 11, fontWeight: 700, color: '#475569', cursor: 'pointer' }}>
-              Ver todas →
+            <button onClick={() => navigate('/projetos')} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC', fontSize: 11, fontWeight: 700, color: '#475569', cursor: 'pointer' }}>
+              Ver todos →
             </button>
           </div>
-          {proximasMedicoes.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '30px 0', color: '#94A3B8', fontSize: 13, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-              <CheckCircle2 size={28} style={{ color: '#22C55E', opacity: 0.7 }} />
-              Nenhuma medição vencendo nos próximos 30 dias
-            </div>
+          {projetosFiltrados.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '30px 0', color: '#94A3B8', fontSize: 13 }}>Nenhum projeto</div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {proximasMedicoes.map((m, i) => {
-                const dias = Math.ceil((new Date(m.Data_Prevista) - hoje) / 86400000)
-                const urgente = dias <= 7
-                return (
-                  <div key={i} style={{
-                    display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
-                    borderRadius: 10, background: urgente ? '#FEF2F2' : '#F8FAFC',
-                    border: `1px solid ${urgente ? '#FECACA' : '#E2E8F0'}`,
-                  }}>
-                    <div style={{
-                      width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                      background: urgente ? '#EF444420' : '#7C3AED18',
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <span style={{ fontSize: 14, fontWeight: 900, color: urgente ? '#EF4444' : '#7C3AED', lineHeight: 1 }}>{dias}</span>
-                      <span style={{ fontSize: 8, color: '#94A3B8', fontWeight: 600 }}>dias</span>
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {m.nomeProjeto || m.ID_Projeto}
-                      </div>
-                      <div style={{ fontSize: 11, color: '#64748B', marginTop: 1 }}>{m.Descricao || '—'}</div>
-                    </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: '#7C3AED' }}>
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(m.Valor_Medicao || 0)}
-                      </div>
-                      <div style={{ fontSize: 10, color: '#94A3B8' }}>
-                        {new Date(m.Data_Prevista).toLocaleDateString('pt-BR')}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
+                {projetosExibidos.map((p, i) => (
+                  <SemafProjeto key={i} projeto={p} onClick={() => navigate(`/acompanhamento?projeto=${p.ID_Projeto}`)} />
+                ))}
+              </div>
+              {projetosRicos.length > 12 && (
+                <div style={{ textAlign: 'center', marginTop: 14 }}>
+                  <button
+                    onClick={() => setMostrarTodosSaude(v => !v)}
+                    style={{ padding: '7px 18px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC', fontSize: 12, fontWeight: 700, color: '#475569', cursor: 'pointer' }}
+                  >
+                    {mostrarTodosSaude ? 'Ver menos ▲' : `Ver todos os ${projetosRicos.length} projetos ▼`}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
-      </div>
-
-      {/* ── Semáforo de projetos ── */}
-      <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', marginBottom: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Activity size={16} style={{ color: '#7C3AED' }} />
-              <span style={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>Saúde dos Projetos</span>
-            </div>
-            <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 4, display: 'flex', gap: 12, alignItems: 'center' }}>
-              <span style={{ color: '#22C55E', fontWeight: 700 }}>● OK {projetosRicos.length - countDanger - countCaution}</span>
-              <span style={{ color: '#F59E0B', fontWeight: 700 }}>● Atenção {countCaution}</span>
-              <span style={{ color: '#EF4444', fontWeight: 700 }}>● Risco {countDanger}</span>
-            </div>
-          </div>
-          <button onClick={() => navigate('/projetos')} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC', fontSize: 11, fontWeight: 700, color: '#475569', cursor: 'pointer' }}>
-            Ver todos →
-          </button>
-        </div>
-        {projetos.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '30px 0', color: '#94A3B8', fontSize: 13 }}>Nenhum projeto cadastrado</div>
-        ) : (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
-              {projetosExibidos.map((p, i) => (
-                <SemafProjeto key={i} projeto={p} onClick={() => navigate(`/acompanhamento?projeto=${p.ID_Projeto}`)} />
-              ))}
-            </div>
-            {projetosRicos.length > 12 && (
-              <div style={{ textAlign: 'center', marginTop: 14 }}>
-                <button
-                  onClick={() => setMostrarTodosSaude(v => !v)}
-                  style={{ padding: '7px 18px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC', fontSize: 12, fontWeight: 700, color: '#475569', cursor: 'pointer' }}
-                >
-                  {mostrarTodosSaude ? 'Ver menos ▲' : `Ver todos os ${projetosRicos.length} projetos ▼`}
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
+      )}
 
       {/* ── Projetos ClickUp por Setor ── */}
-      <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', marginBottom: 20 }}>
-        <ProjetosClickUp />
-      </div>
+      {vis('clickup') && (
+        <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', marginBottom: 20 }}>
+          <ProjetosClickUp filtroSetor={filtroSetor} />
+        </div>
+      )}
 
       {/* ── Painéis ClickUp ── */}
-      <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', marginBottom: 20 }}>
-        <PaineisClickUp />
-      </div>
+      {vis('paineis') && (
+        <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', marginBottom: 20 }}>
+          <PaineisClickUp />
+        </div>
+      )}
 
     </div>
   )

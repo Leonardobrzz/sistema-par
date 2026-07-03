@@ -29,7 +29,7 @@ function BarraProgresso({ perc, cor, atrasado }) {
   )
 }
 
-export default function ProjetosClickUp() {
+export default function ProjetosClickUp({ filtroSetor = '' }) {
   const [projetos, setProjetos] = useState([])
   const [loading, setLoading] = useState(true)
   const [setorAberto, setSetorAberto] = useState(null)
@@ -38,7 +38,6 @@ export default function ProjetosClickUp() {
     api.get('/projetos')
       .then(r => {
         const lista = r.data?.projetos || r.data || []
-        // Apenas projetos em andamento com ID ClickUp
         const ativos = lista.filter(p =>
           p.ID_ClickUp &&
           p.Status &&
@@ -64,11 +63,12 @@ export default function ProjetosClickUp() {
     return ''
   }
 
-  // Agrupa por setor — apenas ARQ, INF e SAN
+  // Agrupa por setor — filtra por setor se passado como prop
   const grupos = {}
   for (const p of projetos) {
     const setor = getSetor(p)
     if (!SETORES_VISIVEIS.includes(setor)) continue
+    if (filtroSetor && setor !== filtroSetor) continue
     if (!grupos[setor]) grupos[setor] = []
     grupos[setor].push(p)
   }
