@@ -513,13 +513,16 @@ async function _doSync() {
     return;
   }
 
-  // Se CLICKUP_SPACE_IDS for vazio ou 'ALL', busca todos os spaces do time dinamicamente
+  // Busca apenas o space "PROJETOS 2026" (ou os IDs configurados em CLICKUP_SPACE_IDS)
   let spaceIds;
   if (!spaceIdsEnv || spaceIdsEnv.toUpperCase() === 'ALL') {
     try {
       const spaces = await getSpaces(teamId);
-      spaceIds = spaces.map((s) => s.id);
-      console.log(`[ClickUp] Sincronizando todos os ${spaceIds.length} espaços do time.`);
+      const SPACES_PERMITIDOS = ['PROJETOS 2026'];
+      const filtrados = spaces.filter(s => SPACES_PERMITIDOS.includes((s.name || '').trim()));
+      spaceIds = filtrados.map(s => s.id);
+      console.log(`[ClickUp] Spaces encontrados: ${spaces.map(s => s.name).join(', ')}`);
+      console.log(`[ClickUp] Sincronizando apenas: ${filtrados.map(s => s.name).join(', ')} (${spaceIds.length} space(s))`);
     } catch (err) {
       console.error('[ClickUp] Erro ao buscar spaces do time:', err.message);
       spaceIds = [];
