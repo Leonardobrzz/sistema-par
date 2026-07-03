@@ -194,8 +194,9 @@ export default function Acompanhamento() {
         </div>
 
         {projetoSelecionado && (
-          <div style={{ marginTop: 10, display: 'flex', gap: 16, fontSize: 12, color: '#64748B' }}>
-            <span>Projeto: <strong style={{ color: '#0F172A' }}>{projetoSelecionado.ID_Projeto}</strong></span>
+          <div style={{ marginTop: 10, display: 'flex', gap: 16, fontSize: 12, color: '#64748B', flexWrap: 'wrap' }}>
+            {/* Extrai código amigável do início do nome (ex: ARQ-2026-7) */}
+            {(() => { const m = (projetoSelecionado.Nome || '').match(/^([A-Z]+-\d{4}-\d+\w*)/); return m ? <span>Código: <strong style={{ color: '#0F172A' }}>{m[1]}</strong></span> : null })()}
             {projetoSelecionado.Cliente && <span>Cliente: <strong style={{ color: '#0F172A' }}>{projetoSelecionado.Cliente}</strong></span>}
             {projetoSelecionado.Setor && <span>Setor: <strong style={{ color: '#0F172A' }}>{projetoSelecionado.Setor}</strong></span>}
             <button onClick={() => { setProjetoId(''); setComparativo(null); setExtrato(null) }} style={{ marginLeft: 'auto', fontSize: 11, color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer' }}>✕ Limpar seleção</button>
