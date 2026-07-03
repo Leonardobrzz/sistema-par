@@ -219,9 +219,9 @@ export default function Acompanhamento() {
       {/* Extrato OPP — aparece independente de ter planejamento */}
       {extrato && projetoId && (
         <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', marginBottom: 20 }}>
-          <div style={{ padding: '18px 24px', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ padding: '18px 24px', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
             <div style={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>Extrato Financeiro OPP</div>
-            <div style={{ display: 'flex', gap: 16, fontSize: 13 }}>
+            <div style={{ display: 'flex', gap: 20, fontSize: 13 }}>
               <span style={{ color: '#15803D', fontWeight: 700 }}>Receitas: {fmt(extrato.resumo?.totalReceitas)}</span>
               <span style={{ color: '#DC2626', fontWeight: 700 }}>Despesas: {fmt(extrato.resumo?.totalDespesas)}</span>
               <span style={{ color: extrato.resumo?.saldo >= 0 ? '#15803D' : '#DC2626', fontWeight: 800 }}>Saldo: {fmt(extrato.resumo?.saldo)}</span>
@@ -231,15 +231,19 @@ export default function Acompanhamento() {
             <>
               <div style={{ padding: '10px 24px 4px', fontSize: 11, fontWeight: 700, color: '#15803D', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Receitas ({extrato.receitas.length})</div>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead><tr style={{ background: '#F0FDF4' }}>{['Descricao','Valor','Vencimento','Situacao','Cliente'].map(h => <th key={h} style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>{h}</th>)}</tr></thead>
+                <thead><tr style={{ background: '#F0FDF4' }}>{['Descrição','Valor','Vencimento','Situação','Cliente'].map(h => <th key={h} style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>{h}</th>)}</tr></thead>
                 <tbody>
                   {extrato.receitas.map((r, i) => (
                     <tr key={i} style={{ borderTop: '1px solid #F1F5F9' }}>
-                      <td style={{ padding: '10px 16px', fontSize: 13, color: '#0F172A' }}>{r.Descricao || '—'}</td>
-                      <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 700, color: '#15803D' }}>{fmt(r.Valor)}</td>
-                      <td style={{ padding: '10px 16px', fontSize: 12, color: '#64748B' }}>{r.Data_Vencimento || '—'}</td>
-                      <td style={{ padding: '10px 16px' }}><span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: r.Situacao === 'Liquidado' ? '#DCFCE7' : '#FEF9C3', color: r.Situacao === 'Liquidado' ? '#15803D' : '#92400E' }}>{r.Situacao || '—'}</span></td>
-                      <td style={{ padding: '10px 16px', fontSize: 12, color: '#475569' }}>{r.Nome_Cliente || '—'}</td>
+                      <td style={{ padding: '10px 16px', fontSize: 13, color: '#0F172A' }}>{r.descricao || r.Descricao || '—'}</td>
+                      <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 700, color: '#15803D' }}>{fmt(r.valor ?? r.Valor)}</td>
+                      <td style={{ padding: '10px 16px', fontSize: 12, color: '#64748B' }}>{r.vencimento || r.Data_Vencimento || '—'}</td>
+                      <td style={{ padding: '10px 16px' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: (r.situacao || r.Situacao) === 'Liquidado' ? '#DCFCE7' : '#FEF9C3', color: (r.situacao || r.Situacao) === 'Liquidado' ? '#15803D' : '#92400E' }}>
+                          {r.situacao || r.Situacao || '—'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '10px 16px', fontSize: 12, color: '#475569' }}>{r.cliente || r.Nome_Cliente || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -250,15 +254,19 @@ export default function Acompanhamento() {
             <>
               <div style={{ padding: '10px 24px 4px', fontSize: 11, fontWeight: 700, color: '#DC2626', textTransform: 'uppercase', letterSpacing: '0.06em', borderTop: '1px solid #F1F5F9' }}>Despesas ({extrato.despesas.length})</div>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead><tr style={{ background: '#FEF2F2' }}>{['Descricao','Valor','Vencimento','Situacao','Fornecedor'].map(h => <th key={h} style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>{h}</th>)}</tr></thead>
+                <thead><tr style={{ background: '#FEF2F2' }}>{['Descrição','Valor','Vencimento','Situação','Fornecedor'].map(h => <th key={h} style={{ padding: '8px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>{h}</th>)}</tr></thead>
                 <tbody>
                   {extrato.despesas.map((d, i) => (
                     <tr key={i} style={{ borderTop: '1px solid #F1F5F9' }}>
-                      <td style={{ padding: '10px 16px', fontSize: 13, color: '#0F172A' }}>{d.Descricao || '—'}</td>
-                      <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 700, color: '#DC2626' }}>{fmt(d.Valor)}</td>
-                      <td style={{ padding: '10px 16px', fontSize: 12, color: '#64748B' }}>{d.Data_Vencimento || '—'}</td>
-                      <td style={{ padding: '10px 16px' }}><span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: d.Situacao === 'Liquidado' ? '#DCFCE7' : '#FEF9C3', color: d.Situacao === 'Liquidado' ? '#15803D' : '#92400E' }}>{d.Situacao || '—'}</span></td>
-                      <td style={{ padding: '10px 16px', fontSize: 12, color: '#475569' }}>{d.Nome_Cliente || '—'}</td>
+                      <td style={{ padding: '10px 16px', fontSize: 13, color: '#0F172A' }}>{d.descricao || d.Descricao || '—'}</td>
+                      <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 700, color: '#DC2626' }}>{fmt(d.valor ?? d.Valor)}</td>
+                      <td style={{ padding: '10px 16px', fontSize: 12, color: '#64748B' }}>{d.vencimento || d.Data_Vencimento || '—'}</td>
+                      <td style={{ padding: '10px 16px' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: (d.situacao || d.Situacao) === 'Liquidado' ? '#DCFCE7' : '#FEF9C3', color: (d.situacao || d.Situacao) === 'Liquidado' ? '#15803D' : '#92400E' }}>
+                          {d.situacao || d.Situacao || '—'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '10px 16px', fontSize: 12, color: '#475569' }}>{d.cliente || d.Nome_Cliente || d.fornecedor || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -267,7 +275,7 @@ export default function Acompanhamento() {
           )}
           {!extrato.receitas?.length && !extrato.despesas?.length && (
             <div style={{ padding: '32px 24px', textAlign: 'center', color: '#94A3B8', fontSize: 13 }}>
-              Nenhum lançamento OPP encontrado para este projeto. Execute o Sync OPP para atualizar.
+              Nenhum lançamento OPP encontrado para este projeto. Execute o Sync OPP em Configurações para atualizar.
             </div>
           )}
         </div>
@@ -380,17 +388,38 @@ export default function Acompanhamento() {
           {comparativo.datas && (
             <div style={{ background: '#fff', borderRadius: 16, padding: '22px 24px', border: '1px solid #E2E8F0', marginBottom: 20 }}>
               <div style={{ fontWeight: 800, fontSize: 15, color: '#0F172A', marginBottom: 16 }}>Datas Planejadas vs. Atuais</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
-                {Object.entries(comparativo.datas).map(([k, v]) => {
-                  const atrasado = v.atual && v.planejado && new Date(v.atual) > new Date(v.planejado)
-                  return (
-                    <div key={k} style={{ padding: '12px 16px', borderRadius: 10, background: atrasado ? '#FEF2F2' : '#F8FAFC', border: `1px solid ${atrasado ? '#FECACA' : '#E2E8F0'}` }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', marginBottom: 6 }}>{k}</div>
-                      <div style={{ fontSize: 13, color: '#475569' }}>Planejado: <strong>{v.planejado || '—'}</strong></div>
-                      <div style={{ fontSize: 13, color: atrasado ? '#DC2626' : '#15803D' }}>Atual: <strong>{v.atual || '—'}</strong></div>
-                    </div>
-                  )
-                })}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+                {(() => {
+                  const { planejado = {}, atual = {} } = comparativo.datas
+                  const labels = {
+                    dataInicioOS: 'Início OS',
+                    dataEntregaContrato: 'Entrega Contrato',
+                    dataEntregaPlanejada: 'Entrega Planejada',
+                  }
+                  return Object.keys(labels).map(k => {
+                    const vP = planejado[k] || ''
+                    const vA = atual[k] || ''
+                    const atrasado = vP && vA && new Date(vA) > new Date(vP)
+                    const semDados = !vP && !vA
+                    if (semDados) return null
+                    return (
+                      <div key={k} style={{ padding: '14px 16px', borderRadius: 10, background: atrasado ? '#FEF2F2' : '#F8FAFC', border: `1px solid ${atrasado ? '#FECACA' : '#E2E8F0'}` }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 }}>{labels[k]}</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
+                          <span style={{ color: '#64748B' }}>Planejado</span>
+                          <strong style={{ color: '#0F172A' }}>{vP ? new Date(vP).toLocaleDateString('pt-BR') : '—'}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                          <span style={{ color: '#64748B' }}>Atual</span>
+                          <strong style={{ color: atrasado ? '#DC2626' : vA ? '#15803D' : '#94A3B8' }}>
+                            {vA ? new Date(vA).toLocaleDateString('pt-BR') : '—'}
+                            {atrasado && ' ⚠'}
+                          </strong>
+                        </div>
+                      </div>
+                    )
+                  }).filter(Boolean)
+                })()}
               </div>
             </div>
           )}
