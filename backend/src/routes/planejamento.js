@@ -496,23 +496,21 @@ router.get('/:id/comparativo', async (req, res, next) => {
 
     const baseline = dados._baseline || null;
 
-    // Horas realmente rastreadas (Log_Horas — sincronizado do ClickUp)
-    const logHoras = await db.findRows('Log_Horas', (l) => l.ID_Projeto === plan.ID_Projeto);
+    // Busca horas, medições e projeto em paralelo
+    const [logHoras, medicoesReais, projeto] = await Promise.all([
+      db.findRows('Log_Horas', (l) => l.ID_Projeto === plan.ID_Projeto),
+      db.findRows('Medicoes', (m) => m.ID_Projeto === plan.ID_Projeto),
+      db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === plan.ID_Projeto),
+    ]);
 
     // Agrupa horas rastreadas por colaborador
     const horasReaisPorColab = {};
     for (const entry of logHoras) {
-      const colab = entry.Colaborador || 'Não identificado';
+      const colab = entry.Colaborador || entry.colaborador || 'Não identificado';
       if (!horasReaisPorColab[colab]) horasReaisPorColab[colab] = 0;
-      horasReaisPorColab[colab] += parseFloat(entry.Horas_Logadas || 0);
+      horasReaisPorColab[colab] += parseFloat(entry.Horas_Logadas || entry.horas_logadas || 0);
     }
     const totalHorasRastreadas = Object.values(horasReaisPorColab).reduce((s, h) => s + h, 0);
-
-    // Medições reais registradas no sistema
-    const medicoesReais = await db.findRows('Medicoes', (m) => m.ID_Projeto === plan.ID_Projeto);
-
-    // Projeto atual
-    const projeto = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === plan.ID_Projeto);
 
     // ── Monta o comparativo ──
     const comparativo = {
@@ -538,61 +536,91 @@ router.get('/:id/comparativo', async (req, res, next) => {
       },
 
       // Horas: planejado vs rastreado
-      horas: {
-        totalPlanejado: baseline?.totalHorasEstimadas || 0,
-        totalRastreado: parseFloat(totalHorasRastreadas.toFixed(2)),
-        desvioAbsoluto: parseFloat((totalHorasRastreadas - (baseline?.totalHorasEstimadas || 0)).toFixed(2)),
-        desvioPerc: baseline?.totalHorasEstimadas > 0
-          ? parseFloat(((totalHorasRastreadas / baseline.totalHorasEstimadas - 1) * 100).toFixed(1))
-          : null,
+      horas: (() => {
+        const totalPlanejado = parseFloat(baseline?.totalHorasEstimadas || dados.totalHorasEstimadas || 0);
+        const totalRastreado = parseFloat(totalHorasRastreadas.toFixed(2));
+        const desvioPerc = totalPlanejado > 0
+          ? parseFloat(((totalRastreado / totalPlanejado - 1) * 100).toFixed(1))
+          : null;
 
-        // Detalhamento por colaborador
-        porColaborador: (() => {
-          const planejados = baseline?.horasPorColaborador || [];
-          const todos = new Set([
-            ...planejados.map((p) => p.colaborador),
-            ...Object.keys(horasReaisPorColab),
-          ]);
-          return [...todos].map((colab) => {
-            const plan = planejados.find((p) => p.colaborador === colab);
-            const rastreado = parseFloat((horasReaisPorColab[colab] || 0).toFixed(2));
-            const planejadoH = plan?.horasEstimadas || 0;
-            const desvio = rastreado - planejadoH;
-            const desvioPerc = planejadoH > 0 ? ((rastreado / planejadoH - 1) * 100) : null;
-            return {
-              colaborador: colab,
-              horasPlanejadas: planejadoH,
-              horasRastreadas: rastreado,
-              desvioAbsoluto: parseFloat(desvio.toFixed(2)),
-              desvioPerc: desvioPerc !== null ? parseFloat(desvioPerc.toFixed(1)) : null,
-              custoEstimado: plan?.custoEstimado || 0,
-            };
-          }).sort((a, b) => Math.abs(b.desvioAbsoluto) - Math.abs(a.desvioAbsoluto));
-        })(),
-      },
+        const planejadosPorColab = baseline?.horasPorColaborador || dados.equipe || [];
+        const todos = new Set([
+          ...planejadosPorColab.map((p) => p.colaborador || p.nome || p.membro),
+          ...Object.keys(horasReaisPorColab),
+        ]);
+
+        const porColaborador = [...todos].filter(Boolean).map((colab) => {
+          const planColab = planejadosPorColab.find(
+            (p) => (p.colaborador || p.nome || p.membro)?.toLowerCase() === colab.toLowerCase()
+          );
+          const rastreado = parseFloat((horasReaisPorColab[colab] || 0).toFixed(2));
+          const planejadoH = parseFloat(planColab?.horasEstimadas || planColab?.horas || planColab?.horasTotal || 0);
+          const desvio = rastreado - planejadoH;
+          const dp = planejadoH > 0 ? ((rastreado / planejadoH - 1) * 100) : null;
+          return {
+            nome: colab,
+            colaborador: colab,
+            horasEstimadas: planejadoH,
+            horasPlanejadas: planejadoH,
+            horasLogadas: rastreado,
+            horasRastreadas: rastreado,
+            desvioAbsoluto: parseFloat(desvio.toFixed(2)),
+            desvioPerc: dp !== null ? parseFloat(dp.toFixed(1)) : null,
+            custoEstimado: planColab?.custoEstimado || 0,
+          };
+        }).sort((a, b) => Math.abs(b.desvioAbsoluto) - Math.abs(a.desvioAbsoluto));
+
+        return {
+          planejadas: totalPlanejado,
+          totalPlanejado,
+          rastreadas: totalRastreado,
+          totalRastreado,
+          desvioAbsoluto: parseFloat((totalRastreado - totalPlanejado).toFixed(2)),
+          desvioPerc,
+          porColaborador,
+        };
+      })(),
 
       // Medições: cronograma planejado vs realizado
       medicoes: (() => {
-        const planejadas = baseline?.medicoes || [];
+        // Usa medições da baseline se existir, senão usa dados do plano
+        const planejadas = baseline?.medicoes || dados.medicoes || [];
         return planejadas.map((mp, i) => {
-          const realizada = medicoesReais.find((mr) =>
-            mr.Descricao?.toLowerCase() === mp.etapa?.toLowerCase() || i === medicoesReais.indexOf(medicoesReais[i])
-          );
-          const dataP = mp.dataPrevisao ? new Date(mp.dataPrevisao) : null;
+          // Tenta casar pelo nome/etapa, depois por índice
+          const realizada = medicoesReais.find((mr) => {
+            if (mp.etapa && mr.Descricao) {
+              return mr.Descricao.toLowerCase().trim() === mp.etapa.toLowerCase().trim();
+            }
+            return false;
+          }) || medicoesReais[i];
+
+          const dataP = mp.dataPrevisao || mp.dataPrevista ? new Date(mp.dataPrevisao || mp.dataPrevista) : null;
           const dataR = realizada?.Data_Realizacao ? new Date(realizada.Data_Realizacao) : null;
-          const atrasoDias = dataP && dataR
-            ? Math.round((dataR - dataP) / (1000 * 60 * 60 * 24))
-            : null;
+          const hoje = new Date();
+          // Se não realizou mas já passou da data prevista — calcula atraso em relação a hoje
+          const atrasoDias = dataP
+            ? (dataR
+                ? Math.round((dataR - dataP) / 86400000)
+                : hoje > dataP ? Math.round((hoje - dataP) / 86400000) : 0)
+            : 0;
+
+          const descricao = mp.etapa || mp.descricao || mp.etapaDescricao || `Medição ${i + 1}`;
+          const valor = mp.valor || mp.valorMedicao || 0;
+          const dataPrevista = mp.dataPrevisao || mp.dataPrevista || '';
+
           return {
-            etapa: mp.etapa,
-            percentual: mp.percentual,
-            valorPlanejado: mp.valor,
-            dataPrevisaoPlanejada: mp.dataPrevisao,
+            descricao,
+            etapa: descricao,
+            percentual: mp.percentual || mp.percentualMedicao || 0,
+            valor,
+            valorPlanejado: valor,
+            dataPrevista,
+            dataPrevisaoPlanejada: dataPrevista,
             dataRealizacao: realizada?.Data_Realizacao || null,
-            statusFinanceiro: realizada?.Status_Financeiro || 'Pendente',
-            statusFisico: realizada?.Status_Fisico || 'Não iniciado',
-            atrasoDias,
-            valorRealizado: parseFloat(realizada?.Valor_Medicao || 0),
+            statusFinanceiro: realizada?.Status_Financeiro || realizada?.statusFinanceiro || 'Pendente',
+            statusFisico: realizada?.Status_Fisico || realizada?.statusFisico || 'Não iniciado',
+            atrasoDias: Math.max(0, atrasoDias),
+            valorRealizado: parseFloat(realizada?.Valor_Medicao || realizada?.valorRealizado || 0),
           };
         });
       })(),
