@@ -1,6 +1,8 @@
-﻿import { useState, useEffect } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import api from '../utils/api'
+
+const SETORES = ['Arquitetura', 'Saneamento', 'Infraestrutura', 'Administrativo']
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0)
 const fmtN = (v, dec = 1) => Number(v || 0).toFixed(dec)
@@ -64,6 +66,9 @@ export default function Acompanhamento() {
   const [extrato, setExtrato] = useState(null)
   const [loading, setLoading] = useState(false)
   const [loadingProjetos, setLoadingProjetos] = useState(true)
+  const [filtroSetor, setFiltroSetor] = useState('')
+  const [filtroBusca, setFiltroBusca] = useState('')
+  const [showDropdown, setShowDropdown] = useState(false)
 
   useEffect(() => {
     api.get('/projetos')
@@ -85,6 +90,17 @@ export default function Acompanhamento() {
       setExtrato(ext.status === 'fulfilled' ? ext.value.data : null)
     }).finally(() => setLoading(false))
   }, [projetoId])
+
+  const projetosFiltrados = useMemo(() => projetos.filter(p => {
+    if (filtroSetor && !(p.Setor || '').toLowerCase().includes(filtroSetor.toLowerCase())) return false
+    if (filtroBusca) {
+      const b = filtroBusca.toLowerCase()
+      if (!(p.Nome || '').toLowerCase().includes(b) && !(p.Cliente || '').toLowerCase().includes(b) && !(p.ID_Projeto || '').toLowerCase().includes(b)) return false
+    }
+    return true
+  }), [projetos, filtroSetor, filtroBusca])
+
+  const projetoSelecionado = projetos.find(p => p.ID_Projeto === projetoId)
 
   const medicoesPercReal = (() => {
     if (!comparativo?.medicoes?.length) return 0
@@ -113,22 +129,78 @@ export default function Acompanhamento() {
         </button>
       </div>
 
-      {/* Seletor de projeto */}
+      {/* Seletor de projeto com filtros */}
       <div style={{ background: '#fff', borderRadius: 14, padding: '20px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 10px rgba(0,0,0,0.04)', marginBottom: 24 }}>
-        <label style={{ fontWeight: 700, fontSize: 13, color: '#0F172A', display: 'block', marginBottom: 8 }}>Selecionar Projeto</label>
-        <select
-          value={projetoId}
-          onChange={e => setProjetoId(e.target.value)}
-          disabled={loadingProjetos}
-          style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid #E2E8F0', fontSize: 14, color: '#0F172A', fontFamily: 'inherit', outline: 'none', background: '#fff' }}
-        >
-          <option value="">— Selecione um projeto —</option>
-          {projetos.map(p => (
-            <option key={p.ID_Projeto} value={p.ID_Projeto}>
-              {p.Nome} {p.Cliente ? `· ${p.Cliente}` : ''} [{p.Status}]
-            </option>
+        <label style={{ fontWeight: 700, fontSize: 13, color: '#0F172A', display: 'block', marginBottom: 12 }}>Selecionar Projeto</label>
+
+        {/* Pills de setor */}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+          {SETORES.map(s => (
+            <button key={s} onClick={() => setFiltroSetor(filtroSetor === s ? '' : s)}
+              style={{ padding: '4px 13px', borderRadius: 20, border: `1.5px solid ${filtroSetor === s ? '#00B5CC' : '#E2E8F0'}`, background: filtroSetor === s ? 'rgba(0,181,204,0.08)' : '#F8FAFC', color: filtroSetor === s ? '#007A8A' : '#64748B', fontWeight: 600, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' }}>
+              {s}
+            </button>
           ))}
-        </select>
+          {(filtroSetor || filtroBusca) && (
+            <button onClick={() => { setFiltroSetor(''); setFiltroBusca('') }}
+              style={{ padding: '4px 13px', borderRadius: 20, border: '1.5px solid #FEE2E2', background: '#FFF5F5', color: '#DC2626', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
+              Limpar
+            </button>
+          )}
+        </div>
+
+        {/* Busca + dropdown customizado */}
+        <div style={{ position: 'relative' }}>
+          <input
+            value={filtroBusca}
+            onChange={e => { setFiltroBusca(e.target.value); setShowDropdown(true) }}
+            onFocus={() => setShowDropdown(true)}
+            placeholder={projetoSelecionado ? projetoSelecionado.Nome : 'Buscar por nome, cliente ou código...'}
+            style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: `1.5px solid ${showDropdown ? '#00B5CC' : '#E2E8F0'}`, fontSize: 14, color: '#0F172A', fontFamily: 'inherit', outline: 'none', background: '#fff', boxSizing: 'border-box', transition: 'border 0.15s' }}
+          />
+          {projetoSelecionado && !filtroBusca && (
+            <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 6, pointerEvents: 'none' }}>
+              <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 6, background: projetoSelecionado.Status === 'Em Andamento' ? '#DCFCE7' : '#F1F5F9', color: projetoSelecionado.Status === 'Em Andamento' ? '#15803D' : '#64748B', fontWeight: 700 }}>{projetoSelecionado.Status}</span>
+            </div>
+          )}
+
+          {showDropdown && (
+            <>
+              {/* Overlay para fechar */}
+              <div style={{ position: 'fixed', inset: 0, zIndex: 10 }} onClick={() => { setShowDropdown(false); setFiltroBusca('') }} />
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20, background: '#fff', borderRadius: 12, border: '1.5px solid #E2E8F0', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', maxHeight: 320, overflowY: 'auto', marginTop: 4 }}>
+                {loadingProjetos ? (
+                  <div style={{ padding: 20, textAlign: 'center', color: '#94A3B8', fontSize: 13 }}>Carregando projetos...</div>
+                ) : projetosFiltrados.length === 0 ? (
+                  <div style={{ padding: 20, textAlign: 'center', color: '#94A3B8', fontSize: 13 }}>Nenhum projeto encontrado</div>
+                ) : projetosFiltrados.map(p => (
+                  <div key={p.ID_Projeto} onClick={() => { setProjetoId(p.ID_Projeto); setShowDropdown(false); setFiltroBusca('') }}
+                    style={{ padding: '11px 16px', cursor: 'pointer', borderBottom: '1px solid #F1F5F9', background: projetoId === p.ID_Projeto ? 'rgba(0,181,204,0.06)' : '#fff', transition: 'background 0.1s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'}
+                    onMouseLeave={e => e.currentTarget.style.background = projetoId === p.ID_Projeto ? 'rgba(0,181,204,0.06)' : '#fff'}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: projetoId === p.ID_Projeto ? 800 : 600, fontSize: 13, color: projetoId === p.ID_Projeto ? '#007A8A' : '#0F172A' }}>{p.Nome}</span>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0, marginLeft: 8 }}>
+                        {p.Setor && <span style={{ fontSize: 11, color: '#94A3B8' }}>{p.Setor}</span>}
+                        <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 6, background: p.Status === 'Em Andamento' || p.Status?.includes('Andamento') ? '#DCFCE7' : '#F1F5F9', color: p.Status === 'Em Andamento' || p.Status?.includes('Andamento') ? '#15803D' : '#64748B', fontWeight: 700 }}>{p.Status}</span>
+                      </div>
+                    </div>
+                    {p.Cliente && <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>{p.Cliente}</div>}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {projetoSelecionado && (
+          <div style={{ marginTop: 10, display: 'flex', gap: 16, fontSize: 12, color: '#64748B' }}>
+            <span>Projeto: <strong style={{ color: '#0F172A' }}>{projetoSelecionado.ID_Projeto}</strong></span>
+            {projetoSelecionado.Cliente && <span>Cliente: <strong style={{ color: '#0F172A' }}>{projetoSelecionado.Cliente}</strong></span>}
+            {projetoSelecionado.Setor && <span>Setor: <strong style={{ color: '#0F172A' }}>{projetoSelecionado.Setor}</strong></span>}
+            <button onClick={() => { setProjetoId(''); setComparativo(null); setExtrato(null) }} style={{ marginLeft: 'auto', fontSize: 11, color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer' }}>✕ Limpar seleção</button>
+          </div>
+        )}
       </div>
 
       {loading && <div style={{ textAlign: 'center', padding: 60, color: '#94A3B8', fontSize: 14 }}>Carregando comparativo...</div>}
