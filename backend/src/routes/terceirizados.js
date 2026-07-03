@@ -40,16 +40,28 @@ router.get('/', async (req, res, next) => {
     rows = rows.map(r => {
       const proj = projMap[r.ID_Projeto];
       const oc = r.OC ? ocMap[String(r.OC)] : null;
+      const valorContratado = parseFloat(r.Valor_Contratado || oc?.Valor_Total || 0);
+      const valorEstimado = parseFloat(r.Valor_Estimado || r.Valor_Contratado || oc?.Valor_Total || 0);
+      const valorGlobal = parseFloat(proj?.Valor_Global || 0);
+      // Calcula % em tempo real usando valor do projeto; fallback para o armazenado
+      const percCalc = valorGlobal > 0 && valorContratado > 0
+        ? ((valorContratado / valorGlobal) * 100).toFixed(2)
+        : (r.Percentual_Contrato || r.Percentual_do_Total || '0');
+      // Fornecedor: prefere o valor manual/ClickUp, só usa OC se não tiver nada
+      const fornecedor = r.Fornecedor || oc?.Nome_Fornecedor || '';
       return {
         ...r,
         nomeProjeto: proj?.Nome || r.ID_Projeto || '',
+        Setor: proj?.Setor || r.Setor || '',
         Descricao_Servico: r.Descricao_Servico || r.Servico || '',
-        Fornecedor: oc?.Nome_Fornecedor || r.Fornecedor || '',
-        Valor_Contratado: oc?.Valor_Total || r.Valor_Contratado || '',
-        Valor_Estimado: r.Valor_Estimado || r.Valor_Contratado || '',
-        Percentual_Contrato: r.Percentual_Contrato || r.Percentual_do_Total || '0',
+        Fornecedor: fornecedor,
+        Valor_Contratado: String(valorContratado || ''),
+        Valor_Estimado: String(valorEstimado || ''),
+        Percentual_Contrato: percCalc,
         Data_Vencimento: r.Data_Vencimento || r.Data_Entrega_Prevista || '',
         ID_Terceirizado: r.ID_Terceirizado || r.ID || '',
+        Link_Contrato: r.Link_Contrato || '',
+        Nr_Contrato: r.Nr_Contrato || '',
       };
     });
 
@@ -73,43 +85,63 @@ router.get('/:id', async (req, res, next) => {
 // POST /api/terceirizados — cria novo terceirizado
 router.post('/', async (req, res, next) => {
   try {
-    const { idProjeto, servico, fornecedor, valorContratado, idTarefaClickUp, idMedicaoVinculada, dataEntregaPrevista, observacao } = req.body;
+    const {
+      idProjeto, ID_Projeto,
+      servico, Servico, Descricao_Servico,
+      fornecedor, Fornecedor,
+      cnpjCpf, CNPJ_CPF,
+      valorContratado, Valor_Contratado,
+      valorEstimado, Valor_Estimado,
+      idTarefaClickUp, dataEntregaPrevista, Data_Vencimento,
+      observacao, Observacoes,
+      Nr_NF, Data_Pagamento,
+      Link_Contrato, Nr_Contrato,
+      Status,
+    } = req.body;
 
-    if (!idProjeto || !servico || !fornecedor) {
+    const _idProjeto = idProjeto || ID_Projeto;
+    const _servico = servico || Servico || Descricao_Servico;
+    const _fornecedor = fornecedor || Fornecedor;
+
+    if (!_idProjeto || !_servico || !_fornecedor) {
       return res.status(400).json({ error: 'Projeto, serviço e fornecedor são obrigatórios.' });
     }
 
-    const project = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === idProjeto);
+    const idProjetoFinal = _idProjeto;
+    const servicoFinal = _servico;
+    const fornecedorFinal = _fornecedor;
+
+    const project = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === idProjetoFinal);
     if (!project) return res.status(404).json({ error: 'Projeto não encontrado.' });
 
-    const valor = parseFloat(valorContratado || 0);
+    const valor = parseFloat(valorContratado || Valor_Contratado || 0);
+    const valorEst = parseFloat(valorEstimado || Valor_Estimado || valor || 0);
     const valorGlobal = parseFloat(project.Valor_Global || 0);
 
     // Verifica teto ANTES de inserir
-    const { total, perc } = await calcPercTerceiros(idProjeto, valorGlobal);
+    const { total, perc } = await calcPercTerceiros(idProjetoFinal, valorGlobal);
     const novoPerc = valorGlobal > 0 ? ((total + valor) / valorGlobal) * 100 : 0;
 
     if (novoPerc > TETO_BLOQUEIO) {
       await createAlert({
         tipo: 'TETO_TERCEIROS_BLOQUEIO',
-        idProjeto,
-        mensagem: `Tentativa bloqueada: adicionar ${fornecedor} elevaria terceirizados para ${novoPerc.toFixed(1)}% (limite: ${TETO_BLOQUEIO}%).`,
+        idProjeto: idProjetoFinal,
+        mensagem: `Tentativa bloqueada: adicionar ${fornecedorFinal} elevaria terceirizados para ${novoPerc.toFixed(1)}% (limite: ${TETO_BLOQUEIO}%).`,
         nivel: 'error',
         setorDestino: ['PO', 'Comercial', 'Coordenador'],
       });
       return res.status(400).json({ error: `Terceirizados ultrapassariam ${TETO_BLOQUEIO}% do contrato (${novoPerc.toFixed(1)}%). Operação bloqueada.` });
     }
 
-    // Verifica se o Agente Comercial tenta contratar o mesmo fornecedor duas vezes
     if (req.user.perfil === 'Comercial') {
       const duplicado = await db.findOne('Terceirizados', (t) =>
-        t.ID_Projeto === idProjeto &&
-        t.Fornecedor?.toLowerCase() === fornecedor.toLowerCase() &&
+        t.ID_Projeto === idProjetoFinal &&
+        t.Fornecedor?.toLowerCase() === fornecedorFinal.toLowerCase() &&
         t.Status !== 'Cancelado'
       );
       if (duplicado) {
         return res.status(400).json({
-          error: `Fornecedor "${fornecedor}" já possui serviço ativo neste projeto. Aprovação do PO e Coordenador é necessária para novo contrato com o mesmo fornecedor.`,
+          error: `Fornecedor "${fornecedorFinal}" já possui serviço ativo neste projeto.`,
         });
       }
     }
@@ -118,18 +150,26 @@ router.post('/', async (req, res, next) => {
 
     const terceirizado = {
       ID: uuidv4(),
-      ID_Projeto: idProjeto,
-      Servico: servico,
-      Fornecedor: fornecedor,
+      ID_Projeto: idProjetoFinal,
+      Servico: servicoFinal,
+      Descricao_Servico: servicoFinal,
+      Fornecedor: fornecedorFinal,
+      CNPJ_CPF: cnpjCpf || CNPJ_CPF || '',
+      Nr_Contrato: Nr_Contrato || '',
+      Valor_Estimado: String(valorEst),
       Valor_Contratado: String(valor),
       Valor_Pago: '0',
-      Status: 'Backlog',
+      Status: Status || 'Backlog',
       ID_Tarefa_ClickUp: idTarefaClickUp || '',
-      ID_Medicao_Vinculada: idMedicaoVinculada || '',
+      ID_Medicao_Vinculada: '',
       Percentual_do_Total: percTotal.toFixed(2),
-      Data_Entrega_Prevista: dataEntregaPrevista || '',
+      Data_Entrega_Prevista: dataEntregaPrevista || Data_Vencimento || '',
+      Data_Vencimento: dataEntregaPrevista || Data_Vencimento || '',
       Data_Entrega_Real: '',
-      Observacao: observacao || '',
+      Observacao: observacao || Observacoes || '',
+      Nr_NF: Nr_NF || '',
+      Data_Pagamento: Data_Pagamento || '',
+      Link_Contrato: Link_Contrato || '',
       Aprovado_Por: '',
       Criado_Em: new Date().toISOString(),
     };
@@ -140,7 +180,7 @@ router.post('/', async (req, res, next) => {
     if (novoPerc >= TETO_AVISO && novoPerc < TETO_BLOQUEIO) {
       await createAlert({
         tipo: 'TETO_TERCEIROS_AVISO',
-        idProjeto,
+        idProjeto: idProjetoFinal,
         mensagem: `Aviso: terceirizados do projeto "${project.Nome}" agora em ${novoPerc.toFixed(1)}% (aviso: ${TETO_AVISO}%).`,
         nivel: 'warning',
         setorDestino: ['PO', 'Comercial'],
