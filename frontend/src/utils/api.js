@@ -8,7 +8,7 @@ const api = axios.create({
 
 // Interceptor de request: injeta token salvo
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('par_token')
+  const token = localStorage.getItem('par_token') || sessionStorage.getItem('par_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
