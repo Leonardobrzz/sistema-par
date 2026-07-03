@@ -1000,6 +1000,24 @@ async function getProjectProgressFromClickUp(clickupId) {
   }
 }
 
+// Extrai o ID da tarefa de uma URL do ClickUp (https://app.clickup.com/t/TASKID)
+function extrairTaskId(url) {
+  if (!url) return null;
+  const m = url.match(/\/t\/([a-z0-9]+)/i);
+  return m ? m[1] : null;
+}
+
+// Posta um comentário em uma tarefa do ClickUp
+async function criarComentarioTask(taskId, texto) {
+  if (!taskId) return null;
+  const res = await axios.post(
+    `${BASE_URL}/task/${taskId}/comment`,
+    { comment_text: texto, notify_all: true },
+    { headers: getHeaders() }
+  );
+  return res.data;
+}
+
 module.exports = {
   syncClickUp,
   syncTerceirizadosClickUp,
@@ -1013,4 +1031,6 @@ module.exports = {
   registerWebhook,
   processWebhookEvent,
   getProjectProgressFromClickUp,
+  criarComentarioTask,
+  extrairTaskId,
 };

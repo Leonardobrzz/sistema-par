@@ -302,6 +302,28 @@ router.post('/:id/aprovar', async (req, res, next) => {
       }
     }
 
+    // ── Notifica no ClickUp (comentário na tarefa linkada) ──────────────────
+    if (acao === 'aprovar' && plan.Link_ClickUp) {
+      try {
+        const clickup = require('../services/clickupService');
+        const taskId = clickup.extrairTaskId(plan.Link_ClickUp);
+        if (taskId) {
+          const valor = (() => {
+            try {
+              const d = JSON.parse(plan.Dados_JSON || '{}');
+              const v = d._baseline?.valorContrato || d.valorContrato || 0;
+              return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            } catch { return ''; }
+          })();
+          const msg = `✅ Planejamento Financeiro aprovado no Sistema PAR\n\nProjeto: ${plan.Nome_Projeto}${valor ? `\nValor: ${valor}` : ''}\nAprovado por: ${req.user.nome}\nData: ${new Date().toLocaleDateString('pt-BR')}`;
+          await clickup.criarComentarioTask(taskId, msg);
+          console.log(`[Aprovação] Comentário ClickUp criado na tarefa ${taskId}`);
+        }
+      } catch (errCU) {
+        console.error('[Aprovação] Falha ao comentar no ClickUp (não bloqueante):', errCU.message);
+      }
+    }
+
     console.log(`[Aprovação] Planejamento ${plan.ID} ${novoStatus} por ${req.user.nome}`);
     res.json(updated);
   } catch (err) {
