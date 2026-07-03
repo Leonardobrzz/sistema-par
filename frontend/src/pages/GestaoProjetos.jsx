@@ -79,16 +79,26 @@ export default function GestaoProjetos() {
 
   useEffect(() => { loadProjects() }, [loadProjects])
 
-  // Status extraído dos dados reais; setor usa lista fixa (campo Setor é preenchido pelo ClickUp com nomes de listas)
-  const statusReais = useMemo(() =>
-    [...new Set(allProjects.map(p => (p.Status || '').trim()).filter(Boolean))].sort()
-  , [allProjects])
+  // Status extraído dos dados reais; agrupa "Em Andamento (Atrasado)" dentro de "Em Andamento"
+  const statusReais = useMemo(() => {
+    const todos = [...new Set(allProjects.map(p => (p.Status || '').trim()).filter(Boolean))]
+    return todos
+      .filter(s => s !== 'Em Andamento (Atrasado)')
+      .sort()
+  }, [allProjects])
 
   // Filtragem 100% no frontend
   const projects = useMemo(() => {
     return allProjects.filter(p => {
       if (filters.setor && !(p.Nome || '').toUpperCase().startsWith(filters.setor)) return false
-      if (filters.status.length > 0 && !filters.status.some(s => (p.Status || '').trim().toLowerCase() === s.trim().toLowerCase())) return false
+      if (filters.status.length > 0) {
+        const ps = (p.Status || '').trim()
+        const match = filters.status.some(s => {
+          if (s === 'Em Andamento') return ps === 'Em Andamento' || ps === 'Em Andamento (Atrasado)'
+          return ps.toLowerCase() === s.toLowerCase()
+        })
+        if (!match) return false
+      }
       if (filters.cliente) {
         const q = filters.cliente.toLowerCase()
         if (!(p.Cliente || '').toLowerCase().includes(q)) return false
