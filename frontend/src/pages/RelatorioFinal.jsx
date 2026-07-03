@@ -55,7 +55,7 @@ export default function RelatorioFinal() {
   const colaboradores = relatorio?.horas?.porColaborador || []
 
   return (
-    <div style={{ padding: "28px 32px", maxWidth: 1280, margin: "0 auto" }}>
+    <div style={{ padding: "28px 32px" }}>
       <div style={{ marginBottom: 28, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#0F172A" }}>Relatorio Final de Projeto</h1>

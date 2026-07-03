@@ -94,7 +94,7 @@ export default function Configuracoes() {
   const btnSecondary = { padding: "10px 20px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#fff", color: "#475569", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }
 
   return (
-    <div style={{ padding: "28px 32px", maxWidth: 900, margin: "0 auto" }}>
+    <div style={{ padding: "28px 32px" }}>
       <div style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 12 }}>
         <Settings size={22} color="#7C3AED" />
         <div>

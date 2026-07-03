@@ -90,7 +90,7 @@ export default function Aprovacao() {
     : 0
 
   return (
-    <div className="space-y-5 fade-in" style={{ maxWidth: 1100, margin: "0 auto" }}>
+    <div className="space-y-5 fade-in">
       <div className="flex items-center gap-3 mb-2">
         <ShieldCheckIcon className="w-6 h-6 text-par-400" />
         <h1 className="page-title">Aprovacoes e Baseline</h1>
