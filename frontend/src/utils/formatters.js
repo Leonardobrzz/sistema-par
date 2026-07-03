@@ -60,9 +60,9 @@ export function formatHoras(horas) {
  */
 export function statusBadgeClass(status) {
   const s = status?.toLowerCase() || ''
+  if (s.includes('atrasado') || s.includes('cancelado'))                          return 'badge badge-red'
   if (s.includes('andamento'))                                                    return 'badge badge-blue'
   if (s.includes('concluíd') || s.includes('concluido') || s.includes('recebido')) return 'badge badge-green'
-  if (s.includes('atrasado') || s.includes('cancelado'))                          return 'badge badge-red'
   if (s.includes('planejar') || s.includes('planejado'))                          return 'badge badge-yellow'
   if (s.includes('aguardando') || s.includes('faturado'))                         return 'badge badge-navy'
   if (s.includes('aprovação') || s.includes('aprovacao'))                         return 'badge badge-yellow'
@@ -74,9 +74,9 @@ export function statusBadgeClass(status) {
 
 export function statusAccentColor(status) {
   const s = status?.toLowerCase() || ''
+  if (s.includes('atrasado') || s.includes('cancelado'))                          return '#DC2626'
   if (s.includes('andamento'))                                                     return '#2563EB'
   if (s.includes('concluíd') || s.includes('concluido'))                          return '#16A34A'
-  if (s.includes('atrasado') || s.includes('cancelado'))                          return '#DC2626'
   if (s.includes('planejar') || s.includes('planejado'))                          return '#D97706'
   if (s.includes('aguardando'))                                                   return '#1E3A5F'
   if (s.includes('paralisado'))                                                   return '#F97316'
