@@ -142,12 +142,6 @@ export default function GestaoProjetos() {
             <FunnelIcon className="w-4 h-4" />
             Filtros {filters.status.length > 0 && <span className="w-2 h-2 rounded-full bg-par-500 pulse-dot ml-1" />}
           </button>
-          {['Admin', 'Coordenador', 'PO'].includes(user?.perfil) && (
-            <button onClick={() => setShowNewModal(true)} className="btn-primary flex items-center gap-2">
-              <PlusIcon className="w-4 h-4" />
-              Novo Projeto
-            </button>
-          )}
         </div>
       </div>
 
@@ -178,16 +172,6 @@ export default function GestaoProjetos() {
               <option value="INF">INF — Infraestrutura</option>
               <option value="SAN">SAN — Saneamento</option>
             </select>
-          </div>
-          <div>
-            <input
-              className="form-input w-full"
-              type="number"
-              min="0"
-              placeholder="Atrasado > N dias"
-              value={filters.margemDias}
-              onChange={(e) => setFilters({ ...filters, margemDias: e.target.value })}
-            />
           </div>
           <div className="md:col-span-4 mt-2">
             <p className="form-label mb-2">Filtrar por Status</p>
@@ -241,15 +225,6 @@ export default function GestaoProjetos() {
               placeholder="Nome do cliente"
               value={filters.cliente}
               onChange={(e) => setFilters({ ...filters, cliente: e.target.value })}
-            />
-            <input
-              className="form-input"
-              type="number"
-              min="0"
-              style={{ width: 160, background: '#F8FAFC', border: '1px solid #E2E8F0' }}
-              placeholder="Atrasado > N dias"
-              value={filters.margemDias}
-              onChange={(e) => setFilters({ ...filters, margemDias: e.target.value })}
             />
           </div>
 
