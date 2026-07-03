@@ -6,6 +6,7 @@ import { ShieldCheckIcon, LockClosedIcon } from '@heroicons/react/24/outline'
 import api from '../utils/api'
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0)
+const fmtCur = (v) => Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 
 export default function Aprovacao() {
   const navigate = useNavigate()
@@ -17,9 +18,11 @@ export default function Aprovacao() {
   const [successMsg, setSuccessMsg] = useState("")
   const [aba, setAba] = useState("aprovacao")
   const [baselineInfo, setBaselineInfo] = useState(null)
+  const [historicoBaselines, setHistoricoBaselines] = useState([])
   const [baselineLoading, setBaselineLoading] = useState(false)
   const [baselineMsg, setBaselineMsg] = useState("")
   const [justBypass, setJustBypass] = useState("")
+  const [versaoViewing, setVersaoViewing] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -35,9 +38,12 @@ export default function Aprovacao() {
   useEffect(() => {
     if (!selected) return
     setBaselineLoading(true)
+    setVersaoViewing(null)
     api.get(`/planejamento/${selected.ID}`).then(r => {
-      setBaselineInfo(r.data?.dadosCompletos?._baseline || null)
-    }).catch(() => setBaselineInfo(null)).finally(() => setBaselineLoading(false))
+      const dados = r.data?.dadosCompletos || {}
+      setBaselineInfo(dados._baseline || null)
+      setHistoricoBaselines(dados._historicoBaselines || [])
+    }).catch(() => { setBaselineInfo(null); setHistoricoBaselines([]) }).finally(() => setBaselineLoading(false))
   }, [selected])
 
   async function acao(tipo) {
@@ -234,32 +240,131 @@ export default function Aprovacao() {
             )}
           </div>
 
-          <div className="card-glass" style={{ padding: "22px 24px" }}>
+          <div className="card-glass" style={{ padding: "22px 24px", overflowY: "auto", maxHeight: "75vh" }}>
             {!selected ? (
               <div style={{ textAlign: "center", padding: 40, color: "#64748B" }}>
                 <LockClosedIcon style={{ width: 40, height: 40, margin: "0 auto 12px", opacity: 0.3 }} />
                 <div style={{ fontWeight: 600 }}>Selecione um planejamento aprovado</div>
               </div>
+            ) : baselineLoading ? (
+              <div style={{ padding: 32, textAlign: "center", color: "#64748B" }}>Carregando baselines...</div>
             ) : (
               <>
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: "#e2e8f0", marginBottom: 4 }}>{selected.Nome_Projeto}</div>
-                  {baselineLoading ? <div style={{ color: "#64748B", fontSize: 13 }}>Carregando baseline...</div> : baselineInfo ? (
-                    <div style={{ padding: "14px 16px", borderRadius: 10, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.3)", marginTop: 12 }}>
-                      <div style={{ fontWeight: 700, color: "#a78bfa", fontSize: 13, marginBottom: 8 }}>Baseline v{baselineInfo.versao} — travado</div>
-                      <div style={{ fontSize: 12, color: "#94a3b8" }}>Travado por: <strong style={{ color: "#e2e8f0" }}>{baselineInfo.travadoPor}</strong></div>
-                      <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>Data: <strong style={{ color: "#e2e8f0" }}>{baselineInfo.dataTravamento ? new Date(baselineInfo.dataTravamento).toLocaleDateString("pt-BR") : "—"}</strong></div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: "#e2e8f0", marginBottom: 16 }}>{selected.Nome_Projeto}</div>
+
+                {/* Timeline de versões */}
+                {(historicoBaselines.length > 0 || baselineInfo) ? (
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#64748B", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Histórico de Versões</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {historicoBaselines.map(b => (
+                        <button key={b.versao} onClick={() => setVersaoViewing(versaoViewing?.versao === b.versao ? null : b)}
+                          style={{ textAlign: "left", padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${versaoViewing?.versao === b.versao ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)"}`, background: versaoViewing?.versao === b.versao ? "rgba(99,102,241,0.15)" : "rgba(255,255,255,0.03)", cursor: "pointer", transition: "all 0.15s" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <span style={{ fontWeight: 700, fontSize: 13, color: versaoViewing?.versao === b.versao ? "#a78bfa" : "#94a3b8" }}>
+                              🔒 {b.versaoLabel || `Versão ${b.versao}`}
+                            </span>
+                            <span style={{ fontSize: 11, color: "#64748B" }}>{b.dataTravamento ? new Date(b.dataTravamento).toLocaleDateString("pt-BR") : ""}</span>
+                          </div>
+                          <div style={{ fontSize: 11, color: "#64748B", marginTop: 3 }}>Travado por {b.travadoPor || "—"} · {b.valorContrato ? fmtCur(b.valorContrato) : ""}</div>
+                        </button>
+                      ))}
+                      {/* Versão atual/corrente */}
+                      {baselineInfo && (
+                        <button onClick={() => setVersaoViewing(versaoViewing?.versao === baselineInfo.versao ? null : baselineInfo)}
+                          style={{ textAlign: "left", padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${versaoViewing?.versao === baselineInfo.versao ? "#4F46E5" : "rgba(99,102,241,0.35)"}`, background: versaoViewing?.versao === baselineInfo.versao ? "rgba(99,102,241,0.2)" : "rgba(99,102,241,0.07)", cursor: "pointer", transition: "all 0.15s" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <span style={{ fontWeight: 700, fontSize: 13, color: "#a78bfa" }}>
+                              🔒 {baselineInfo.versaoLabel || `Versão ${baselineInfo.versao}`} <span style={{ fontSize: 10, background: "rgba(99,102,241,0.3)", padding: "1px 6px", borderRadius: 4, marginLeft: 4, color: "#c4b5fd" }}>ATUAL</span>
+                            </span>
+                            <span style={{ fontSize: 11, color: "#64748B" }}>{baselineInfo.dataTravamento ? new Date(baselineInfo.dataTravamento).toLocaleDateString("pt-BR") : ""}</span>
+                          </div>
+                          <div style={{ fontSize: 11, color: "#64748B", marginTop: 3 }}>Travado por {baselineInfo.travadoPor || "—"} · {baselineInfo.valorContrato ? fmtCur(baselineInfo.valorContrato) : ""}</div>
+                        </button>
+                      )}
                     </div>
-                  ) : (
-                    <div style={{ padding: "12px 16px", borderRadius: 10, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", marginTop: 12, fontSize: 13, color: "#D97706" }}>
-                      Nenhum baseline travado para este planejamento.
+                  </div>
+                ) : (
+                  <div style={{ padding: "12px 16px", borderRadius: 10, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", marginBottom: 16, fontSize: 13, color: "#D97706" }}>
+                    Nenhum baseline travado ainda.
+                  </div>
+                )}
+
+                {/* Detalhe da versão selecionada */}
+                {versaoViewing && (
+                  <div style={{ marginBottom: 20, padding: "16px 18px", borderRadius: 12, background: "rgba(15,23,42,0.5)", border: "1px solid rgba(99,102,241,0.3)" }}>
+                    <div style={{ fontWeight: 800, fontSize: 14, color: "#a78bfa", marginBottom: 12 }}>
+                      {versaoViewing.versaoLabel || `Versão ${versaoViewing.versao}`}
                     </div>
-                  )}
-                </div>
+
+                    {/* Financeiro */}
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>Financeiro</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+                      {[
+                        ["Valor Contrato", versaoViewing.valorContrato],
+                        ["Custo Total", versaoViewing.custoTotal],
+                        ["Margem", versaoViewing.margem ? `${Number(versaoViewing.margem).toFixed(1)}%` : null],
+                        ["BDI", versaoViewing.bdi ? `${Number(versaoViewing.bdi).toFixed(1)}%` : null],
+                      ].map(([label, val]) => val != null && (
+                        <div key={label} style={{ padding: "8px 10px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                          <div style={{ fontSize: 10, color: "#64748B", fontWeight: 600 }}>{label}</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0", marginTop: 2 }}>
+                            {typeof val === "number" ? fmtCur(val) : val}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Datas */}
+                    {(versaoViewing.dataInicio || versaoViewing.dataFim) && (
+                      <>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>Prazo</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+                          {[["Início", versaoViewing.dataInicio], ["Fim", versaoViewing.dataFim]].map(([l, d]) => d && (
+                            <div key={l} style={{ padding: "8px 10px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                              <div style={{ fontSize: 10, color: "#64748B", fontWeight: 600 }}>{l}</div>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0", marginTop: 2 }}>{new Date(d).toLocaleDateString("pt-BR")}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Equipe */}
+                    {Array.isArray(versaoViewing.equipe) && versaoViewing.equipe.length > 0 && (
+                      <>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>Equipe</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 14 }}>
+                          {versaoViewing.equipe.map((m, i) => (
+                            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", fontSize: 12 }}>
+                              <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{m.nome || m.membro}</span>
+                              <span style={{ color: "#64748B" }}>{m.horas || m.horasTotal || "—"}h</span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Medições */}
+                    {Array.isArray(versaoViewing.medicoes) && versaoViewing.medicoes.length > 0 && (
+                      <>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>Medições</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          {versaoViewing.medicoes.map((m, i) => (
+                            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", fontSize: 12 }}>
+                              <span style={{ color: "#94a3b8" }}>{m.descricao || `Medição ${i + 1}`}</span>
+                              <span style={{ color: "#e2e8f0", fontWeight: 700 }}>{fmtCur(m.valor)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {baselineTravado && (
-                  <div style={{ padding: "10px 14px", borderRadius: 8, marginBottom: 16, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", fontSize: 12, color: "#D97706" }}>
-                    Ja existe um baseline. Travar novamente criara a Versao {(baselineInfo?.versao || 1) + 1}, arquivando a versao atual.
+                  <div style={{ padding: "10px 14px", borderRadius: 8, marginBottom: 12, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", fontSize: 12, color: "#D97706" }}>
+                    Travar novamente criará a Versão {(baselineInfo?.versao || 1) + 1}, arquivando a atual.
                   </div>
                 )}
 
@@ -270,7 +375,7 @@ export default function Aprovacao() {
                 <button onClick={travarBaseline} disabled={baselineLoading}
                   style={{ width: "100%", padding: "12px 0", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#4F46E5,#7C3AED)", color: "#fff", fontWeight: 800, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                   <LockClosedIcon style={{ width: 16, height: 16 }} />
-                  {baselineTravado ? `Travar Nova Versao (v${(baselineInfo?.versao || 1) + 1})` : "Travar Baseline (Versao 1)"}
+                  {baselineTravado ? `Travar Nova Versão (v${(baselineInfo?.versao || 1) + 1})` : "Travar Baseline (Versão 1)"}
                 </button>
               </>
             )}
