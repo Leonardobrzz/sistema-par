@@ -7,11 +7,13 @@ import Header from './Header'
 
 export default function MainLayout() {
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#f4f7f9' }}>
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Espaço fixo igual à largura colapsada do sidebar */}
+      <div style={{ width: 72, flexShrink: 0 }} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Header />
-        <main className="flex-1 overflow-y-auto p-6 fade-in bg-[#f4f7f9]">
+        <main style={{ flex: 1, overflowY: 'auto', padding: '24px', background: '#f4f7f9' }} className="fade-in">
           <Outlet />
         </main>
       </div>
