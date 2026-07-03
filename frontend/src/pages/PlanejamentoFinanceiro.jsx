@@ -327,7 +327,7 @@ export default function PlanejamentoFinanceiro() {
   const sc = statusCfg[planStatus] || statusCfg["Rascunho"]
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", paddingBottom: 60 }}>
+    <div style={{ paddingBottom: 60 }}>
 
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
