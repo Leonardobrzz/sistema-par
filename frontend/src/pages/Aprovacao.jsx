@@ -2,11 +2,84 @@
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { toast } from 'react-hot-toast'
-import { ShieldCheckIcon, LockClosedIcon } from '@heroicons/react/24/outline'
+import { ShieldCheckIcon, LockClosedIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline'
 import api from '../utils/api'
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0)
 const fmtCur = (v) => Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+
+function gerarPDFBaseline(b, nomeProjeto) {
+  const linhas = (arr, fn) => arr.map(fn).join('')
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>Baseline ${b.versaoLabel}</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #0F172A; padding: 32px; }
+    h1 { font-size: 18px; margin-bottom: 4px; }
+    .sub { color: #64748B; font-size: 11px; margin-bottom: 24px; }
+    h2 { font-size: 11px; font-weight: 700; color: #7C3AED; text-transform: uppercase; letter-spacing: 0.08em; margin: 18px 0 8px; border-bottom: 1px solid #E2E8F0; padding-bottom: 4px; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+    .card { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 8px 10px; }
+    .card-label { font-size: 9px; color: #94A3B8; font-weight: 700; text-transform: uppercase; }
+    .card-val { font-size: 13px; font-weight: 800; margin-top: 2px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+    th { background: #F1F5F9; font-size: 10px; text-align: left; padding: 6px 8px; font-weight: 700; color: #64748B; }
+    td { padding: 6px 8px; font-size: 11px; border-bottom: 1px solid #F1F5F9; }
+    .right { text-align: right; }
+    .total { font-weight: 800; background: #F8FAFC; }
+  </style></head><body>
+  <h1>📋 ${b.versaoLabel || 'Baseline'} — ${nomeProjeto || ''}</h1>
+  <div class="sub">Travado em ${b.travadoEm ? new Date(b.travadoEm).toLocaleString('pt-BR') : '—'} por ${b.travadoPor || '—'}</div>
+
+  <h2>Financeiro</h2>
+  <div class="grid">
+    <div class="card"><div class="card-label">Valor do Contrato</div><div class="card-val">${fmtCur(b.valorContrato)}</div></div>
+    <div class="card"><div class="card-label">Impostos</div><div class="card-val">${b.impostosPerc || 0}%</div></div>
+    <div class="card"><div class="card-label">Taxa Adm</div><div class="card-val">${b.taxaAdmPerc || 0}%</div></div>
+    <div class="card"><div class="card-label">Comissão</div><div class="card-val">${b.comissaoPerc || 7.5}%</div></div>
+    <div class="card"><div class="card-label">Receita Líquida</div><div class="card-val">${fmtCur(b.valorContrato * (1 - (b.impostosPerc || 0) / 100 - (b.taxaAdmPerc || 0) / 100 - (b.comissaoPerc || 7.5) / 100))}</div></div>
+  </div>
+
+  <h2>Datas Planejadas</h2>
+  <div class="grid">
+    <div class="card"><div class="card-label">Início OS</div><div class="card-val">${b.dataInicioOS ? new Date(b.dataInicioOS).toLocaleDateString('pt-BR') : '—'}</div></div>
+    <div class="card"><div class="card-label">Entrega Contrato</div><div class="card-val">${b.dataEntregaContrato ? new Date(b.dataEntregaContrato).toLocaleDateString('pt-BR') : '—'}</div></div>
+    <div class="card"><div class="card-label">Entrega Planejada</div><div class="card-val">${b.dataEntregaPlanejada ? new Date(b.dataEntregaPlanejada).toLocaleDateString('pt-BR') : '—'}</div></div>
+  </div>
+
+  ${(b.horasPorColaborador || []).length > 0 ? `
+  <h2>Equipe Interna — ${b.totalHorasEstimadas || 0}h estimadas</h2>
+  <table><tr><th>Colaborador</th><th class="right">Horas</th><th class="right">R$/h</th><th class="right">Custo</th></tr>
+  ${linhas(b.horasPorColaborador, e => `<tr><td>${e.colaborador}</td><td class="right">${e.horasEstimadas}h</td><td class="right">${fmtCur(e.mediaHora)}</td><td class="right">${fmtCur(e.custoEstimado)}</td></tr>`)}
+  <tr class="total"><td colspan="3">Total</td><td class="right">${fmtCur(b.totalCustoEquipe)}</td></tr>
+  </table>` : ''}
+
+  ${(b.terceirizados || []).length > 0 ? `
+  <h2>Serviços Terceirizados</h2>
+  <table><tr><th>Descrição</th><th>Fornecedor</th><th class="right">Valor</th></tr>
+  ${linhas(b.terceirizados, t => `<tr><td>${t.descricao}</td><td>${t.fornecedor || '—'}</td><td class="right">${fmtCur(t.custo)}</td></tr>`)}
+  <tr class="total"><td colspan="2">Total</td><td class="right">${fmtCur(b.terceirizados.reduce((s, t) => s + t.custo, 0))}</td></tr>
+  </table>` : ''}
+
+  ${(b.despesas || []).length > 0 ? `
+  <h2>Despesas Gerais</h2>
+  <table><tr><th>Descrição</th><th class="right">Valor</th></tr>
+  ${linhas(b.despesas, d => `<tr><td>${d.descricao}</td><td class="right">${fmtCur(d.valor)}</td></tr>`)}
+  <tr class="total"><td>Total</td><td class="right">${fmtCur(b.despesas.reduce((s, d) => s + d.valor, 0))}</td></tr>
+  </table>` : ''}
+
+  ${(b.medicoes || []).length > 0 ? `
+  <h2>Medições Planejadas</h2>
+  <table><tr><th>Etapa</th><th class="right">%</th><th class="right">Valor</th><th>Previsão</th></tr>
+  ${linhas(b.medicoes, m => `<tr><td>${m.etapa}</td><td class="right">${m.percentual}%</td><td class="right">${fmtCur(m.valor)}</td><td>${m.dataPrevisao ? new Date(m.dataPrevisao).toLocaleDateString('pt-BR') : '—'}</td></tr>`)}
+  </table>` : ''}
+
+  </body></html>`
+
+  const win = window.open('', '_blank')
+  win.document.write(html)
+  win.document.close()
+  setTimeout(() => win.print(), 500)
+}
 
 export default function Aprovacao() {
   const navigate = useNavigate()
@@ -293,52 +366,92 @@ export default function Aprovacao() {
                 {/* Detalhe da versão selecionada */}
                 {versaoViewing && (
                   <div style={{ marginBottom: 20, padding: "16px 18px", borderRadius: 12, background: "rgba(15,23,42,0.5)", border: "1px solid rgba(99,102,241,0.3)" }}>
-                    <div style={{ fontWeight: 800, fontSize: 14, color: "#a78bfa", marginBottom: 12 }}>
-                      {versaoViewing.versaoLabel || `Versão ${versaoViewing.versao}`}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                      <div style={{ fontWeight: 800, fontSize: 14, color: "#a78bfa" }}>
+                        🔒 {versaoViewing.versaoLabel || `Versão ${versaoViewing.versao}`}
+                        <span style={{ fontSize: 11, color: "#64748B", fontWeight: 500, marginLeft: 8 }}>
+                          Travado em {versaoViewing.travadoEm ? new Date(versaoViewing.travadoEm).toLocaleDateString("pt-BR") : "—"} por {versaoViewing.travadoPor || "—"}
+                        </span>
+                      </div>
+                      <button onClick={() => gerarPDFBaseline(versaoViewing, selected?.Nome_Projeto)}
+                        style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, border: "none", background: "#7C3AED", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                        <DocumentArrowDownIcon style={{ width: 14, height: 14 }} /> PDF
+                      </button>
                     </div>
 
                     {/* Financeiro */}
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>Financeiro</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>Financeiro</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 14 }}>
                       {[
-                        ["Valor Contrato", versaoViewing.valorContrato],
-                        ["Custo Total", versaoViewing.custoTotal],
-                        ["Margem", versaoViewing.margem ? `${Number(versaoViewing.margem).toFixed(1)}%` : null],
-                        ["BDI", versaoViewing.bdi ? `${Number(versaoViewing.bdi).toFixed(1)}%` : null],
-                      ].map(([label, val]) => val != null && (
+                        ["Valor do Contrato", fmtCur(versaoViewing.valorContrato)],
+                        ["Impostos", `${versaoViewing.impostosPerc || 0}%`],
+                        ["Taxa Adm", `${versaoViewing.taxaAdmPerc || 0}%`],
+                        ["Comissão", `${versaoViewing.comissaoPerc || 7.5}%`],
+                        ["Receita Líquida", fmtCur((versaoViewing.valorContrato || 0) * (1 - (versaoViewing.impostosPerc || 0) / 100 - (versaoViewing.taxaAdmPerc || 0) / 100 - (versaoViewing.comissaoPerc || 7.5) / 100))],
+                      ].map(([label, val]) => (
                         <div key={label} style={{ padding: "8px 10px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
                           <div style={{ fontSize: 10, color: "#64748B", fontWeight: 600 }}>{label}</div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0", marginTop: 2 }}>
-                            {typeof val === "number" ? fmtCur(val) : val}
-                          </div>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: "#e2e8f0", marginTop: 2 }}>{val}</div>
                         </div>
                       ))}
                     </div>
 
                     {/* Datas */}
-                    {(versaoViewing.dataInicio || versaoViewing.dataFim) && (
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>Datas Planejadas</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 14 }}>
+                      {[
+                        ["Início OS", versaoViewing.dataInicioOS],
+                        ["Entrega Contrato", versaoViewing.dataEntregaContrato],
+                        ["Entrega Planejada", versaoViewing.dataEntregaPlanejada],
+                      ].map(([l, d]) => (
+                        <div key={l} style={{ padding: "8px 10px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                          <div style={{ fontSize: 10, color: "#64748B", fontWeight: 600 }}>{l}</div>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: "#e2e8f0", marginTop: 2 }}>{d ? new Date(d).toLocaleDateString("pt-BR") : "—"}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Equipe */}
+                    {(versaoViewing.horasPorColaborador || []).length > 0 && (
                       <>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>Prazo</div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
-                          {[["Início", versaoViewing.dataInicio], ["Fim", versaoViewing.dataFim]].map(([l, d]) => d && (
-                            <div key={l} style={{ padding: "8px 10px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                              <div style={{ fontSize: 10, color: "#64748B", fontWeight: 600 }}>{l}</div>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0", marginTop: 2 }}>{new Date(d).toLocaleDateString("pt-BR")}</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>
+                          Equipe — {versaoViewing.totalHorasEstimadas || 0}h estimadas
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 14 }}>
+                          {versaoViewing.horasPorColaborador.map((m, i) => (
+                            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", fontSize: 12 }}>
+                              <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{m.colaborador}</span>
+                              <span style={{ color: "#64748B" }}>{m.horasEstimadas}h &nbsp;·&nbsp; {fmtCur(m.custoEstimado)}</span>
                             </div>
                           ))}
                         </div>
                       </>
                     )}
 
-                    {/* Equipe */}
-                    {Array.isArray(versaoViewing.equipe) && versaoViewing.equipe.length > 0 && (
+                    {/* Terceirizados */}
+                    {(versaoViewing.terceirizados || []).length > 0 && (
                       <>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>Equipe</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>Terceirizados</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 14 }}>
-                          {versaoViewing.equipe.map((m, i) => (
+                          {versaoViewing.terceirizados.map((t, i) => (
                             <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", fontSize: 12 }}>
-                              <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{m.nome || m.membro}</span>
-                              <span style={{ color: "#64748B" }}>{m.horas || m.horasTotal || "—"}h</span>
+                              <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{t.descricao}</span>
+                              <span style={{ color: "#a78bfa", fontWeight: 700 }}>{fmtCur(t.custo)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Despesas */}
+                    {(versaoViewing.despesas || []).length > 0 && (
+                      <>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>Despesas Gerais</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 14 }}>
+                          {versaoViewing.despesas.map((d, i) => (
+                            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", fontSize: 12 }}>
+                              <span style={{ color: "#e2e8f0" }}>{d.descricao}</span>
+                              <span style={{ color: "#64748B", fontWeight: 700 }}>{fmtCur(d.valor)}</span>
                             </div>
                           ))}
                         </div>
@@ -346,14 +459,14 @@ export default function Aprovacao() {
                     )}
 
                     {/* Medições */}
-                    {Array.isArray(versaoViewing.medicoes) && versaoViewing.medicoes.length > 0 && (
+                    {(versaoViewing.medicoes || []).length > 0 && (
                       <>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>Medições</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>Medições Planejadas</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                           {versaoViewing.medicoes.map((m, i) => (
                             <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", fontSize: 12 }}>
-                              <span style={{ color: "#94a3b8" }}>{m.descricao || `Medição ${i + 1}`}</span>
-                              <span style={{ color: "#e2e8f0", fontWeight: 700 }}>{fmtCur(m.valor)}</span>
+                              <span style={{ color: "#94a3b8" }}>{m.etapa || m.descricao || `Medição ${i + 1}`}</span>
+                              <span style={{ color: "#e2e8f0", fontWeight: 700 }}>{m.percentual}% · {fmtCur(m.valor)}</span>
                             </div>
                           ))}
                         </div>

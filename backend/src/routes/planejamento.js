@@ -444,6 +444,19 @@ router.post('/:id/baseline', async (req, res, next) => {
         dataPrevisao: m.dataPrevisao || m.data_previsao || '',
       })),
 
+      // Terceirizados planejados
+      terceirizados: (dados.terceirizados || []).map((t) => ({
+        descricao: t.descricao || t.nome || '',
+        custo: parseFloat(t.custo || 0),
+        fornecedor: t.fornecedor || '',
+      })),
+
+      // Despesas gerais planejadas
+      despesas: (dados.despesas || []).map((d) => ({
+        descricao: d.descricao || '',
+        valor: parseFloat(d.valor || 0),
+      })),
+
       // Resumo financeiro planejado
       valorContrato: parseFloat(dados.valorContrato || plan.Valor_Contrato || 0),
       impostosPerc: parseFloat(dados.impostosPerc || plan.Impostos_Perc || 16.33),
