@@ -333,9 +333,11 @@ export default function GestaoProjetos() {
                                 className="group-hover:text-par-600 transition-colors">
                                 {p.Nome}
                               </p>
-                              <p style={{ fontSize: 10.5, color: '#94A3B8', margin: '2px 0 0', fontWeight: 500 }}>
-                                {p.Nr_Contrato ? `#${String(p.Nr_Contrato).padStart(4,'0')}` : 'S/ Número'}
-                              </p>
+                              {p.Nr_Contrato && (
+                                <p style={{ fontSize: 10.5, color: '#94A3B8', margin: '2px 0 0', fontWeight: 500 }}>
+                                  {`#${String(p.Nr_Contrato).padStart(4,'0')}`}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </td>
