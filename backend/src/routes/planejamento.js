@@ -537,7 +537,12 @@ router.get('/:id/comparativo', async (req, res, next) => {
 
       // Horas: planejado vs rastreado
       horas: (() => {
-        const totalPlanejado = parseFloat(baseline?.totalHorasEstimadas || dados.totalHorasEstimadas || 0);
+        const totalPlanejado = parseFloat(
+          baseline?.totalHorasEstimadas ||
+          dados.totalHorasEstimadas ||
+          (dados.equipe || []).reduce((s, e) => s + parseFloat(e.horas_estimadas || e.horasEstimadas || e.horas || 0), 0) ||
+          0
+        );
         const totalRastreado = parseFloat(totalHorasRastreadas.toFixed(2));
         const desvioPerc = totalPlanejado > 0
           ? parseFloat(((totalRastreado / totalPlanejado - 1) * 100).toFixed(1))
@@ -545,16 +550,16 @@ router.get('/:id/comparativo', async (req, res, next) => {
 
         const planejadosPorColab = baseline?.horasPorColaborador || dados.equipe || [];
         const todos = new Set([
-          ...planejadosPorColab.map((p) => p.colaborador || p.nome || p.membro),
+          ...planejadosPorColab.map((p) => p.colaborador || p.nome || p.membro || p.Colaborador),
           ...Object.keys(horasReaisPorColab),
         ]);
 
         const porColaborador = [...todos].filter(Boolean).map((colab) => {
           const planColab = planejadosPorColab.find(
-            (p) => (p.colaborador || p.nome || p.membro)?.toLowerCase() === colab.toLowerCase()
+            (p) => (p.colaborador || p.nome || p.membro || p.Colaborador)?.toLowerCase() === colab.toLowerCase()
           );
           const rastreado = parseFloat((horasReaisPorColab[colab] || 0).toFixed(2));
-          const planejadoH = parseFloat(planColab?.horasEstimadas || planColab?.horas || planColab?.horasTotal || 0);
+          const planejadoH = parseFloat(planColab?.horasEstimadas || planColab?.horas_estimadas || planColab?.horas || planColab?.horasTotal || 0);
           const desvio = rastreado - planejadoH;
           const dp = planejadoH > 0 ? ((rastreado / planejadoH - 1) * 100) : null;
           return {
