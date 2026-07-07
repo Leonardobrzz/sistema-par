@@ -302,6 +302,7 @@ export default function GestaoProjetos() {
                   <th className="table-header" style={{ width: '13%' }}>Status</th>
                   <th className="table-header" style={{ width: '11%', textAlign: 'right' }}>Valor</th>
                   <th className="table-header" style={{ width: '10%' }}>Entrega</th>
+                  <th className="table-header" style={{ width: '10%' }}>Progresso</th>
                   {filters.verTarefas && <th className="table-header" style={{ width: '5%', textAlign: 'center' }}>ClickUp</th>}
                   <th className="table-header" style={{ width: '7%' }} />
                 </tr>
@@ -354,6 +355,20 @@ export default function GestaoProjetos() {
                         </td>
                         <td style={{ padding: '11px 12px', fontSize: 11.5, color: '#374151', fontWeight: 500, whiteSpace: 'nowrap' }}>
                           {formatDate(p.Data_Entrega_Contrato) || '—'}
+                        </td>
+                        <td style={{ padding: '11px 14px', minWidth: 90 }}>
+                          {(() => {
+                            const perc = Math.min(parseFloat(p.Progresso_Perc || 0), 100)
+                            const cor = perc >= 100 ? '#16A34A' : perc >= 60 ? '#2563EB' : perc >= 30 ? '#D97706' : '#94A3B8'
+                            return (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ flex: 1, height: 5, background: '#E2E8F0', borderRadius: 4, overflow: 'hidden' }}>
+                                  <div style={{ width: `${perc}%`, height: '100%', background: cor, borderRadius: 4, transition: 'width 0.3s' }} />
+                                </div>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: cor, minWidth: 30 }}>{perc}%</span>
+                              </div>
+                            )
+                          })()}
                         </td>
                         {filters.verTarefas && (
                           <td style={{ padding: '11px 12px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
