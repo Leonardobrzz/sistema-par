@@ -287,7 +287,7 @@ router.post('/:id/aprovar', async (req, res, next) => {
         const opp = require('../services/oppService');
         const projeto = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === plan.ID_Projeto);
         const osResult = await opp.criarOSDoPlano(plan, projeto);
-        const osId = osResult?.id_os || osResult?.id || osResult?.codigo_os || '';
+        const osId = osResult?.id_ordem || osResult?.id_os || osResult?.id || osResult?.codigo_os || '';
         if (osId) {
           // Salva o ID da O.S. no planejamento
           await db.updateRowById('Planejamentos', 'ID', plan.ID, {

@@ -375,14 +375,11 @@ async function criarOSDoPlano(planejamento, projeto) {
   })();
 
   const payload = {
-    // Campos obrigatórios OPP
-    descricao_os: `${planejamento.Nome_Projeto || projeto?.Nome || 'Projeto PAR'}`,
-    data_abertura_os: new Date().toISOString().split('T')[0],
-    data_previsao_os: planejamento.Data_Entrega_Contrato || dados.dataEntregaContrato || '',
-    valor_os: parseFloat(planejamento.Valor_Contrato || 0),
-    situacao_os: 'Aberta',
-    // Referência cruzada PAR → OPP
-    observacao_os: [
+    problema_ordem: `${planejamento.Nome_Projeto || projeto?.Nome || 'Projeto PAR'}`,
+    data_pedido: new Date().toISOString().split('T')[0],
+    data_entrega: planejamento.Data_Entrega_Contrato || dados.dataEntregaContrato || '',
+    situacao: 'Aberta',
+    obs_pedido: [
       `Criado automaticamente pelo Sistema PAR em ${new Date().toLocaleString('pt-BR')}.`,
       `Nr. Contrato: ${planejamento.Nr_Contrato_OS || '—'}`,
       `Responsável PAR: ${planejamento.Resp_Planejamento || '—'}`,
