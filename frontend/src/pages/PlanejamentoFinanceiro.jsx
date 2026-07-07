@@ -521,24 +521,31 @@ export default function PlanejamentoFinanceiro() {
               <Field label="Nome do Projeto"><input value={form.nomeProjeto} onChange={e => f("nomeProjeto", e.target.value)} style={INPUT} /></Field>
               <Field label="Cliente"><input value={form.cliente} onChange={e => f("cliente", e.target.value)} style={INPUT} /></Field>
               <Field label="Nome do Centro de Custo">
-                <div style={{ display: "flex", gap: 6 }}>
-                  <input
-                    value={form.nrContratoOS}
-                    onChange={e => !planTravado && f("nrContratoOS", e.target.value)}
-                    readOnly={planTravado}
-                    style={{ ...INPUT, flex: 1, background: planTravado ? "#F0FDF4" : undefined, color: planTravado ? "#15803D" : undefined, cursor: planTravado ? "not-allowed" : undefined }}
-                    placeholder="ex: ARQ-2026-4 CALÇADÃO APUIARÉS"
-                  />
-                  {planTravado ? (
-                    <div title={`Travado — PAR busca esse nome no OPP`} style={{ padding: "9px 12px", borderRadius: 8, background: "#DCFCE7", border: "1.5px solid #86EFAC", color: "#15803D", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
-                      🔒 Travado
-                    </div>
-                  ) : planStatus === "Aprovado" && form.nrContratoOS ? (
-                    <button onClick={travarOPP} disabled={travandoOPP} title="Trava o vínculo com o OPP. Após travar, o nome não pode ser alterado."
-                      style={{ padding: "9px 12px", borderRadius: 8, border: "1.5px solid #FDE68A", background: "#FFFBEB", color: "#B45309", fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>
-                      {travandoOPP ? "Travando..." : "🔒 Travar OPP"}
-                    </button>
-                  ) : null}
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <input
+                      value={form.nrContratoOS}
+                      onChange={e => !planTravado && f("nrContratoOS", e.target.value)}
+                      readOnly={planTravado}
+                      style={{ ...INPUT, flex: 1, background: planTravado ? "#F0FDF4" : undefined, color: planTravado ? "#15803D" : undefined, cursor: planTravado ? "not-allowed" : undefined }}
+                      placeholder="Ex: ARQ FORTIM REFORM E.E.F EMÍLIA QUEIROZ"
+                    />
+                    {planTravado ? (
+                      <div title={`Travado — PAR busca esse nome no OPP`} style={{ padding: "9px 12px", borderRadius: 8, background: "#DCFCE7", border: "1.5px solid #86EFAC", color: "#15803D", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
+                        🔒 Travado
+                      </div>
+                    ) : planStatus === "Aprovado" && form.nrContratoOS ? (
+                      <button onClick={travarOPP} disabled={travandoOPP} title="Trava o vínculo com o OPP. Após travar, o nome não pode ser alterado."
+                        style={{ padding: "9px 12px", borderRadius: 8, border: "1.5px solid #FDE68A", background: "#FFFBEB", color: "#B45309", fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>
+                        {travandoOPP ? "Travando..." : "🔒 Travar OPP"}
+                      </button>
+                    ) : null}
+                  </div>
+                  {!planTravado && (
+                    <p style={{ margin: 0, fontSize: 11, color: "#94A3B8", lineHeight: 1.4 }}>
+                      ⚠️ Use <strong>exatamente</strong> o mesmo nome cadastrado no Opportune (campo "Centro de Custo"). Ex: <em>ARQ FORTIM REFORM E.E.F EMÍLIA QUEIROZ</em>. O PAR usa esse nome para cruzar as receitas e despesas do projeto.
+                    </p>
+                  )}
                 </div>
               </Field>
               <Field label="O.S. OPP (preencher após aprovação)">
