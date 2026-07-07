@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { toast } from 'react-hot-toast'
@@ -17,12 +17,25 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [lembrar, setLembrar] = useState(false)
-  const { register, handleSubmit, formState: { errors } } = useForm()
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm()
+
+  useEffect(() => {
+    const emailSalvo = localStorage.getItem('par_lembrar_email')
+    if (emailSalvo) {
+      setValue('email', emailSalvo)
+      setLembrar(true)
+    }
+  }, [])
 
   async function onSubmit({ email, senha }) {
     setLoading(true)
     try {
       await login(email, senha, lembrar)
+      if (lembrar) {
+        localStorage.setItem('par_lembrar_email', email)
+      } else {
+        localStorage.removeItem('par_lembrar_email')
+      }
       navigate('/dashboard')
     } catch (err) {
       toast.error(err.response?.data?.error || 'Credenciais inválidas')
