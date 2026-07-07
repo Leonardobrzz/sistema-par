@@ -12,8 +12,7 @@ import { useAuth } from '../contexts/AuthContext'
 
 const SETORES = ['ARQ', 'INF', 'SAN']
 const STATUS_LIST = [
-  'A Planejar', 'Em Andamento', 'Paralisado', 'Aguardando Aprovação',
-  'Aguardando Cliente', 'Concluído', 'Arquivado', 'Atrasado'
+  'Backlog', 'Em Andamento', 'Em Andamento (Atrasado)', 'Paralisado', 'Concluído'
 ]
 
 function StatusMultiSelect({ value, onChange, options = STATUS_LIST }) {
@@ -50,7 +49,7 @@ export default function GestaoProjetos() {
   const topScrollRef  = useRef(null)
   const bodyScrollRef = useRef(null)
   const [showNewModal, setShowNewModal] = useState(false)
-  const DEFAULT_STATUS = ['Backlog', 'Em Andamento']
+  const DEFAULT_STATUS = ['Backlog', 'Em Andamento', 'Em Andamento (Atrasado)', 'Paralisado']
   const [filters, setFilters] = useState({
     busca: searchParams.get('busca') || '',
     setor: '',
