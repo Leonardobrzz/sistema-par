@@ -41,7 +41,7 @@ async function getTasks(listId, page = 0) {
     params: {
       archived: false,
       include_closed: true,
-      subtasks: false,
+      subtasks: true,
       page,
     },
   });
