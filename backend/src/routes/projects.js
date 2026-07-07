@@ -58,8 +58,17 @@ router.get('/', async (req, res, next) => {
       const temVenceAmanha = alertasProj.some((a) => a.Tipo_Alerta === 'VENCE_AMANHA');
       const totalAlertas = alertasProj.length;
 
+      const setorNorm = (() => {
+        const s = (p.Setor || p.Nome || '').toUpperCase()
+        if (/SAN/.test(p.Nome || '') || /SANEAMENTO/.test(s)) return 'Saneamento'
+        if (/ARQ/.test(p.Nome || '') || /ARQUITETURA/.test(s)) return 'Arquitetura'
+        if (/INF/.test(p.Nome || '') || /INFRAESTRUTURA/.test(s)) return 'Infraestrutura'
+        return p.Setor || ''
+      })()
+
       return {
         ...p,
+        Setor: setorNorm,
         temPlanejamento: !!plan,
         statusPlanejamento: plan?.Status || null,
         percTerceiros: percTerceiros.toFixed(1),
