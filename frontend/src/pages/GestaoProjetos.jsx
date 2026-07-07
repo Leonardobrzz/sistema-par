@@ -63,6 +63,7 @@ export default function GestaoProjetos() {
   useEffect(() => {
     const idProjeto = searchParams.get('id')
     if (idProjeto) setFilters(prev => ({ ...prev, busca: idProjeto }))
+    if (searchParams.get('novo') === '1') setShowNewModal(true)
   }, [searchParams])
 
   const loadProjects = useCallback(async () => {

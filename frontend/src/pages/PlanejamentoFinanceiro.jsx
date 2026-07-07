@@ -339,6 +339,10 @@ export default function PlanejamentoFinanceiro() {
           style={{ display: "flex", alignItems: "center", gap: 4, padding: "7px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#fff", color: "#475569", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
           <ArrowLeft size={15} /> Projetos
         </button>
+        <button onClick={() => navigate("/projetos?novo=1")}
+          style={{ display: "flex", alignItems: "center", gap: 4, padding: "7px 14px", borderRadius: 8, border: "none", background: "#7C3AED", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+          <Plus size={15} /> Novo Projeto
+        </button>
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
