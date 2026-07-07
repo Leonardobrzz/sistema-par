@@ -40,15 +40,15 @@ router.get('/', async (req, res, next) => {
     rows = rows.map(r => {
       const proj = projMap[r.ID_Projeto];
       const oc = r.OC ? ocMap[String(r.OC)] : null;
-      const valorContratado = parseFloat(r.Valor_Contratado || oc?.Valor_Total || 0);
+      // OPP tem prioridade quando há OC vinculada — fonte mais confiável
+      const valorContratado = parseFloat(oc?.Valor_Total || r.Valor_Contratado || 0);
       const valorEstimado = parseFloat(r.Valor_Estimado || r.Valor_Contratado || oc?.Valor_Total || 0);
       const valorGlobal = parseFloat(proj?.Valor_Global || 0);
-      // Calcula % em tempo real usando valor do projeto; fallback para o armazenado
       const percCalc = valorGlobal > 0 && valorContratado > 0
         ? ((valorContratado / valorGlobal) * 100).toFixed(2)
         : (r.Percentual_Contrato || r.Percentual_do_Total || '0');
-      // Fornecedor: prefere o valor manual/ClickUp, só usa OC se não tiver nada
-      const fornecedor = r.Fornecedor || oc?.Nome_Fornecedor || '';
+      // Fornecedor: OPP (quando tem OC) > manual > ClickUp responsável
+      const fornecedor = (oc ? oc.Nome_Fornecedor : null) || r.Fornecedor || r.Responsavel || '';
       return {
         ...r,
         nomeProjeto: proj?.Nome || r.ID_Projeto || '',
