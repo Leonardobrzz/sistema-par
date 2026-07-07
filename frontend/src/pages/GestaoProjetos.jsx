@@ -302,7 +302,6 @@ export default function GestaoProjetos() {
                   <th className="table-header" style={{ width: '13%' }}>Status</th>
                   <th className="table-header" style={{ width: '11%', textAlign: 'right' }}>Valor</th>
                   <th className="table-header" style={{ width: '10%' }}>Entrega</th>
-                  <th className="table-header" style={{ width: '6%', textAlign: 'center' }}>3ºs</th>
                   {filters.verTarefas && <th className="table-header" style={{ width: '5%', textAlign: 'center' }}>ClickUp</th>}
                   <th className="table-header" style={{ width: '7%' }} />
                 </tr>
@@ -355,11 +354,6 @@ export default function GestaoProjetos() {
                         </td>
                         <td style={{ padding: '11px 12px', fontSize: 11.5, color: '#374151', fontWeight: 500, whiteSpace: 'nowrap' }}>
                           {formatDate(p.Data_Entrega_Contrato) || '—'}
-                        </td>
-                        <td style={{ padding: '11px 12px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: perc > 20 ? '#DC2626' : perc > 15 ? '#D97706' : '#374151' }}>
-                            {perc.toFixed(1)}%
-                          </span>
                         </td>
                         {filters.verTarefas && (
                           <td style={{ padding: '11px 12px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
