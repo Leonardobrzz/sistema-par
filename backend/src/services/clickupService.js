@@ -493,9 +493,10 @@ async function syncSingleProject(idProjeto) {
     // 1. Sincroniza Status e Progresso
     await syncProjectStatuses(allTasks, [projeto], allLists);
 
-    // 2. Sincroniza Horas Logadas (pega as time entries do time e filtra)
+    // 2. Sincroniza Horas Logadas — tenta time_entries, fallback em time_spent das tasks
     const timeEntries = await getTimeEntries(teamId);
     await syncTimeEntries(timeEntries, [projeto]);
+    await syncHorasDoTimespent(allTasks, projeto);
 
     broadcast('sync', { type: 'SYNC_PROJETO_CONCLUIDO', idProjeto });
   } catch (err) {
@@ -789,6 +790,34 @@ async function syncOsCliente(allLists, projetos) {
 
   if (atualizados > 0) {
     console.log(`[ClickUp] OS Cliente: ${atualizados} projetos com Centro_Custo_OPP atualizado.`);
+  }
+}
+
+// Fallback: extrai horas do campo time_spent das tasks (captura lançamentos manuais)
+async function syncHorasDoTimespent(tasks, projeto) {
+  for (const task of tasks) {
+    if (!task.time_spent || parseInt(task.time_spent) === 0) continue;
+    const horas = (parseInt(task.time_spent) / 3600000).toFixed(2);
+    const entryId = `timespent_${task.id}`;
+    const assignee = task.assignees?.[0]?.username || task.assignees?.[0]?.email || 'Não identificado';
+
+    const exists = await db.findOne('Log_Horas', r => r.ID_TimeEntry_ClickUp === entryId);
+    if (!exists) {
+      await db.insertRow('Log_Horas', {
+        ID: entryId,
+        ID_Projeto: projeto.ID_Projeto,
+        Colaborador: assignee,
+        Horas_Estimadas: '',
+        Horas_Logadas: horas,
+        Custo_Calculado: '',
+        Data: new Date().toISOString().split('T')[0],
+        ID_TimeEntry_ClickUp: entryId,
+      });
+      console.log(`[ClickUp] time_spent task "${task.name}": ${horas}h → ${assignee}`);
+    } else if (parseFloat(exists.Horas_Logadas).toFixed(2) !== horas) {
+      await db.updateRowById('Log_Horas', 'ID_TimeEntry_ClickUp', entryId, { ...exists, Horas_Logadas: horas });
+      console.log(`[ClickUp] time_spent atualizado "${task.name}": ${horas}h`);
+    }
   }
 }
 
