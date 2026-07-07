@@ -285,6 +285,17 @@ export default function PlanejamentoFinanceiro() {
     } finally { setTravandoOPP(false) }
   }
 
+  async function destravarlOPP() {
+    if (!window.confirm(`Destravar vínculo OPP?\n\nO campo "Nome do Centro de Custo" poderá ser editado novamente.`)) return
+    try {
+      await api.post(`/planejamento/${projetoId}/destravar`)
+      toast.success("Vínculo destravado. Você pode editar o nome agora.")
+      setPlanTravado(false)
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Erro ao destravar")
+    }
+  }
+
   async function travarBaseline() {
     if (!planId) return toast.error("Salve o planejamento primeiro")
     setLockingBaseline(true)
@@ -531,9 +542,9 @@ export default function PlanejamentoFinanceiro() {
                       placeholder="Ex: ARQ FORTIM REFORM E.E.F EMÍLIA QUEIROZ"
                     />
                     {planTravado ? (
-                      <div title={`Travado — PAR busca esse nome no OPP`} style={{ padding: "9px 12px", borderRadius: 8, background: "#DCFCE7", border: "1.5px solid #86EFAC", color: "#15803D", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
+                      <button onClick={destravarlOPP} title="Clique para destravar e editar o nome" style={{ padding: "9px 12px", borderRadius: 8, background: "#DCFCE7", border: "1.5px solid #86EFAC", color: "#15803D", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
                         🔒 Travado
-                      </div>
+                      </button>
                     ) : planStatus === "Aprovado" && form.nrContratoOS ? (
                       <button onClick={travarOPP} disabled={travandoOPP} title="Trava o vínculo com o OPP. Após travar, o nome não pode ser alterado."
                         style={{ padding: "9px 12px", borderRadius: 8, border: "1.5px solid #FDE68A", background: "#FFFBEB", color: "#B45309", fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>

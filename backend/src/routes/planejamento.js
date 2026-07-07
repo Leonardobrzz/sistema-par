@@ -676,4 +676,21 @@ router.post('/:id/travar', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// POST /api/planejamento/:id/destravar — remove o travamento OPP
+router.post('/:id/destravar', async (req, res, next) => {
+  try {
+    const plan = await db.findOne('Planejamentos', p => p.ID_Projeto === req.params.id);
+    if (!plan) return res.status(404).json({ error: 'Planejamento não encontrado.' });
+
+    await db.updateRowById('Planejamentos', 'ID', plan.ID, {
+      ...plan,
+      Travado: false,
+      Travado_Em: '',
+      Travado_Por: '',
+    });
+
+    res.json({ ok: true, message: 'Vínculo OPP destravado.' });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
