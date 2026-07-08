@@ -486,31 +486,50 @@ router.post('/sync', async (req, res, next) => {
   }
 });
 
-// GET /api/opp/debug-categoria — mostra campos brutos de 5 despesas para diagnóstico
+// GET /api/opp/debug-categoria — mostra categorias únicas já no banco + amostra bruta da API
 router.get('/debug-categoria', async (req, res, next) => {
   try {
-    if (!['Admin', 'Diretoria', 'Financeiro'].includes(req.user.perfil)) {
-      return res.status(403).json({ error: 'Sem permissão.' });
-    }
-    const axios = require('axios');
-    const BASE_URL = process.env.OPP_BASE_URL;
-    const headers = {
-      'access-token': process.env.OPP_API_KEY || process.env.OPP_TOKEN,
-      'secret-access-token': process.env.OPP_SECRET || process.env.OPP_API_SECRET,
-      'cache-control': 'no-cache',
-    };
-    const r = await axios.get(`${BASE_URL}/contas-pagar?limit=5`, { headers });
-    const items = Array.isArray(r.data?.data) ? r.data.data : (Array.isArray(r.data) ? r.data : []);
-    const debug = items.map(d => ({
-      nome_conta: d.nome_conta,
-      categoria: d.categoria,
-      nome_categoria: d.nome_categoria,
-      categoria_pag: d.categoria_pag,
-      id_categoria: d.id_categoria,
-      observacoes_pag: (d.observacoes_pag || '').slice(0, 80),
-      todosOsCampos: Object.keys(d),
+    const db = process.env.USE_POSTGRES === 'true' ? require('../services/postgresService') : require('../services/googleSheetsService');
+
+    // 1. Categorias que já estão no banco sincronizado
+    const rows = await db.readSheet('Financeiro_OPP');
+    const categoriasUnicas = [...new Set(rows.map(r => r.Categoria).filter(Boolean))].sort();
+    const exemplos = rows.filter(r => r.Categoria).slice(0, 10).map(r => ({
+      Categoria: r.Categoria,
+      Tipo: r.Tipo,
+      Descricao: r.Descricao,
     }));
-    res.json(debug);
+
+    // 2. Tenta buscar amostra bruta da API (para ver campos disponíveis)
+    let camposBrutos = null;
+    try {
+      const axios = require('axios');
+      const BASE_URL = process.env.OPP_BASE_URL;
+      const headers = {
+        'access-token': process.env.OPP_API_KEY || process.env.OPP_TOKEN,
+        'secret-access-token': process.env.OPP_SECRET || process.env.OPP_API_SECRET,
+        'cache-control': 'no-cache',
+      };
+      const r = await axios.get(`${BASE_URL}/contas-pagar?limit=3`, { headers });
+      const items = Array.isArray(r.data?.data) ? r.data.data : (Array.isArray(r.data) ? r.data : []);
+      camposBrutos = items.map(d => ({
+        nome_conta: d.nome_conta,
+        categoria: d.categoria,
+        nome_categoria: d.nome_categoria,
+        categoria_pag: d.categoria_pag,
+        id_categoria: d.id_categoria,
+        todos_campos: Object.keys(d),
+      }));
+    } catch (e) {
+      camposBrutos = { erro: e.message };
+    }
+
+    res.json({
+      totalNosBanco: rows.length,
+      categoriasUnicas,
+      exemplos,
+      amostrabrutaAPI: camposBrutos,
+    });
   } catch (err) { next(err); }
 });
 
