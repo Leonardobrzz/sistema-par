@@ -535,13 +535,21 @@ export default function PlanejamentoFinanceiro() {
               <Field label="Nome do Centro de Custo">
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <div style={{ display: "flex", gap: 6 }}>
-                    <input
-                      value={form.nrContratoOS}
-                      onChange={e => !planTravado && f("nrContratoOS", e.target.value)}
-                      readOnly={planTravado}
-                      style={{ ...INPUT, flex: 1, background: planTravado ? "#F0FDF4" : undefined, color: planTravado ? "#15803D" : undefined, cursor: planTravado ? "not-allowed" : undefined }}
-                      placeholder="Ex: ARQ FORTIM REFORM E.E.F EMÍLIA QUEIROZ"
-                    />
+                    <div style={{ flex: 1, position: "relative" }}>
+                      <input
+                        value={form.nrContratoOS}
+                        onChange={e => !planTravado && f("nrContratoOS", e.target.value.toUpperCase())}
+                        readOnly={planTravado}
+                        maxLength={60}
+                        style={{ ...INPUT, width: "100%", background: planTravado ? "#F0FDF4" : undefined, color: planTravado ? "#15803D" : undefined, cursor: planTravado ? "not-allowed" : undefined, paddingRight: 48, boxSizing: "border-box" }}
+                        placeholder="Ex: ARQ FORTIM REFORM E.E.F EMÍLIA QUEIROZ"
+                      />
+                      {!planTravado && (
+                        <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 10, fontWeight: 700, color: (form.nrContratoOS || "").length >= 55 ? "#DC2626" : "#94A3B8" }}>
+                          {(form.nrContratoOS || "").length}/60
+                        </span>
+                      )}
+                    </div>
                     {planTravado ? (
                       <button onClick={() => setShowEstornoModal(true)} title="Estornar planejamento aprovado para edição" style={{ padding: "9px 14px", borderRadius: 8, background: "#FEF3C7", border: "1.5px solid #FDE68A", color: "#B45309", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
                         ↩ Estornar Planejamento

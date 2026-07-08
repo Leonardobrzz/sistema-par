@@ -72,10 +72,34 @@ function ErroModal({ projeto, onClose }) {
   )
 }
 
+const COLUNAS_CHECKLIST = [
+  { key: "projeto",   label: "Projeto" },
+  { key: "cliente",   label: "Cliente" },
+  { key: "setor",     label: "Setor" },
+  { key: "status",    label: "Status" },
+  { key: "valor",     label: "Valor" },
+  { key: "problemas", label: "Problemas" },
+  { key: "acoes",     label: "Ações" },
+]
+
 export default function ChecklistIntegridade() {
   const navigate = useNavigate()
   const [aba, setAba] = useState("checklist")
   const [erroModal, setErroModal] = useState(null)
+  const [colunasVisiveis, setColunasVisiveis] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('par_checklist_colunas') || 'null') || COLUNAS_CHECKLIST.map(c => c.key) }
+    catch { return COLUNAS_CHECKLIST.map(c => c.key) }
+  })
+  const [showColunas, setShowColunas] = useState(false)
+
+  function toggleColuna(key) {
+    setColunasVisiveis(prev => {
+      const next = prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+      localStorage.setItem('par_checklist_colunas', JSON.stringify(next))
+      return next
+    })
+  }
+  const col = (key) => colunasVisiveis.includes(key)
 
   // ── Checklist state ──
   const [data, setData] = useState(null)
@@ -400,55 +424,69 @@ export default function ChecklistIntegridade() {
 
               {/* Tabela */}
               <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #E2E8F0", overflow: "hidden" }}>
+                {/* Controle de colunas */}
+                <div style={{ padding: "10px 16px", borderBottom: "1px solid #F1F5F9", display: "flex", justifyContent: "flex-end", position: "relative" }}>
+                  <button onClick={() => setShowColunas(!showColunas)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 7, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#475569", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                    <TableCellsIcon style={{ width: 14, height: 14 }} /> Colunas
+                  </button>
+                  {showColunas && (
+                    <div style={{ position: "absolute", top: "100%", right: 16, zIndex: 50, background: "#fff", borderRadius: 10, border: "1px solid #E2E8F0", boxShadow: "0 8px 24px rgba(0,0,0,0.1)", padding: "8px 0", minWidth: 160 }}>
+                      {COLUNAS_CHECKLIST.map(c => (
+                        <button key={c.key} onClick={() => toggleColuna(c.key)} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "7px 16px", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#0F172A", textAlign: "left" }}>
+                          <span style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${col(c.key) ? "#7C3AED" : "#CBD5E1"}`, background: col(c.key) ? "#7C3AED" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            {col(c.key) && <span style={{ color: "#fff", fontSize: 10, fontWeight: 900 }}>✓</span>}
+                          </span>
+                          {c.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
                       <tr style={{ background: "#F8FAFC" }}>
-                        {["Projeto", "Cliente", "Setor", "Status", "Valor", "Problemas Identificados", "Ações"].map(h => (
-                          <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
-                        ))}
+                        {col("projeto")   && <th style={{ padding: "10px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", whiteSpace: "nowrap" }}>Projeto</th>}
+                        {col("cliente")   && <th style={{ padding: "10px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", whiteSpace: "nowrap" }}>Cliente</th>}
+                        {col("setor")     && <th style={{ padding: "10px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", whiteSpace: "nowrap" }}>Setor</th>}
+                        {col("status")    && <th style={{ padding: "10px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", whiteSpace: "nowrap" }}>Status</th>}
+                        {col("valor")     && <th style={{ padding: "10px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", whiteSpace: "nowrap" }}>Valor</th>}
+                        {col("problemas") && <th style={{ padding: "10px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", whiteSpace: "nowrap" }}>Problemas Identificados</th>}
+                        {col("acoes")     && <th style={{ padding: "10px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", whiteSpace: "nowrap" }}>Ações</th>}
                       </tr>
                     </thead>
                     <tbody>
                       {projetosFiltrados.length === 0 ? (
-                        <tr><td colSpan={7} style={{ padding: "48px 0", textAlign: "center", color: "#94A3B8" }}>Nenhum projeto encontrado com este filtro.</td></tr>
+                        <tr><td colSpan={colunasVisiveis.length} style={{ padding: "48px 0", textAlign: "center", color: "#94A3B8" }}>Nenhum projeto encontrado com este filtro.</td></tr>
                       ) : projetosFiltrados.map((p, i) => {
                         const sc = STATUS_COLOR[p.status] || { bg: "#F1F5F9", color: "#64748B" }
                         return (
                           <tr key={p.id} style={{ borderTop: "1px solid #F1F5F9", background: i % 2 === 0 ? "#fff" : "#FAFAFA" }}>
-                            {/* Projeto */}
-                            <td style={{ padding: "12px 16px", maxWidth: 220 }}>
+                            {col("projeto") && <td style={{ padding: "12px 16px", maxWidth: 220 }}>
                               <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.nome}</div>
                               <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 2 }}>{p.id}</div>
-                            </td>
-                            {/* Cliente */}
-                            <td style={{ padding: "12px 16px", fontSize: 13, color: "#475569", whiteSpace: "nowrap" }}>{p.cliente}</td>
-                            {/* Setor */}
-                            <td style={{ padding: "12px 16px", fontSize: 12, color: p.camposFaltando.includes("Setor") ? "#DC2626" : "#475569", fontWeight: p.camposFaltando.includes("Setor") ? 700 : 400 }}>
+                            </td>}
+                            {col("cliente")   && <td style={{ padding: "12px 16px", fontSize: 13, color: "#475569", whiteSpace: "nowrap" }}>{p.cliente}</td>}
+                            {col("setor")     && <td style={{ padding: "12px 16px", fontSize: 12, color: p.camposFaltando.includes("Setor") ? "#DC2626" : "#475569", fontWeight: p.camposFaltando.includes("Setor") ? 700 : 400 }}>
                               {p.setor === "—" ? <span style={{ color: "#DC2626" }}>⚠ Sem setor</span> : p.setor}
-                            </td>
-                            {/* Status */}
-                            <td style={{ padding: "12px 16px" }}>
+                            </td>}
+                            {col("status")    && <td style={{ padding: "12px 16px" }}>
                               <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: sc.bg, color: sc.color, whiteSpace: "nowrap" }}>{p.status}</span>
-                            </td>
-                            {/* Valor */}
-                            <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 700, color: p.valorGlobal === 0 ? "#DC2626" : "#0F172A", whiteSpace: "nowrap" }}>
+                            </td>}
+                            {col("valor")     && <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 700, color: p.valorGlobal === 0 ? "#DC2626" : "#0F172A", whiteSpace: "nowrap" }}>
                               {p.valorGlobal === 0 ? <span style={{ color: "#DC2626" }}>⚠ Sem valor</span> : fmt(p.valorGlobal)}
-                            </td>
-                            {/* Problemas */}
-                            <td style={{ padding: "12px 16px" }}>
+                            </td>}
+                            {col("problemas") && <td style={{ padding: "12px 16px" }}>
                               <div style={{ display: "flex", gap: 4, flexWrap: "wrap", maxWidth: 420 }}>
                                 {p.camposFaltando.map(c => <Badge key={c} label={`Campo: ${c}`} type="campo" />)}
                                 {p.problemasPlanejamento.map(c => <Badge key={c} label={c} type="planejamento" />)}
                                 {p.medsSemOC > 0 && <Badge label={`${p.medsSemOC} medição(ões) sem O.C.`} type="medicao" />}
                                 {p.horasSemProfissional > 0 && <Badge label={`${p.horasSemProfissional} hora(s) sem profissional`} type="horas" />}
                               </div>
-                            </td>
-                            {/* Ações */}
-                            <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
+                            </td>}
+                            {col("acoes")     && <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
                               <div style={{ display: "flex", gap: 6 }}>
-                                <button
-                                  onClick={() => navigate(`/planejamento/${p.id}`)}
+                                <button onClick={() => navigate(`/planejamento/${p.id}`)}
                                   style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid #E2E8F0", background: "#EEF2FF", color: "#4338CA", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                                   Planejamento
                                 </button>
@@ -459,7 +497,7 @@ export default function ChecklistIntegridade() {
                                   </a>
                                 )}
                               </div>
-                            </td>
+                            </td>}
                           </tr>
                         )
                       })}

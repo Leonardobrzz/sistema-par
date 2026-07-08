@@ -230,7 +230,7 @@ router.post('/', async (req, res, next) => {
       if (project) {
         await db.updateRowById('Projetos_Contratos', 'ID_Projeto', dados.idProjeto, {
           ...project,
-          Status: status === 'Aprovado' ? 'Planejado' : project.Status,
+          Status: project.Status, // mantém status do ClickUp, não sobrescreve
           Valor_Global: String(dados.valorContrato || project.Valor_Global),
           Atualizado_Em: new Date().toISOString(),
         });

@@ -16,7 +16,7 @@ const NAV_ITEMS = [
   { to: '/planejamento',     label: 'Planejamento Financeiro',            icon: CalculatorIcon,            perfis: ['PO', 'Coordenador', 'Admin', 'Diretoria'] },
   { to: '/aprovacao',        label: 'Aprovações & Baseline',              icon: ShieldCheckIcon,           perfis: ['PO', 'Coordenador', 'Admin', 'Diretoria'], badge: 'aprovacao' },
   { to: '/terceirizados',    label: 'Terceirizados',                      icon: UsersIcon,                 perfis: ['PO', 'Comercial', 'Coordenador', 'Admin', 'Diretoria'] },
-  { to: '/medicoes',         label: 'Medições & Faturamento',             icon: ChartBarIcon,              perfis: ['Financeiro', 'Comercial', 'Coordenador', 'Admin', 'Diretoria'] },
+  { to: '/medicoes',         label: 'Medições & Faturamento',             icon: ChartBarIcon,              perfis: ['PO', 'Financeiro', 'Comercial', 'Coordenador', 'Admin', 'Diretoria'] },
   { to: '/comercial',        label: 'Comercial / OPP',                    icon: BuildingOffice2Icon,       perfis: ['Comercial', 'Financeiro', 'Admin', 'Diretoria'] },
   { to: '/importacao-opp',   label: 'Importar Opportune',                 icon: ArrowUpTrayIcon,           perfis: ['Financeiro', 'Admin', 'Coordenador', 'Diretoria'] },
   { to: '/extrato',          label: 'Extrato por Projeto',                icon: BanknotesIcon,             perfis: ['Financeiro', 'Coordenador', 'Admin', 'Diretoria'] },
