@@ -486,6 +486,34 @@ router.post('/sync', async (req, res, next) => {
   }
 });
 
+// GET /api/opp/debug-categoria — mostra campos brutos de 5 despesas para diagnóstico
+router.get('/debug-categoria', async (req, res, next) => {
+  try {
+    if (!['Admin', 'Diretoria', 'Financeiro'].includes(req.user.perfil)) {
+      return res.status(403).json({ error: 'Sem permissão.' });
+    }
+    const axios = require('axios');
+    const BASE_URL = process.env.OPP_BASE_URL;
+    const headers = {
+      'access-token': process.env.OPP_API_KEY || process.env.OPP_TOKEN,
+      'secret-access-token': process.env.OPP_SECRET || process.env.OPP_API_SECRET,
+      'cache-control': 'no-cache',
+    };
+    const r = await axios.get(`${BASE_URL}/contas-pagar?limit=5`, { headers });
+    const items = Array.isArray(r.data?.data) ? r.data.data : (Array.isArray(r.data) ? r.data : []);
+    const debug = items.map(d => ({
+      nome_conta: d.nome_conta,
+      categoria: d.categoria,
+      nome_categoria: d.nome_categoria,
+      categoria_pag: d.categoria_pag,
+      id_categoria: d.id_categoria,
+      observacoes_pag: (d.observacoes_pag || '').slice(0, 80),
+      todosOsCampos: Object.keys(d),
+    }));
+    res.json(debug);
+  } catch (err) { next(err); }
+});
+
 // GET /api/opp/centros-custo — lista centros de custo do OPP
 router.get('/centros-custo', async (req, res, next) => {
   try {
