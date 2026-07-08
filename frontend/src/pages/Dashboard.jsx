@@ -637,23 +637,65 @@ export default function Dashboard() {
                 <PieIcon size={16} style={{ color: '#7C3AED' }} />
                 <span style={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>Projetos por Status</span>
               </div>
-              <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 8 }}>
+              <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 12 }}>
                 {projetosFiltrados.length} projetos{filtroSetor ? ` · ${filtroSetor}` : ' no total'}
               </div>
               {projetosFiltrados.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: 13 }}>Nenhum projeto</div>
               ) : (
-                <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie data={statusData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value">
-                      {statusData.map((entry, i) => (
-                        <Cell key={i} fill={STATUS_COLORS[entry.name] || '#94A3B8'} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(v, n) => [v, n]} />
-                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, fontWeight: 600 }} />
-                  </PieChart>
-                </ResponsiveContainer>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  {/* Donut com total no centro */}
+                  <div style={{ position: 'relative', flexShrink: 0, width: 170, height: 170 }}>
+                    <ResponsiveContainer width={170} height={170}>
+                      <PieChart>
+                        <Pie
+                          data={statusData}
+                          cx="50%" cy="50%"
+                          innerRadius={52} outerRadius={78}
+                          paddingAngle={2}
+                          dataKey="value"
+                          strokeWidth={0}
+                        >
+                          {statusData.map((entry, i) => (
+                            <Cell key={i} fill={STATUS_COLORS[entry.name] || '#94A3B8'} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(v, n) => [`${v} projetos`, n]}
+                          contentStyle={{ borderRadius: 8, fontSize: 12, border: '1px solid #E2E8F0', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    {/* Total no centro */}
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                      <span style={{ fontSize: 26, fontWeight: 900, color: '#0F172A', lineHeight: 1 }}>
+                        {statusData.reduce((a, b) => a + b.value, 0)}
+                      </span>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: '#94A3B8', marginTop: 2 }}>projetos</span>
+                    </div>
+                  </div>
+                  {/* Legenda customizada */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7 }}>
+                    {statusData.sort((a, b) => b.value - a.value).map((entry) => {
+                      const total = statusData.reduce((a, b) => a + b.value, 0)
+                      const pct = total > 0 ? Math.round((entry.value / total) * 100) : 0
+                      const cor = STATUS_COLORS[entry.name] || '#94A3B8'
+                      return (
+                        <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ width: 10, height: 10, borderRadius: '50%', background: cor, flexShrink: 0 }} />
+                          <span style={{ fontSize: 12, color: '#475569', fontWeight: 500, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.name}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                            <div style={{ width: 48, height: 5, borderRadius: 3, background: '#F1F5F9', overflow: 'hidden' }}>
+                              <div style={{ width: `${pct}%`, height: '100%', background: cor, borderRadius: 3, transition: 'width 0.4s' }} />
+                            </div>
+                            <span style={{ fontSize: 12, fontWeight: 800, color: '#0F172A', minWidth: 20, textAlign: 'right' }}>{entry.value}</span>
+                            <span style={{ fontSize: 10, color: '#94A3B8', minWidth: 28 }}>{pct}%</span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
               )}
             </div>
           )}
