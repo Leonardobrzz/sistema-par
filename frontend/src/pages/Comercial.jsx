@@ -68,6 +68,8 @@ export default function Comercial() {
   useEffect(() => { carregarClientes() }, [carregarClientes])
   useEffect(() => { if (aba === "terceirizados") carregarTerceirizados() }, [aba, carregarTerceirizados])
 
+  const [syncTercLoading, setSyncTercLoading] = useState(false)
+
   async function syncOPP() {
     setSyncLoading(true)
     try {
@@ -75,6 +77,16 @@ export default function Comercial() {
       toast.success(`Sync concluido: ${res.data.totalReceitas || 0} receitas, ${res.data.totalDespesas || 0} despesas`)
     } catch { toast.error("Erro ao sincronizar OPP") }
     finally { setSyncLoading(false) }
+  }
+
+  async function syncTerceirizados() {
+    setSyncTercLoading(true)
+    try {
+      const res = await api.post("/clickup/sync-terceirizados")
+      toast.success(res.data.message)
+      await carregarTerceirizados()
+    } catch { toast.error("Erro ao sincronizar terceirizados") }
+    finally { setSyncTercLoading(false) }
   }
 
   const tiposCadastro = useMemo(() => [...new Set(clientes.map(c => c.tipo_cadastro).filter(Boolean))].sort(), [clientes])
@@ -237,6 +249,12 @@ export default function Comercial() {
       {/* TERCEIRIZADOS TAB */}
       {aba === "terceirizados" && (
         <>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+            <button onClick={syncTerceirizados} disabled={syncTercLoading} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff", color: "#475569", fontWeight: 700, fontSize: 13, cursor: syncTercLoading ? "wait" : "pointer" }}>
+              <ArrowPathIcon style={{ width: 15, height: 15, animation: syncTercLoading ? "spin 1s linear infinite" : "none" }} />
+              {syncTercLoading ? "Sincronizando..." : "Sync Terceirizados"}
+            </button>
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(statusTercOptions.length, 5)},1fr)`, gap: 12, marginBottom: 16 }}>
             {statusTercOptions.map(s => {
               const color = s === "Cancelado" ? "#DC2626" : s === "Concluído" || s === "Entregue" ? "#15803D" : s === "Em Andamento" || s === "Confirmado" ? "#2563EB" : s === "Contas a Pagar" ? "#D97706" : "#64748B"

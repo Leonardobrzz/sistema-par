@@ -82,6 +82,17 @@ router.post('/sync', async (req, res, next) => {
   }
 });
 
+// POST /api/clickup/sync-terceirizados — sync rápido só da pasta Terceirizados
+router.post('/sync-terceirizados', async (req, res, next) => {
+  try {
+    const { syncTerceirizadosClickUp } = require('../services/clickupService');
+    const total = await syncTerceirizadosClickUp();
+    res.json({ message: `Sync concluído: ${total} tarefas processadas.`, total });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/clickup/horas/:idProjeto — horas estimadas vs logadas por projeto
 router.get('/horas/:idProjeto', async (req, res, next) => {
   try {
