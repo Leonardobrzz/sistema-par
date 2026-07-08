@@ -689,20 +689,30 @@ router.post('/:id/travar', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// POST /api/planejamento/:id/destravar — remove o travamento OPP
+// POST /api/planejamento/:id/destravar — estorna o planejamento aprovado (com motivo)
 router.post('/:id/destravar', async (req, res, next) => {
   try {
     const plan = await db.findOne('Planejamentos', p => p.ID_Projeto === req.params.id);
     if (!plan) return res.status(404).json({ error: 'Planejamento não encontrado.' });
+
+    const { motivo } = req.body;
+    const dadosAtuais = (() => { try { return JSON.parse(plan.Dados_JSON || '{}') } catch { return {} } })();
+    const historicoEstornos = dadosAtuais._historicoEstornos || [];
+    historicoEstornos.push({
+      data: new Date().toISOString(),
+      usuario: req.user?.nome || req.user?.email || 'Sistema',
+      motivo: motivo || 'Sem motivo informado',
+    });
 
     await db.updateRowById('Planejamentos', 'ID', plan.ID, {
       ...plan,
       Travado: false,
       Travado_Em: '',
       Travado_Por: '',
+      Dados_JSON: JSON.stringify({ ...dadosAtuais, _historicoEstornos: historicoEstornos }),
     });
 
-    res.json({ ok: true, message: 'Vínculo OPP destravado.' });
+    res.json({ ok: true, message: 'Planejamento estornado com sucesso.' });
   } catch (err) { next(err); }
 });
 

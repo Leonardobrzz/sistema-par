@@ -109,6 +109,9 @@ export default function PlanejamentoFinanceiro() {
   const [planStatus, setPlanStatus] = useState(null)
   const [planTravado, setPlanTravado] = useState(false)
   const [travandoOPP, setTravandoOPP] = useState(false)
+  const [showEstornoModal, setShowEstornoModal] = useState(false)
+  const [motivoEstorno, setMotivoEstorno] = useState("")
+  const [estornando, setEstornando] = useState(false)
   const [baseline, setBaseline] = useState(null)
   const [historicoBaselines, setHistoricoBaselines] = useState([])
   const [baselineViewing, setBaselineViewing] = useState(null) // versão sendo visualizada
@@ -285,15 +288,18 @@ export default function PlanejamentoFinanceiro() {
     } finally { setTravandoOPP(false) }
   }
 
-  async function destravarlOPP() {
-    if (!window.confirm(`Destravar vínculo OPP?\n\nO campo "Nome do Centro de Custo" poderá ser editado novamente.`)) return
+  async function confirmarEstorno() {
+    if (!motivoEstorno.trim()) { toast.error("Informe o motivo do estorno."); return }
+    setEstornando(true)
     try {
-      await api.post(`/planejamento/${projetoId}/destravar`)
-      toast.success("Vínculo destravado. Você pode editar o nome agora.")
+      await api.post(`/planejamento/${projetoId}/destravar`, { motivo: motivoEstorno })
+      toast.success("Planejamento estornado. Pode editar e gerar nova baseline.")
       setPlanTravado(false)
+      setShowEstornoModal(false)
+      setMotivoEstorno("")
     } catch (err) {
-      toast.error(err.response?.data?.error || "Erro ao destravar")
-    }
+      toast.error(err.response?.data?.error || "Erro ao estornar planejamento")
+    } finally { setEstornando(false) }
   }
 
   async function travarBaseline() {
@@ -537,8 +543,8 @@ export default function PlanejamentoFinanceiro() {
                       placeholder="Ex: ARQ FORTIM REFORM E.E.F EMÍLIA QUEIROZ"
                     />
                     {planTravado ? (
-                      <button onClick={destravarlOPP} title="Clique para destravar e editar o nome" style={{ padding: "9px 12px", borderRadius: 8, background: "#DCFCE7", border: "1.5px solid #86EFAC", color: "#15803D", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
-                        🔒 Travado
+                      <button onClick={() => setShowEstornoModal(true)} title="Estornar planejamento aprovado para edição" style={{ padding: "9px 14px", borderRadius: 8, background: "#FEF3C7", border: "1.5px solid #FDE68A", color: "#B45309", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                        ↩ Estornar Planejamento
                       </button>
                     ) : planStatus === "Aprovado" && form.nrContratoOS ? (
                       <button onClick={travarOPP} disabled={travandoOPP} title="Trava o vínculo com o OPP. Após travar, o nome não pode ser alterado."
@@ -941,6 +947,42 @@ export default function PlanejamentoFinanceiro() {
         )}
 
       </>)}
+
+      {/* ── Modal de estorno ── */}
+      {showEstornoModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+          onClick={() => !estornando && setShowEstornoModal(false)}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: 28, maxWidth: 480, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+              <span style={{ fontSize: 22 }}>↩</span>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#0F172A" }}>Estornar Planejamento</h3>
+            </div>
+            <p style={{ margin: "0 0 16px", fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>
+              Esta ação vai <strong>destravar</strong> o planejamento aprovado para permitir edições e geração de nova baseline.<br />
+              Informe o motivo para registrar o histórico.
+            </p>
+            <label style={{ fontSize: 12, fontWeight: 700, color: "#475569", display: "block", marginBottom: 6, textTransform: "uppercase" }}>Motivo do estorno *</label>
+            <textarea
+              value={motivoEstorno}
+              onChange={e => setMotivoEstorno(e.target.value)}
+              placeholder="Ex: Ajuste no valor do contrato solicitado pelo cliente..."
+              rows={4}
+              style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", fontSize: 13, fontFamily: "inherit", outline: "none", resize: "vertical", boxSizing: "border-box", color: "#0F172A" }}
+            />
+            <div style={{ display: "flex", gap: 10, marginTop: 18, justifyContent: "flex-end" }}>
+              <button onClick={() => setShowEstornoModal(false)} disabled={estornando}
+                style={{ padding: "9px 18px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#fff", color: "#475569", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                Cancelar
+              </button>
+              <button onClick={confirmarEstorno} disabled={estornando || !motivoEstorno.trim()}
+                style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: motivoEstorno.trim() ? "#B45309" : "#E2E8F0", color: motivoEstorno.trim() ? "#fff" : "#94A3B8", fontWeight: 700, fontSize: 13, cursor: motivoEstorno.trim() ? "pointer" : "not-allowed" }}>
+                {estornando ? "Estornando..." : "Confirmar Estorno"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Modal de visualização de baseline ── */}
       {baselineViewing && (
