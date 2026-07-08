@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
+﻿import { useEffect, useState, useCallback, useMemo } from 'react'
 import { toast } from 'react-hot-toast'
 import { PlusIcon, TrashIcon, ArrowPathIcon, UsersIcon, DocumentIcon, LinkIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import api from '../utils/api'
@@ -25,6 +25,34 @@ const STATUS_COLOR = {
   'Solicitado': 'badge-gray',
 }
 
+// Mapeamento de cores para status do ClickUp
+function statusStyle(s) {
+  const sl = (s || '').toLowerCase()
+  if (sl.includes('concluí') || sl.includes('conclu') || sl.includes('emitida') || sl.includes('autorizada')) return { bg: '#DCFCE7', color: '#15803D' }
+  if (sl.includes('andamento') || sl.includes('execu')) return { bg: '#DBEAFE', color: '#1D4ED8' }
+  if (sl.includes('análise') || sl.includes('analise') || sl.includes('técnica') || sl.includes('tecnica')) return { bg: '#EDE9FE', color: '#6D28D9' }
+  if (sl.includes('negociação') || sl.includes('negociac') || sl.includes('assinatura') || sl.includes('elab')) return { bg: '#FEF9C3', color: '#A16207' }
+  if (sl.includes('pagar') || sl.includes('pagamento') || sl.includes('compra')) return { bg: '#FEE2E2', color: '#DC2626' }
+  if (sl.includes('paralisado') || sl.includes('arquivada') || sl.includes('cancelado')) return { bg: '#F1F5F9', color: '#64748B' }
+  if (sl.includes('nova') || sl.includes('solicitação') || sl.includes('aguardando')) return { bg: '#F0F9FF', color: '#0369A1' }
+  return { bg: '#F1F5F9', color: '#475569' }
+}
+
+// Etapas fixas na ordem certa
+const ETAPAS = [
+  { key: 'solicitação', label: 'Solicitação', color: '#3B82F6', bg: '#EFF6FF', border: '#BFDBFE' },
+  { key: 'contratação', label: 'Contratação', color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A' },
+  { key: 'execução', label: 'Execução & Pagamento', color: '#10B981', bg: '#ECFDF5', border: '#A7F3D0' },
+]
+
+function getEtapaKey(etapa) {
+  const e = (etapa || '').toLowerCase()
+  if (e.includes('solicit')) return 'solicitação'
+  if (e.includes('contrat')) return 'contratação'
+  if (e.includes('execu') || e.includes('pagamento')) return 'execução'
+  return null
+}
+
 const inp = { padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#0F172A", fontSize: 13, fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box" }
 const lbl = { fontSize: 12, fontWeight: 700, color: "#475569", display: "block", marginBottom: 5 }
 
@@ -37,10 +65,12 @@ export default function Terceirizados() {
   const [editItem, setEditItem] = useState(null)
   const [projetos, setProjetos] = useState([])
   const [filtroSetor, setFiltroSetor] = useState('')
-  const [filtroStatus, setFiltroStatus] = useState('ativos')  // 'ativos' = esconde Solicitado
+  const [filtroStatus, setFiltroStatus] = useState('ativos')
   const [filtroProjeto, setFiltroProjeto] = useState('')
   const [filtroFornecedor, setFiltroFornecedor] = useState('')
   const [filtroBusca, setFiltroBusca] = useState('')
+  const [filtroEtapa, setFiltroEtapa] = useState('')        // ex: 'solicitação'
+  const [filtroStatusClickUp, setFiltroStatusClickUp] = useState('') // status dentro da etapa
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -71,6 +101,19 @@ export default function Terceirizados() {
     } catch (err) { toast.error(err.response?.data?.error || 'Erro ao cancelar') }
   }
 
+  // Agrupa por etapa para o painel de resumo
+  const resumoPorEtapa = useMemo(() => {
+    const grupos = {}
+    for (const t of terceirizados) {
+      const ek = getEtapaKey(t.Etapa_ClickUp)
+      if (!ek) continue
+      if (!grupos[ek]) grupos[ek] = {}
+      const s = t.Status_ClickUp || t.Status || '—'
+      grupos[ek][s] = (grupos[ek][s] || 0) + 1
+    }
+    return grupos
+  }, [terceirizados])
+
   const fornecedoresUnicos = useMemo(() =>
     [...new Set(terceirizados.filter(t => t.Fornecedor).map(t => t.Fornecedor))].sort(),
     [terceirizados])
@@ -89,13 +132,35 @@ export default function Terceirizados() {
           !(t.nomeProjeto || '').toLowerCase().includes(b) &&
           !(t.Nr_Contrato || '').toLowerCase().includes(b)) return false
     }
+    if (filtroEtapa && getEtapaKey(t.Etapa_ClickUp) !== filtroEtapa) return false
+    if (filtroStatusClickUp && (t.Status_ClickUp || '').toLowerCase() !== filtroStatusClickUp.toLowerCase()) return false
     return true
-  }), [terceirizados, filtroSetor, filtroProjeto, filtroFornecedor, filtroStatus, filtroBusca])
+  }), [terceirizados, filtroSetor, filtroProjeto, filtroFornecedor, filtroStatus, filtroBusca, filtroEtapa, filtroStatusClickUp])
+
+  function selecionarEtapaStatus(etapaKey, status) {
+    if (filtroEtapa === etapaKey && filtroStatusClickUp === status) {
+      setFiltroEtapa(''); setFiltroStatusClickUp('')
+    } else {
+      setFiltroEtapa(etapaKey); setFiltroStatusClickUp(status)
+      setFiltroStatus('') // mostra todos incluindo solicitado
+    }
+  }
+
+  function selecionarEtapa(etapaKey) {
+    if (filtroEtapa === etapaKey && !filtroStatusClickUp) {
+      setFiltroEtapa('')
+    } else {
+      setFiltroEtapa(etapaKey); setFiltroStatusClickUp('')
+      setFiltroStatus('')
+    }
+  }
+
+  const ativoEtapaBadge = filtroEtapa || filtroStatusClickUp
 
   return (
     <div style={{ padding: "28px 32px" }}>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <UsersIcon style={{ width: 22, height: 22, color: "#00B5CC" }} />
@@ -110,6 +175,82 @@ export default function Terceirizados() {
         </div>
       </div>
 
+      {/* Painel por etapa ClickUp */}
+      {!loading && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
+          {ETAPAS.map(etapa => {
+            const statusMap = resumoPorEtapa[etapa.key] || {}
+            const total = Object.values(statusMap).reduce((a, b) => a + b, 0)
+            const isActive = filtroEtapa === etapa.key
+            return (
+              <div key={etapa.key}
+                style={{
+                  background: isActive ? etapa.bg : '#fff',
+                  border: `1.5px solid ${isActive ? etapa.color : '#E2E8F0'}`,
+                  borderRadius: 12,
+                  padding: "14px 16px",
+                  cursor: 'pointer',
+                  transition: 'border-color 0.15s, box-shadow 0.15s',
+                  boxShadow: isActive ? `0 0 0 3px ${etapa.bg}` : 'none',
+                }}
+                onClick={() => selecionarEtapa(etapa.key)}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: etapa.color }} />
+                    <span style={{ fontSize: 12, fontWeight: 800, color: etapa.color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{etapa.label}</span>
+                  </div>
+                  <span style={{ fontSize: 18, fontWeight: 900, color: etapa.color }}>{total}</span>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                  {Object.entries(statusMap)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([s, count]) => {
+                      const st = statusStyle(s)
+                      const isStatusActive = filtroEtapa === etapa.key && filtroStatusClickUp.toLowerCase() === s.toLowerCase()
+                      return (
+                        <span key={s}
+                          onClick={e => { e.stopPropagation(); selecionarEtapaStatus(etapa.key, s) }}
+                          title={`Filtrar: ${s}`}
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 4,
+                            padding: "3px 8px", borderRadius: 20,
+                            fontSize: 11, fontWeight: 700,
+                            background: isStatusActive ? st.color : st.bg,
+                            color: isStatusActive ? '#fff' : st.color,
+                            border: `1px solid ${isStatusActive ? st.color : st.bg}`,
+                            cursor: 'pointer',
+                            transition: 'background 0.12s',
+                            whiteSpace: 'nowrap',
+                          }}>
+                          {s} <span style={{ opacity: 0.75, fontWeight: 600 }}>{count}</span>
+                        </span>
+                      )
+                    })}
+                  {Object.keys(statusMap).length === 0 && (
+                    <span style={{ fontSize: 11, color: "#CBD5E1" }}>Sem registros</span>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Filtro ativo badge */}
+      {ativoEtapaBadge && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "8px 14px", background: "#F0F9FF", borderRadius: 8, border: "1px solid #BAE6FD" }}>
+          <span style={{ fontSize: 12, color: "#0369A1", fontWeight: 600 }}>
+            Filtrando: {ETAPAS.find(e => e.key === filtroEtapa)?.label || filtroEtapa}
+            {filtroStatusClickUp && ` › ${filtroStatusClickUp}`}
+          </span>
+          <button onClick={() => { setFiltroEtapa(''); setFiltroStatusClickUp(''); setFiltroStatus('ativos') }}
+            style={{ marginLeft: 4, background: "none", border: "none", cursor: "pointer", color: "#0369A1", fontWeight: 700, fontSize: 12, padding: "2px 6px", borderRadius: 4 }}>
+            × Limpar
+          </button>
+        </div>
+      )}
+
       {/* Filtros setor */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
         {SETORES_PAR.map(s => (
@@ -122,7 +263,7 @@ export default function Terceirizados() {
 
       {/* Filtros linha */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-        <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}
+        <select value={filtroStatus} onChange={e => { setFiltroStatus(e.target.value); setFiltroEtapa(''); setFiltroStatusClickUp('') }}
           style={{ ...inp, width: "auto", paddingRight: 32 }}>
           <option value="ativos">Contratos ativos</option>
           <option value="">Todos os registros</option>
@@ -162,8 +303,8 @@ export default function Terceirizados() {
             <table style={{ width: "100%", borderCollapse: "collapse", whiteSpace: "nowrap" }}>
               <thead>
                 <tr style={{ background: "#F8FAFC" }}>
-                  {["Projeto", "Fornecedor", "Serviço / Nº Contrato", "Valor Contrat.", "% Contrato", "Status", "Vencimento", "Doc.", "Ações"].map(h => (
-                    <th key={h} style={{ padding: "12px 14px", fontSize: 11, fontWeight: 700, color: "#64748B", textAlign: h.includes("Valor") || h === "% Contrato" ? "right" : h === "Status" || h === "Vencimento" || h === "Doc." ? "center" : "left", letterSpacing: 0.5, textTransform: "uppercase", borderBottom: "1px solid #E2E8F0" }}>{h}</th>
+                  {["Etapa", "Projeto", "Fornecedor", "Serviço / Nº Contrato", "Valor Contrat.", "% Contrato", "Status ClickUp", "Vencimento", "Doc.", "Ações"].map(h => (
+                    <th key={h} style={{ padding: "12px 14px", fontSize: 11, fontWeight: 700, color: "#64748B", textAlign: h.includes("Valor") || h === "% Contrato" ? "right" : h === "Status ClickUp" || h === "Etapa" || h === "Vencimento" || h === "Doc." ? "center" : "left", letterSpacing: 0.5, textTransform: "uppercase", borderBottom: "1px solid #E2E8F0" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -179,19 +320,30 @@ export default function Terceirizados() {
                   const perc = parseFloat(t.Percentual_Contrato || 0)
                   const percColor = perc > 20 ? "#DC2626" : perc > 15 ? "#D97706" : "#16A34A"
                   const valorC = parseFloat(t.Valor_Contratado || 0)
+                  const ek = getEtapaKey(t.Etapa_ClickUp)
+                  const etapaCfg = ETAPAS.find(e => e.key === ek)
+                  const sCUp = t.Status_ClickUp || ''
+                  const sSt = statusStyle(sCUp)
                   return (
                     <tr key={t.ID_Terceirizado || t.ID} style={{ borderBottom: "1px solid #F1F5F9", transition: "background 0.12s" }}
                       onMouseEnter={e => e.currentTarget.style.background = "#F8FAFC"}
                       onMouseLeave={e => e.currentTarget.style.background = ""}>
+                      <td style={{ padding: "11px 14px", textAlign: "center" }}>
+                        {etapaCfg ? (
+                          <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 20, fontSize: 10, fontWeight: 800, background: etapaCfg.bg, color: etapaCfg.color, border: `1px solid ${etapaCfg.border}`, whiteSpace: 'nowrap' }}>
+                            {etapaCfg.label === 'Execução & Pagamento' ? 'Execução' : etapaCfg.label}
+                          </span>
+                        ) : <span style={{ color: "#CBD5E1" }}>—</span>}
+                      </td>
                       <td style={{ padding: "11px 14px" }}>
-                        <div style={{ fontWeight: 700, fontSize: 13, color: "#0F172A", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis" }} title={t.nomeProjeto}>{t.nomeProjeto || t.ID_Projeto || <span style={{ color: "#CBD5E1" }}>—</span>}</div>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: "#0F172A", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis" }} title={t.nomeProjeto}>{t.nomeProjeto || t.ID_Projeto || <span style={{ color: "#CBD5E1" }}>—</span>}</div>
                         {t.Setor && <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 1 }}>{t.Setor}</div>}
                       </td>
                       <td style={{ padding: "11px 14px" }}>
-                        <div style={{ fontWeight: 700, fontSize: 13, color: "#00788A", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis" }} title={t.Fornecedor}>{t.Fornecedor || <span style={{ color: "#CBD5E1" }}>—</span>}</div>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: "#00788A", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis" }} title={t.Fornecedor}>{t.Fornecedor || <span style={{ color: "#CBD5E1" }}>—</span>}</div>
                         {t.CNPJ_CPF && <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 1 }}>{t.CNPJ_CPF}</div>}
                       </td>
-                      <td style={{ padding: "11px 14px", maxWidth: 260 }}>
+                      <td style={{ padding: "11px 14px", maxWidth: 240 }}>
                         <div style={{ fontSize: 12, color: "#0F172A", overflow: "hidden", textOverflow: "ellipsis" }} title={t.Descricao_Servico}>{t.Descricao_Servico || t.Servico || <span style={{ color: "#CBD5E1" }}>—</span>}</div>
                         {t.Nr_Contrato && <div style={{ fontSize: 11, color: "#7C3AED", fontWeight: 600, marginTop: 2 }}>Nº {t.Nr_Contrato}</div>}
                       </td>
@@ -200,9 +352,11 @@ export default function Terceirizados() {
                         <span style={{ fontSize: 13, fontWeight: 700, color: percColor }}>{perc > 0 ? `${perc.toFixed(1)}%` : "—"}</span>
                       </td>
                       <td style={{ padding: "11px 14px", textAlign: "center" }}>
-                        <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: STATUS_COLOR[t.Status] === 'badge-green' ? "#DCFCE7" : STATUS_COLOR[t.Status] === 'badge-blue' ? "#DBEAFE" : STATUS_COLOR[t.Status] === 'badge-yellow' ? "#FEF9C3" : STATUS_COLOR[t.Status] === 'badge-red' ? "#FEE2E2" : "#F1F5F9", color: STATUS_COLOR[t.Status] === 'badge-green' ? "#15803D" : STATUS_COLOR[t.Status] === 'badge-blue' ? "#1D4ED8" : STATUS_COLOR[t.Status] === 'badge-yellow' ? "#A16207" : STATUS_COLOR[t.Status] === 'badge-red' ? "#DC2626" : "#64748B" }}>
-                          {t.Status || "—"}
-                        </span>
+                        {sCUp ? (
+                          <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: sSt.bg, color: sSt.color, whiteSpace: 'nowrap' }}>
+                            {sCUp}
+                          </span>
+                        ) : <span style={{ color: "#CBD5E1" }}>—</span>}
                       </td>
                       <td style={{ padding: "11px 14px", textAlign: "center", fontSize: 12, color: "#64748B" }}>{formatDate(t.Data_Vencimento) || "—"}</td>
                       <td style={{ padding: "11px 14px", textAlign: "center" }}>
@@ -255,7 +409,6 @@ function TerceirizadoModal({ item, projetos, onClose, onSaved }) {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
-  // Calcula % em tempo real baseado no valor do projeto selecionado
   const projetoSel = projetos.find(p => p.ID_Projeto === form.ID_Projeto)
   const valorGlobal = parseFloat(projetoSel?.Valor_Global || 0)
   const valorC = parseFloat(form.Valor_Contratado || 0)
@@ -292,7 +445,6 @@ function TerceirizadoModal({ item, projetos, onClose, onSaved }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 680, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
-        {/* Header */}
         <div style={{ padding: "20px 24px", borderBottom: "1px solid #E2E8F0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ fontWeight: 800, fontSize: 16, color: "#0F172A" }}>{item ? "Editar Terceirizado" : "Novo Serviço Terceirizado"}</div>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><XMarkIcon style={{ width: 20, height: 20 }} /></button>
@@ -301,7 +453,6 @@ function TerceirizadoModal({ item, projetos, onClose, onSaved }) {
         <form onSubmit={onSubmit} style={{ padding: "24px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
 
-            {/* Projeto */}
             <div style={{ gridColumn: "span 2" }}>
               <label style={lbl}>Projeto <span style={{ color: "#EF4444" }}>*</span></label>
               <select value={form.ID_Projeto} onChange={e => set('ID_Projeto', e.target.value)} style={inp}>
@@ -315,7 +466,6 @@ function TerceirizadoModal({ item, projetos, onClose, onSaved }) {
               )}
             </div>
 
-            {/* Fornecedor */}
             <div>
               <label style={lbl}>Fornecedor / Empresa <span style={{ color: "#EF4444" }}>*</span></label>
               <input value={form.Fornecedor} onChange={e => set('Fornecedor', e.target.value)} style={inp} placeholder="Nome da empresa ou profissional" />
@@ -325,19 +475,16 @@ function TerceirizadoModal({ item, projetos, onClose, onSaved }) {
               <input value={form.CNPJ_CPF} onChange={e => set('CNPJ_CPF', e.target.value)} style={inp} placeholder="00.000.000/0000-00" />
             </div>
 
-            {/* Serviço */}
             <div style={{ gridColumn: "span 2" }}>
               <label style={lbl}>Descrição do Serviço <span style={{ color: "#EF4444" }}>*</span></label>
               <input value={form.Descricao_Servico} onChange={e => set('Descricao_Servico', e.target.value)} style={inp} placeholder="Ex: Projeto estrutural, Levantamento topográfico..." />
             </div>
 
-            {/* Nr Contrato */}
             <div>
               <label style={lbl}>Número do Contrato</label>
               <input value={form.Nr_Contrato} onChange={e => set('Nr_Contrato', e.target.value)} style={inp} placeholder="Ex: CT-2026-001" />
             </div>
 
-            {/* Status */}
             <div>
               <label style={lbl}>Status</label>
               <select value={form.Status} onChange={e => set('Status', e.target.value)} style={inp}>
@@ -345,13 +492,11 @@ function TerceirizadoModal({ item, projetos, onClose, onSaved }) {
               </select>
             </div>
 
-            {/* Valores */}
             <div>
               <label style={lbl}>Valor Contratado (R$)</label>
               <input value={form.Valor_Contratado} onChange={e => set('Valor_Contratado', e.target.value)} style={inp} placeholder="0,00" type="number" step="0.01" min="0" />
             </div>
 
-            {/* % calculado */}
             {percCalc && (
               <div style={{ gridColumn: "span 2", padding: "8px 12px", borderRadius: 8, background: parseFloat(percCalc) > 25 ? "#FEF2F2" : "#F0FDF4", border: `1px solid ${parseFloat(percCalc) > 25 ? "#FCA5A5" : "#86EFAC"}` }}>
                 <span style={{ fontSize: 13, fontWeight: 700, color: parseFloat(percCalc) > 25 ? "#DC2626" : "#15803D" }}>
@@ -361,7 +506,6 @@ function TerceirizadoModal({ item, projetos, onClose, onSaved }) {
               </div>
             )}
 
-            {/* Datas */}
             <div>
               <label style={lbl}>Data de Vencimento</label>
               <input type="date" value={form.Data_Vencimento} onChange={e => set('Data_Vencimento', e.target.value)} style={inp} />
@@ -371,13 +515,11 @@ function TerceirizadoModal({ item, projetos, onClose, onSaved }) {
               <input type="date" value={form.Data_Pagamento} onChange={e => set('Data_Pagamento', e.target.value)} style={inp} />
             </div>
 
-            {/* NF */}
             <div style={{ gridColumn: "span 2" }}>
               <label style={lbl}>Número da NF</label>
               <input value={form.Nr_NF} onChange={e => set('Nr_NF', e.target.value)} style={inp} placeholder="Ex: NF-12345" />
             </div>
 
-            {/* Link Contrato */}
             <div style={{ gridColumn: "span 2" }}>
               <label style={lbl}>Link do Documento / Contrato</label>
               <div style={{ display: "flex", gap: 8 }}>
@@ -394,7 +536,6 @@ function TerceirizadoModal({ item, projetos, onClose, onSaved }) {
               </div>
             </div>
 
-            {/* Obs */}
             <div style={{ gridColumn: "span 2" }}>
               <label style={lbl}>Observações</label>
               <textarea value={form.Observacoes} onChange={e => set('Observacoes', e.target.value)} rows={3}
