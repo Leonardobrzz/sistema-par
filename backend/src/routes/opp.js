@@ -486,5 +486,16 @@ router.post('/sync', async (req, res, next) => {
   }
 });
 
+// GET /api/opp/centros-custo — lista centros de custo do OPP
+router.get('/centros-custo', async (req, res, next) => {
+  try {
+    const data = await opp.oppRequest('GET', '/centros_custos');
+    const lista = Array.isArray(data) ? data : (data?.data || data?.centros_custos || []);
+    res.json(lista);
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
 

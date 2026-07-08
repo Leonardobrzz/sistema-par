@@ -26,16 +26,21 @@ router.get('/', async (req, res, next) => {
     if (projeto) rows = rows.filter((r) => r.ID_Projeto === projeto);
     if (status) rows = rows.filter((r) => r.Status_Financeiro === status);
 
-    // Enriquece com nome do projeto
+    // Enriquece com nome do projeto, cliente e setor
     const projects = await db.readSheet('Projetos_Contratos');
-    const map = {};
-    for (const p of projects) { map[p.ID_Projeto] = p.Nome; }
+    const projMap = {};
+    for (const p of projects) { projMap[p.ID_Projeto] = p; }
 
-    const enriched = rows.map((m) => ({
-      ...m,
-      nomeProjeto: map[m.ID_Projeto] || '',
-      atrasada: m.Status_Financeiro !== 'Recebido' && m.Data_Previsao && new Date(m.Data_Previsao) < new Date(),
-    }));
+    const enriched = rows.map((m) => {
+      const proj = projMap[m.ID_Projeto] || {};
+      return {
+        ...m,
+        nomeProjeto: proj.Nome || m.nomeProjeto || '',
+        cliente: proj.Cliente || proj.Nome_Cliente || '',
+        setor: proj.Setor || '',
+        atrasada: m.Status_Financeiro !== 'Recebido' && m.Data_Previsao && new Date(m.Data_Previsao) < new Date(),
+      };
+    });
 
     res.json(enriched);
   } catch (err) {

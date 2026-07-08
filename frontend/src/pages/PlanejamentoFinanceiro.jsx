@@ -540,13 +540,13 @@ export default function PlanejamentoFinanceiro() {
                         value={form.nrContratoOS}
                         onChange={e => !planTravado && f("nrContratoOS", e.target.value.toUpperCase())}
                         readOnly={planTravado}
-                        maxLength={60}
+                        maxLength={45}
                         style={{ ...INPUT, width: "100%", background: planTravado ? "#F0FDF4" : undefined, color: planTravado ? "#15803D" : undefined, cursor: planTravado ? "not-allowed" : undefined, paddingRight: 48, boxSizing: "border-box" }}
-                        placeholder="Ex: ARQ FORTIM REFORM E.E.F EMÍLIA QUEIROZ"
+                        placeholder="Ex: ARQ CROATÁ HOSPITAL MUNICIPAL"
                       />
                       {!planTravado && (
-                        <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 10, fontWeight: 700, color: (form.nrContratoOS || "").length >= 55 ? "#DC2626" : "#94A3B8" }}>
-                          {(form.nrContratoOS || "").length}/60
+                        <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 10, fontWeight: 700, color: (form.nrContratoOS || "").length >= 40 ? "#DC2626" : "#94A3B8" }}>
+                          {(form.nrContratoOS || "").length}/45
                         </span>
                       )}
                     </div>
@@ -563,7 +563,7 @@ export default function PlanejamentoFinanceiro() {
                   </div>
                   {!planTravado && (
                     <p style={{ margin: 0, fontSize: 11, color: "#94A3B8", lineHeight: 1.4 }}>
-                      ⚠️ Use <strong>exatamente</strong> o mesmo nome cadastrado no Opportune (campo "Centro de Custo"). Ex: <em>ARQ FORTIM REFORM E.E.F EMÍLIA QUEIROZ</em>. O PAR usa esse nome para cruzar as receitas e despesas do projeto.
+                      ⚠️ Use <strong>exatamente</strong> o mesmo nome do Centro de Custo no Opportune (Financeiro › Parâmetros › Centros de Custos). Padrão: <em>SIGLA CLIENTE DESCRIÇÃO</em> — ex: <em>ARQ CROATÁ HOSPITAL MUNICIPAL</em>. Limite: 45 caracteres.
                     </p>
                   )}
                 </div>
