@@ -319,6 +319,7 @@ export default function Dashboard() {
   const [filtroSetor, setFiltroSetor] = useState('')
   const [secoesVisiveis, setSecoesVisiveis] = useState(loadPrefs)
   const [mostrarPersonalizar, setMostrarPersonalizar] = useState(false)
+  const [periodoRecebido, setPeriodoRecebido] = useState({ inicio: '', fim: '' })
 
   useEffect(() => {
     const load = async () => {
@@ -378,7 +379,15 @@ export default function Dashboard() {
   })()
 
   const totalContrato = aprovados.reduce((s, p) => s + parseFloat(p.Valor_Contrato || 0), 0)
-  const totalRecebido = medicoesFiltradas.filter(m => m.Status_Financeiro === 'Recebido').reduce((s, m) => s + parseFloat(m.Valor_Medicao || 0), 0)
+  const medicoesPeriodo = medicoesFiltradas.filter(m => {
+    if (m.Status_Financeiro !== 'Recebido') return false
+    const d = m.Data_Recebimento || m.Data_Prevista || m.Data_Emissao_NF
+    if (!d) return true
+    if (periodoRecebido.inicio && d < periodoRecebido.inicio) return false
+    if (periodoRecebido.fim && d > periodoRecebido.fim) return false
+    return true
+  })
+  const totalRecebido = medicoesPeriodo.reduce((s, m) => s + parseFloat(m.Valor_Medicao || 0), 0)
   const totalAReceber = medicoesFiltradas.filter(m => m.Status_Financeiro !== 'Recebido' && m.Status !== 'Cancelada').reduce((s, m) => s + parseFloat(m.Valor_Medicao || 0), 0)
   const alertasCriticos = alertas.filter(a => a.Nivel === 'error')
 
@@ -491,38 +500,47 @@ export default function Dashboard() {
       </div>
 
       {/* ── Filtro por Setor ── */}
-      {setoresDisponiveis.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20, alignItems: 'center' }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', marginRight: 4 }}>SETOR:</span>
-          <button
-            onClick={() => setFiltroSetor('')}
-            style={{
-              padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: 'pointer',
-              border: `1.5px solid ${!filtroSetor ? '#7C3AED' : '#E2E8F0'}`,
-              background: !filtroSetor ? '#EDE9FE' : '#fff',
-              color: !filtroSetor ? '#7C3AED' : '#64748B',
-              transition: 'all 0.15s',
-            }}
-          >
-            Todos ({projetos.length})
-          </button>
-          {setoresDisponiveis.map(s => (
+      {(() => {
+        const SETORES_FIXOS = ['Arquitetura', 'Saneamento', 'Infraestrutura']
+        const setoresExtra = setoresDisponiveis.filter(s => !SETORES_FIXOS.includes(s))
+        const todosSetores = [...SETORES_FIXOS, ...setoresExtra]
+        return (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20, alignItems: 'center' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', marginRight: 4 }}>SETOR:</span>
             <button
-              key={s}
-              onClick={() => setFiltroSetor(filtroSetor === s ? '' : s)}
+              onClick={() => setFiltroSetor('')}
               style={{
                 padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                border: `1.5px solid ${filtroSetor === s ? '#7C3AED' : '#E2E8F0'}`,
-                background: filtroSetor === s ? '#EDE9FE' : '#fff',
-                color: filtroSetor === s ? '#7C3AED' : '#64748B',
+                border: `1.5px solid ${!filtroSetor ? '#7C3AED' : '#E2E8F0'}`,
+                background: !filtroSetor ? '#EDE9FE' : '#fff',
+                color: !filtroSetor ? '#7C3AED' : '#64748B',
                 transition: 'all 0.15s',
               }}
             >
-              {s} ({projetos.filter(p => p.Setor === s).length})
+              Todos ({projetos.length})
             </button>
-          ))}
-        </div>
-      )}
+            {todosSetores.map(s => {
+              const count = projetos.filter(p => p.Setor === s).length
+              return (
+                <button
+                  key={s}
+                  onClick={() => setFiltroSetor(filtroSetor === s ? '' : s)}
+                  style={{
+                    padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                    border: `1.5px solid ${filtroSetor === s ? '#7C3AED' : '#E2E8F0'}`,
+                    background: filtroSetor === s ? '#EDE9FE' : '#fff',
+                    color: filtroSetor === s ? '#7C3AED' : '#64748B',
+                    transition: 'all 0.15s',
+                    opacity: count === 0 ? 0.5 : 1,
+                  }}
+                >
+                  {s} ({count})
+                </button>
+              )
+            })}
+          </div>
+        )
+      })()}
 
       {/* ── Banners de urgência ── */}
       {pendentesAprov.length > 0 && (
@@ -541,8 +559,20 @@ export default function Dashboard() {
       {vis('kpis') && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
           <StatCard label="Projetos em Andamento" value={emAndamento.length} sub={`${projetosFiltrados.length} total · ${concluidos.length} concluídos`} icon={<FolderOpen size={20} />} color="#0EA5E9" onClick={() => navigate('/projetos')} />
-          <StatCard label="Carteira Aprovada" value={fmt(totalContrato)} sub={`${aprovados.length} planejamento(s) aprovado(s)`} icon={<Briefcase size={20} />} color="#7C3AED" />
-          <StatCard label="Total Recebido" value={fmt(totalRecebido)} sub="medições com status Recebido" icon={<CheckCircle2 size={20} />} color="#16A34A" />
+          <StatCard label="Planejamentos Aprovados" value={fmt(totalContrato)} sub={`${aprovados.length} planejamento(s) aprovado(s)`} icon={<Briefcase size={20} />} color="#7C3AED" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <StatCard label="Total Recebido" value={fmt(totalRecebido)} sub={periodoRecebido.inicio || periodoRecebido.fim ? 'filtrado por período' : 'medições com status Recebido'} icon={<CheckCircle2 size={20} />} color="#16A34A" />
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <input type="date" value={periodoRecebido.inicio} onChange={e => setPeriodoRecebido(p => ({ ...p, inicio: e.target.value }))}
+                style={{ flex: 1, padding: '5px 8px', borderRadius: 6, border: '1.5px solid #E2E8F0', fontSize: 11, color: '#475569', fontFamily: 'inherit', outline: 'none' }} />
+              <span style={{ fontSize: 11, color: '#94A3B8' }}>até</span>
+              <input type="date" value={periodoRecebido.fim} onChange={e => setPeriodoRecebido(p => ({ ...p, fim: e.target.value }))}
+                style={{ flex: 1, padding: '5px 8px', borderRadius: 6, border: '1.5px solid #E2E8F0', fontSize: 11, color: '#475569', fontFamily: 'inherit', outline: 'none' }} />
+              {(periodoRecebido.inicio || periodoRecebido.fim) && (
+                <button onClick={() => setPeriodoRecebido({ inicio: '', fim: '' })} style={{ padding: '4px 7px', borderRadius: 6, border: 'none', background: '#FEE2E2', color: '#DC2626', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>✕</button>
+              )}
+            </div>
+          </div>
           <StatCard label="A Receber" value={fmt(totalAReceber)} sub="medições pendentes/em andamento" icon={<BadgeDollarSign size={20} />} color="#D97706"
             warn={totalAReceber > 0 ? 'caution' : null} onClick={() => navigate('/medicoes')} />
         </div>

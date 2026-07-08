@@ -41,9 +41,41 @@ function KpiCard({ label, value, color = "#DC2626", bg = "#FEF2F2", border = "#F
 
 const FILTROS_TIPO = ["Todos", "Campo Vazio", "Sem Planejamento", "Medição sem O.C.", "Sem Data Entrega"]
 
+function ErroModal({ projeto, onClose }) {
+  if (!projeto) return null
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}
+      onClick={onClose}>
+      <div style={{ background: "#fff", borderRadius: 16, padding: 24, maxWidth: 480, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#DC2626", textTransform: "uppercase", letterSpacing: "0.06em" }}>Inconformidades</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A", marginTop: 2 }}>{projeto.Nome}</div>
+            {projeto.Cliente && <div style={{ fontSize: 12, color: "#94A3B8" }}>{projeto.Cliente}</div>}
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", fontSize: 18, lineHeight: 1 }}>✕</button>
+        </div>
+        <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+          {(projeto.Erros || []).map((e, i) => (
+            <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#FEF2F2", borderRadius: 8, border: "1px solid #FECACA" }}>
+              <span style={{ color: "#DC2626", fontWeight: 800, marginTop: 1 }}>!</span>
+              <span style={{ fontSize: 13, color: "#0F172A" }}>{e}</span>
+            </li>
+          ))}
+          {(!projeto.Erros || projeto.Erros.length === 0) && (
+            <li style={{ fontSize: 13, color: "#94A3B8", textAlign: "center", padding: 12 }}>Nenhum erro detalhado disponível</li>
+          )}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
 export default function ChecklistIntegridade() {
   const navigate = useNavigate()
   const [aba, setAba] = useState("checklist")
+  const [erroModal, setErroModal] = useState(null)
 
   // ── Checklist state ──
   const [data, setData] = useState(null)
@@ -282,9 +314,13 @@ export default function ChecklistIntegridade() {
                               {p.AlertasAtivos > 0 ? <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: "#FFFBEB", color: "#B45309" }}>{p.AlertasAtivos}</span> : <span style={{ color: "#CBD5E1", fontSize: 11 }}>—</span>}
                             </td>
                             <td style={{ padding: "10px 14px", textAlign: "center" }}>
-                              <span style={{ fontSize: 11, fontWeight: 800, padding: "3px 10px", borderRadius: 6, background: p.Auditoria === "ERRO" ? "#FEE2E2" : "#DCFCE7", color: p.Auditoria === "ERRO" ? "#DC2626" : "#15803D" }}>
-                                {p.Auditoria === "ERRO" ? "ERRO" : "OK"}
-                              </span>
+                              {p.Auditoria === "ERRO" ? (
+                                <button onClick={() => setErroModal(p)} style={{ fontSize: 11, fontWeight: 800, padding: "3px 10px", borderRadius: 6, background: "#FEE2E2", color: "#DC2626", border: "none", cursor: "pointer", textDecoration: "underline dotted" }} title="Clique para ver os erros">
+                                  ERRO
+                                </button>
+                              ) : (
+                                <span style={{ fontSize: 11, fontWeight: 800, padding: "3px 10px", borderRadius: 6, background: "#DCFCE7", color: "#15803D" }}>OK</span>
+                              )}
                             </td>
                           </tr>
                         )
@@ -448,6 +484,8 @@ export default function ChecklistIntegridade() {
       {!loading && !data && (
         <div style={{ textAlign: "center", padding: 60, color: "#DC2626" }}>Erro ao carregar checklist. Verifique a conexão com o backend.</div>
       )}
+
+      <ErroModal projeto={erroModal} onClose={() => setErroModal(null)} />
     </div>
   )
 }

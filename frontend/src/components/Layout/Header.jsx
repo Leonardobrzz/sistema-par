@@ -27,7 +27,7 @@ export default function Header() {
 
   const PAGE_TITLES = {
     '/dashboard':       'Dashboard',
-    '/projetos':        'Gestão de Projetos',
+    '/projetos':        'Planejamento Físico/Financeiro',
     '/planejamento':    'Planejamento Financeiro',
     '/terceirizados':   'Terceirizados',
     '/medicoes':        'Medições & Faturamento',

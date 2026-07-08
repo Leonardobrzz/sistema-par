@@ -67,8 +67,20 @@ async function oppRequest(method, path, data = null) {
  * @param {object} filtros — filtros opcionais (ex: { situacao_cliente: 'Ativo' })
  */
 async function listarClientes(filtros = {}) {
-  const params = new URLSearchParams(filtros).toString();
-  return oppRequest('GET', `/clientes${params ? '?' + params : ''}`);
+  const todos = [];
+  let offset = 0;
+  const LIMIT = 100;
+  while (true) {
+    const params = new URLSearchParams({ ...filtros, limit: LIMIT, offset }).toString();
+    const resultado = await oppRequest('GET', `/clientes?${params}`);
+    const lista = Array.isArray(resultado) ? resultado : resultado?.data || resultado?.clientes || [];
+    if (lista.length === 0) break;
+    todos.push(...lista);
+    if (lista.length < LIMIT) break;
+    offset += LIMIT;
+    if (offset > 10000) break;
+  }
+  return todos;
 }
 
 /**

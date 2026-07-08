@@ -107,9 +107,6 @@ export default function Terceirizados() {
           <button onClick={load} style={{ padding: "9px 16px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#fff", color: "#475569", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
             <ArrowPathIcon style={{ width: 15, height: 15 }} /> Atualizar
           </button>
-          <button onClick={() => { setEditItem(null); setShowModal(true) }} style={{ padding: "9px 16px", borderRadius: 8, border: "none", background: "#00B5CC", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-            <PlusIcon style={{ width: 15, height: 15 }} /> Novo Registro
-          </button>
         </div>
       </div>
 
@@ -165,7 +162,7 @@ export default function Terceirizados() {
             <table style={{ width: "100%", borderCollapse: "collapse", whiteSpace: "nowrap" }}>
               <thead>
                 <tr style={{ background: "#F8FAFC" }}>
-                  {["Projeto", "Fornecedor", "Serviço / Nº Contrato", "Valor Est.", "Valor Contrat.", "% Contrato", "Status", "Vencimento", "Doc.", "Ações"].map(h => (
+                  {["Projeto", "Fornecedor", "Serviço / Nº Contrato", "Valor Contrat.", "% Contrato", "Status", "Vencimento", "Doc.", "Ações"].map(h => (
                     <th key={h} style={{ padding: "12px 14px", fontSize: 11, fontWeight: 700, color: "#64748B", textAlign: h.includes("Valor") || h === "% Contrato" ? "right" : h === "Status" || h === "Vencimento" || h === "Doc." ? "center" : "left", letterSpacing: 0.5, textTransform: "uppercase", borderBottom: "1px solid #E2E8F0" }}>{h}</th>
                   ))}
                 </tr>
@@ -182,7 +179,6 @@ export default function Terceirizados() {
                   const perc = parseFloat(t.Percentual_Contrato || 0)
                   const percColor = perc > 20 ? "#DC2626" : perc > 15 ? "#D97706" : "#16A34A"
                   const valorC = parseFloat(t.Valor_Contratado || 0)
-                  const valorE = parseFloat(t.Valor_Estimado || 0)
                   return (
                     <tr key={t.ID_Terceirizado || t.ID} style={{ borderBottom: "1px solid #F1F5F9", transition: "background 0.12s" }}
                       onMouseEnter={e => e.currentTarget.style.background = "#F8FAFC"}
@@ -199,7 +195,6 @@ export default function Terceirizados() {
                         <div style={{ fontSize: 12, color: "#0F172A", overflow: "hidden", textOverflow: "ellipsis" }} title={t.Descricao_Servico}>{t.Descricao_Servico || t.Servico || <span style={{ color: "#CBD5E1" }}>—</span>}</div>
                         {t.Nr_Contrato && <div style={{ fontSize: 11, color: "#7C3AED", fontWeight: 600, marginTop: 2 }}>Nº {t.Nr_Contrato}</div>}
                       </td>
-                      <td style={{ padding: "11px 14px", textAlign: "right", fontSize: 13, fontWeight: 600, color: valorE > 0 ? "#0F172A" : "#CBD5E1" }}>{valorE > 0 ? formatBRL(valorE) : "—"}</td>
                       <td style={{ padding: "11px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: valorC > 0 ? "#0F172A" : "#CBD5E1" }}>{valorC > 0 ? formatBRL(valorC) : "—"}</td>
                       <td style={{ padding: "11px 14px", textAlign: "right" }}>
                         <span style={{ fontSize: 13, fontWeight: 700, color: percColor }}>{perc > 0 ? `${perc.toFixed(1)}%` : "—"}</span>
@@ -351,10 +346,6 @@ function TerceirizadoModal({ item, projetos, onClose, onSaved }) {
             </div>
 
             {/* Valores */}
-            <div>
-              <label style={lbl}>Valor Estimado (R$)</label>
-              <input value={form.Valor_Estimado} onChange={e => set('Valor_Estimado', e.target.value)} style={inp} placeholder="0,00" type="number" step="0.01" min="0" />
-            </div>
             <div>
               <label style={lbl}>Valor Contratado (R$)</label>
               <input value={form.Valor_Contratado} onChange={e => set('Valor_Contratado', e.target.value)} style={inp} placeholder="0,00" type="number" step="0.01" min="0" />

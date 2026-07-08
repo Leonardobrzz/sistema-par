@@ -624,7 +624,10 @@ async function syncTerceirizadosClickUp() {
     const tercFolder = folders.find(f => f.name?.toLowerCase().includes('terceirizado'));
     if (!tercFolder) { console.log('[ClickUp Terc] Pasta Terceirizados não encontrada no espaço Gestão.'); return 0; }
 
-    const lists = await getLists(tercFolder.id);
+    const LISTAS_ALVO = ['solicitação', 'contratação', 'execução', 'execucao', 'pagamento'];
+    const allLists = await getLists(tercFolder.id);
+    const lists = allLists.filter(l => LISTAS_ALVO.some(kw => l.name?.toLowerCase().includes(kw)));
+    console.log(`[ClickUp Terc] Listas filtradas: ${lists.map(l => l.name).join(', ')}`);
     const allTasks = [];
     for (const list of lists) {
       let page = 0;
@@ -710,7 +713,18 @@ async function syncTerceirizadosClickUp() {
         criados++;
       }
     }
-    console.log(`[ClickUp Terc] Concluído: ${criados} criados, ${atualizados} atualizados, ${allTasks.length} tarefas processadas.`);
+    // Remove registros que vieram de listas fora das 3 alvo (ex: "Cadastro de Tercei... 2020")
+    const taskIdsAlvo = new Set(allTasks.map(t => t.id));
+    const paraRemover = existentes.filter(r =>
+      r.ID_Tarefa_ClickUp &&
+      !taskIdsAlvo.has(r.ID_Tarefa_ClickUp)
+    );
+    let removidos = 0;
+    for (const r of paraRemover) {
+      await db.updateRowById('Terceirizados', 'ID', r.ID, { ...r, Status: 'Cancelado' });
+      removidos++;
+    }
+    console.log(`[ClickUp Terc] Concluído: ${criados} criados, ${atualizados} atualizados, ${removidos} removidos, ${allTasks.length} tarefas processadas.`);
     return allTasks.length;
   } catch (err) {
     console.error('[ClickUp Terc] Erro ao sincronizar terceirizados:', err.message);

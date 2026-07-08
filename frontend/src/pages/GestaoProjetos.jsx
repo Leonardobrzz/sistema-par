@@ -135,12 +135,18 @@ export default function GestaoProjetos() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button 
-            onClick={() => setShowFilters(!showFilters)} 
+          <button
+            onClick={() => setShowFilters(!showFilters)}
             className={`btn-secondary flex items-center gap-2 ${showFilters ? 'ring-2 ring-slate-200 bg-slate-50' : ''}`}
           >
             <FunnelIcon className="w-4 h-4" />
             Filtros {filters.status.length > 0 && <span className="w-2 h-2 rounded-full bg-par-500 pulse-dot ml-1" />}
+          </button>
+          <button
+            onClick={() => setShowNewModal(true)}
+            className="btn-primary flex items-center gap-2"
+          >
+            <PlusIcon className="w-4 h-4" /> Novo Projeto
           </button>
         </div>
       </div>

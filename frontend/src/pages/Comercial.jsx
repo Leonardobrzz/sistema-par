@@ -218,7 +218,10 @@ export default function Comercial() {
                         <td style={{ padding: "12px 16px" }}>
                           <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: c.situacao_cliente === "Ativo" ? "#DCFCE7" : "#F1F5F9", color: c.situacao_cliente === "Ativo" ? "#15803D" : "#64748B" }}>{c.situacao_cliente || "—"}</span>
                         </td>
-                        <td style={{ padding: "12px 16px", fontSize: 13, color: "#475569" }}>{c.contato_cliente || c.email_cliente || "—"}</td>
+                        <td style={{ padding: "12px 16px", fontSize: 13, color: "#475569" }}>
+                          <div>{c.contato_cliente || c.email_cliente || "—"}</div>
+                          {(c.fone_cliente || c.celular_cliente) && <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{c.fone_cliente || c.celular_cliente}</div>}
+                        </td>
                         <td style={{ padding: "12px 16px", fontSize: 13, color: "#475569" }}>{[c.cidade_cliente, c.uf_cliente].filter(Boolean).join("/") || "—"}</td>
                       </tr>
                     ))}
