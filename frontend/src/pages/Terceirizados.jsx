@@ -162,8 +162,12 @@ export default function Terceirizados() {
     setFiltroStatus('ativos')
   }
 
+  const statusClickUpUnicos = useMemo(() =>
+    [...new Set(terceirizados.filter(t => t.Status_ClickUp).map(t => t.Status_ClickUp))].sort(),
+    [terceirizados])
+
   const ativoEtapaBadge = filtroEtapa || filtroStatusClickUp
-  const temFiltroAtivo = filtroSetor || filtroFornecedor || filtroCliente || filtroVencimentoDe || filtroVencimentoAte
+  const temFiltroAtivo = filtroSetor || filtroFornecedor || filtroCliente || filtroVencimentoDe || filtroVencimentoAte || filtroStatusClickUp
 
   return (
     <div style={{ padding: "28px 32px" }}>
@@ -174,7 +178,7 @@ export default function Terceirizados() {
             <UsersIcon style={{ width: 22, height: 22, color: "#00B5CC" }} />
             <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#0F172A" }}>Serviços Terceirizados</h1>
           </div>
-          <p style={{ margin: 0, fontSize: 13, color: "#64748B" }}>{tercFiltrados.length} de {terceirizados.length} registros</p>
+          <p style={{ margin: 0, fontSize: 13, color: "#64748B" }}>{tercFiltrados.length} registros</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={load} style={{ padding: "9px 16px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#fff", color: "#475569", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
@@ -288,6 +292,13 @@ export default function Terceirizados() {
           style={{ ...inp, width: "auto", paddingRight: 32 }}>
           <option value="">Setor: Todos</option>
           {SETORES_PAR.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+
+        {/* Status ClickUp */}
+        <select value={filtroStatusClickUp} onChange={e => { setFiltroStatusClickUp(e.target.value); setFiltroEtapa('') }}
+          style={{ ...inp, width: "auto", paddingRight: 32 }}>
+          <option value="">Status: Todos</option>
+          {statusClickUpUnicos.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
 
         {/* Vencimento */}
