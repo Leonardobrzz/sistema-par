@@ -66,8 +66,7 @@ app.get('/api/debug-clickup-campos', async (req, res) => {
     // Busca espaços do time
     const spacesRes = await axios.get(`https://api.clickup.com/api/v2/team/${teamId}/space`, { headers });
     const spaces = spacesRes.data.spaces || [];
-    const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-    const gestao = spaces.find(s => norm(s.name) === 'gestao') || spaces.find(s => norm(s.name).includes('gestao') && !norm(s.name).includes('demanda')) || spaces[0];
+    const gestao = spaces.find(s => s.name === 'Gestão') || spaces.find(s => s.name.toLowerCase() === 'gestao') || spaces.find(s => s.name.toLowerCase().startsWith('gest') && s.name.length < 10) || spaces[0];
     // Busca pastas do espaço
     const foldersRes = await axios.get(`https://api.clickup.com/api/v2/space/${gestao.id}/folder`, { headers });
     const folders = foldersRes.data.folders || [];
@@ -86,7 +85,7 @@ app.get('/api/debug-clickup-campos', async (req, res) => {
       custom_fields: (t.custom_fields || []).map(f => ({ name: f.name, type: f.type, value: f.value }))
     }));
     res.json({ espaco: gestao.name, pasta: tercFolder.name, lista: list.name, totalTasks: tasks.length, amostra });
-  } catch (err) { res.status(500).json({ erro: err.message }); }
+  } catch (err) { res.status(500).json({ erro: err.message, status: err.response?.status, data: err.response?.data }); }
 });
 
 // Debug público: inspeciona OSs do OPP
