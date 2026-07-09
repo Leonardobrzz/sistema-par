@@ -38,12 +38,24 @@ router.get('/', async (req, res, next) => {
     const projMap = Object.fromEntries(projetos.map(p => [p.ID_Projeto, p]));
     const ocMap = Object.fromEntries(ocs.map(o => [String(o.ID_OC), o]));
 
-    // Mapa OC -> valor já liquidado (pago) no Financeiro_OPP
+    // Mapa OC -> valor já liquidado:
+    // Fonte 1: Financeiro_OPP com OC preenchido e Situacao=Liquidado
     const liquidadoMap = {};
     for (const f of financeiro) {
       if (f.OC && (f.Situacao === 'Liquidado' || f.Situacao === 'Pago')) {
         const key = String(f.OC);
         liquidadoMap[key] = (liquidadoMap[key] || 0) + parseFloat(f.Valor || 0);
+      }
+    }
+    // Fonte 2: OrdensCompra_OPP — quando a OC está liquidada/entregue, usa Valor_Total
+    for (const oc of ocs) {
+      const key = String(oc.ID_OC);
+      if (!liquidadoMap[key]) {
+        const sit = (oc.Situacao || '').toLowerCase();
+        if (sit.includes('liquid') || sit.includes('pago') || sit.includes('entregue') ||
+            sit.includes('conclu') || sit.includes('aprovado')) {
+          liquidadoMap[key] = parseFloat(oc.Valor_Total || 0);
+        }
       }
     }
 

@@ -338,13 +338,19 @@ async function syncReceitasDespesas(db) {
         Nome_Cliente: d.nome_fornecedor || '',
         Nr_Documento: d.n_documento_pag || '',
         Nr_OS_OPP: d.nr_os || d.numero_os || '',
-        // Extrai número da OC das observações: "Ref. a ordem de compra nº 600, ..."
+        // OC: campo direto da API (id_pedido/id_ordem_compra) > extração do texto
         OC: (() => {
+          // Campos diretos que o OPP pode retornar
+          const direto = d.id_pedido || d.id_pedido_compra || d.id_ordem_compra
+                      || d.numero_pedido || d.pedido || d.nr_pedido || '';
+          if (direto) return String(direto);
+          // Fallback: extrai do texto de observações/nome
           const obs = d.observacoes_pag || '';
           const nome = d.nome_conta || '';
-          // "Ref. a ordem de compra nº 600, ..." ou "Ordem nro. 600\n..." ou "Ordem de Compra 600"
           const m = obs.match(/ordem(?:\s+de\s+compra)?\s+n(?:r?o\.?|[º°])\s*(\d+)/i)
-                 || nome.match(/ordem(?:\s+de\s+compra)?\s+(\d+)/i);
+                 || obs.match(/\boc\s*[:\-]?\s*(\d+)/i)
+                 || obs.match(/\bpedido\s+n[º°]?\s*(\d+)/i)
+                 || nome.match(/\boc\s*[:\-]?\s*(\d+)/i);
           return m ? m[1] : '';
         })(),
         Sincronizado_Em: agora.toISOString(),
