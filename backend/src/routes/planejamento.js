@@ -99,39 +99,6 @@ function calcularTotais(dados) {
 }
 
 
-// GET /api/planejamento/debug-valor — diagnóstico do valor por projeto
-router.get('/debug-valor', async (req, res, next) => {
-  try {
-    const [planejamentos, terceirizados, ocs] = await Promise.all([
-      db.readSheet('Planejamentos'),
-      db.readSheet('Terceirizados'),
-      db.readSheet('OrdensCompra_OPP'),
-    ]);
-    const ocValorMap = {};
-    for (const oc of ocs) {
-      if ((oc.Situacao || '').toLowerCase() !== 'cancelado') {
-        ocValorMap[String(oc.ID_OC)] = parseFloat(oc.Valor_Total || 0);
-      }
-    }
-    const tercComOC = terceirizados.filter(t => t.OC && t.ID_Projeto);
-    const valorOCPorProjeto = {};
-    for (const t of tercComOC) {
-      const val = ocValorMap[String(t.OC)];
-      if (val > 0) valorOCPorProjeto[t.ID_Projeto] = (valorOCPorProjeto[t.ID_Projeto] || 0) + val;
-    }
-    res.json({
-      totalOCs: ocs.length,
-      totalTerceirizados: terceirizados.length,
-      tercComOC: tercComOC.length,
-      amostrasOC: ocs.slice(0, 5).map(o => ({ ID_OC: o.ID_OC, Valor_Total: o.Valor_Total, Situacao: o.Situacao })),
-      amostrasTercOC: tercComOC.slice(0, 10).map(t => ({ ID_Projeto: t.ID_Projeto, OC: t.OC, valEncontrado: ocValorMap[String(t.OC)] })),
-      projetosComValor: Object.keys(valorOCPorProjeto).length,
-      amostraProjetosValor: Object.entries(valorOCPorProjeto).slice(0, 5),
-      totalPlanejamentos: planejamentos.length,
-    });
-  } catch (err) { next(err); }
-});
-
 // GET /api/planejamento — lista todos os planejamentos
 router.get('/', async (req, res, next) => {
   try {
