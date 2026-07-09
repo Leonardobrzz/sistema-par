@@ -85,6 +85,87 @@ function CategoriaRow({ label, nivel, total, lista, cor }) {
   )
 }
 
+function PvECard({ grupo }) {
+  const [open, setOpen] = useState(false)
+  const { label, cor, planejado, executado, variacao, percExec, detalhes, tipo } = grupo
+  const isReceita = tipo === 'receita'
+  const overBudget = !isReceita && variacao > 0
+  const underReceita = isReceita && variacao < 0
+  const alert = overBudget || underReceita
+  const ok = !alert && (planejado > 0 || executado > 0)
+  const execPct = percExec != null ? Math.min(percExec, 200) : 0
+
+  return (
+    <div style={{ borderRadius: 12, border: `1.5px solid ${alert ? '#FECACA' : ok ? '#BBF7D0' : '#E2E8F0'}`, overflow: 'hidden', marginBottom: 8 }}>
+      <div onClick={() => detalhes.length > 0 && setOpen(!open)}
+        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: alert ? '#FEF2F2' : ok ? '#F0FDF4' : '#F8FAFC', cursor: detalhes.length > 0 ? 'pointer' : 'default' }}>
+        <span style={{ width: 10, height: 10, borderRadius: '50%', background: cor, flexShrink: 0 }} />
+        <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{label}</span>
+        <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase' }}>Planejado</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#475569' }}>{fmt(planejado)}</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase' }}>Executado</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: executado > 0 ? '#0F172A' : '#94A3B8' }}>{fmt(executado)}</div>
+          </div>
+          <div style={{ textAlign: 'right', minWidth: 80 }}>
+            <div style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase' }}>Variação</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: alert ? '#DC2626' : ok ? '#15803D' : '#475569' }}>
+              {variacao >= 0 ? '+' : ''}{fmt(variacao)}
+            </div>
+          </div>
+          <div style={{ width: 64, textAlign: 'right' }}>
+            <div style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase' }}>%</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: alert ? '#DC2626' : '#475569' }}>
+              {percExec != null ? `${percExec.toFixed(0)}%` : '—'}
+            </div>
+          </div>
+          {percExec != null && (
+            <div style={{ width: 80 }}>
+              <div style={{ height: 6, background: '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${execPct / 2}%`, background: alert ? '#EF4444' : ok ? '#22C55E' : '#94A3B8', borderRadius: 3, transition: 'width 0.3s' }} />
+              </div>
+            </div>
+          )}
+        </div>
+        {detalhes.length > 0 && <span style={{ fontSize: 11, color: '#94A3B8', marginLeft: 8 }}>{open ? '▲' : '▼'} {detalhes.length}</span>}
+      </div>
+      {open && (
+        <div style={{ overflowX: 'auto', borderTop: '1px solid #F1F5F9' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: '#FAFAFA' }}>
+                {['Categoria', 'Descrição', 'Valor', 'Data', 'Situação'].map(h => (
+                  <th key={h} style={{ padding: '6px 12px', fontSize: 10, fontWeight: 700, color: '#94A3B8', textAlign: 'left', textTransform: 'uppercase' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {detalhes.map((d, i) => (
+                <tr key={i} style={{ borderTop: '1px solid #F1F5F9' }}>
+                  <td style={{ padding: '7px 12px', fontSize: 11, fontWeight: 600, color: '#7C3AED' }}>{d.categoria || '—'}</td>
+                  <td style={{ padding: '7px 12px', fontSize: 12, color: '#334155' }}>{d.descricao || '—'}</td>
+                  <td style={{ padding: '7px 12px', fontSize: 12, fontWeight: 700, color: '#0F172A' }}>{fmt(d.valor)}</td>
+                  <td style={{ padding: '7px 12px', fontSize: 11, color: '#94A3B8' }}>{d.data || '—'}</td>
+                  <td style={{ padding: '7px 12px' }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 5,
+                      background: d.situacao === 'Liquidado' ? '#DCFCE7' : '#FEF3C7',
+                      color:      d.situacao === 'Liquidado' ? '#15803D'  : '#D97706' }}>
+                      {d.situacao || '—'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function ExtratoProjeto() {
   const navigate = useNavigate()
   const [data, setData] = useState(null)
@@ -93,6 +174,8 @@ export default function ExtratoProjeto() {
   const [busca, setBusca] = useState("")
   const [filtroStatus, setFiltroStatus] = useState("")
   const [syncing, setSyncing] = useState(false)
+  const [pve, setPve] = useState(null)
+  const [pveLoading, setPveLoading] = useState(false)
 
   const carregar = () => {
     setLoading(true)
@@ -103,6 +186,15 @@ export default function ExtratoProjeto() {
   }
 
   useEffect(() => { carregar() }, [])
+
+  useEffect(() => {
+    if (!projetoSel) { setPve(null); return }
+    setPveLoading(true)
+    api.get(`/extrato/${projetoSel}`)
+      .then(r => setPve(r.data))
+      .catch(() => setPve(null))
+      .finally(() => setPveLoading(false))
+  }, [projetoSel])
 
   async function syncOPP() {
     setSyncing(true)
@@ -268,6 +360,72 @@ export default function ExtratoProjeto() {
                 <CategoriaRow nivel="1.0" label="Receitas" total={proj.financeiro.receitas10.total} lista={proj.financeiro.receitas10.lista} cor={{ bg: "#F0FDF4", border: "#86EFAC", color: "#15803D" }} />
                 <CategoriaRow nivel="2.0" label="Custos Diretos de Projetos" total={proj.financeiro.custosDiretos20.total} lista={proj.financeiro.custosDiretos20.lista} cor={{ bg: "#FEF2F2", border: "#FECACA", color: "#991B1B" }} />
                 <CategoriaRow nivel="3.0" label="Despesas Operacionais" total={proj.financeiro.despesasOp30.total} lista={proj.financeiro.despesasOp30.lista} cor={{ bg: "#FFFBEB", border: "#FDE68A", color: "#92400E" }} />
+              </>
+            )}
+          </div>
+
+          {/* Planejado x Executado */}
+          <div style={{ background: "#fff", borderRadius: 14, padding: "20px 24px", border: "1px solid #E2E8F0", marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: "#0F172A" }}>Planejado × Executado</div>
+                <div style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>Baseline do PAR vs. lançamentos reais no OPP</div>
+              </div>
+              {pve && (
+                <div style={{ display: "flex", gap: 10 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 8, background: "#F0FDF4", color: "#15803D", border: "1px solid #BBF7D0" }}>
+                    Margem Plano: {pve.totais.margemPlano != null ? `${pve.totais.margemPlano.toFixed(1)}%` : "—"}
+                  </span>
+                  <span style={{ fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 8,
+                    background: pve.totais.margemReal != null && pve.totais.margemReal >= 23 ? "#F0FDF4" : "#FEF2F2",
+                    color:      pve.totais.margemReal != null && pve.totais.margemReal >= 23 ? "#15803D"  : "#DC2626",
+                    border:     `1px solid ${pve.totais.margemReal != null && pve.totais.margemReal >= 23 ? "#BBF7D0" : "#FECACA"}` }}>
+                    Margem Real: {pve.totais.margemReal != null ? `${pve.totais.margemReal.toFixed(1)}%` : "—"}
+                  </span>
+                </div>
+              )}
+            </div>
+            {pveLoading && <div style={{ textAlign: "center", padding: 32, color: "#94A3B8" }}>Carregando comparativo...</div>}
+            {!pveLoading && !pve && (
+              <div style={{ textAlign: "center", padding: 32, background: "#FFFBEB", borderRadius: 10, border: "1px solid #FDE68A", color: "#92400E", fontSize: 13 }}>
+                Sem baseline cadastrado — salve um Planejamento Financeiro para este projeto para ver o comparativo.
+              </div>
+            )}
+            {!pveLoading && pve && pve.grupos.length === 0 && (
+              <div style={{ textAlign: "center", padding: 32, color: "#94A3B8", fontSize: 13 }}>
+                Nenhum dado disponível (baseline vazio e sem lançamentos OPP vinculados).
+              </div>
+            )}
+            {!pveLoading && pve && pve.grupos.length > 0 && (
+              <>
+                <div style={{ display: "flex", gap: 8, padding: "0 16px 10px", borderBottom: "1px solid #F1F5F9", marginBottom: 10 }}>
+                  <span style={{ flex: 1, fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase" }}>Categoria</span>
+                  <span style={{ width: 130, fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase", textAlign: "right" }}>Planejado</span>
+                  <span style={{ width: 130, fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase", textAlign: "right" }}>Executado</span>
+                  <span style={{ width: 130, fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase", textAlign: "right" }}>Variação</span>
+                  <span style={{ width: 55, fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase", textAlign: "right" }}>% exec</span>
+                  <span style={{ width: 80 }} />
+                  <span style={{ width: 36 }} />
+                </div>
+                {pve.grupos.map(g => <PvECard key={g.key} grupo={g} />)}
+                <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                  <div style={{ padding: "8px 14px", borderRadius: 8, background: "#F0FDF4", border: "1px solid #BBF7D0", fontSize: 12, color: "#15803D", fontWeight: 700 }}>
+                    Receita exec.: {fmt(pve.totais.totalReceita)}
+                  </div>
+                  <div style={{ padding: "8px 14px", borderRadius: 8, background: "#FEF2F2", border: "1px solid #FECACA", fontSize: 12, color: "#DC2626", fontWeight: 700 }}>
+                    Custos exec.: {fmt(pve.totais.totalCustos)}
+                  </div>
+                  <div style={{ padding: "8px 14px", borderRadius: 8,
+                    background: pve.totais.totalReceita - pve.totais.totalCustos >= 0 ? "#F0FDF4" : "#FEF2F2",
+                    border: `1px solid ${pve.totais.totalReceita - pve.totais.totalCustos >= 0 ? "#BBF7D0" : "#FECACA"}`,
+                    fontSize: 12, fontWeight: 700,
+                    color: pve.totais.totalReceita - pve.totais.totalCustos >= 0 ? "#15803D" : "#DC2626" }}>
+                    Saldo real: {fmt(pve.totais.totalReceita - pve.totais.totalCustos)}
+                  </div>
+                  <div style={{ padding: "8px 14px", borderRadius: 8, background: "#F8FAFC", border: "1px solid #E2E8F0", fontSize: 12, color: "#64748B" }}>
+                    {pve.totalLancamentos} lançamentos OPP vinculados
+                  </div>
+                </div>
               </>
             )}
           </div>
