@@ -105,6 +105,9 @@ export default function PlanejamentoFinanceiro() {
 
   const [projetos, setProjetos] = useState([])
   const [projetoId, setProjetoId] = useState(paramId || "")
+  const [centrosCusto, setCentrosCusto] = useState([])
+  const [ccSugestoes, setCcSugestoes] = useState([])
+  const [ccFocado, setCcFocado] = useState(false)
   const [planId, setPlanId] = useState(null)          // ID interno do planejamento
   const [planStatus, setPlanStatus] = useState(null)
   const [planTravado, setPlanTravado] = useState(false)
@@ -272,6 +275,35 @@ export default function PlanejamentoFinanceiro() {
     } catch (err) {
       toast.error(err.response?.data?.error || "Erro ao salvar")
     } finally { setSaving(false) }
+  }
+
+  async function carregarCentrosCusto() {
+    if (centrosCusto.length > 0) return
+    try {
+      const r = await api.get('/opp/centros-custo')
+      const lista = Array.isArray(r.data) ? r.data : []
+      // Extrai o nome do centro de custo (campo pode ser nome, descricao, nome_centro, etc.)
+      const nomes = lista
+        .map(c => c.nome || c.descricao || c.nome_centro || c.name || '')
+        .filter(Boolean)
+        .map(n => n.toUpperCase())
+        .sort()
+      setCentrosCusto(nomes)
+    } catch { /* silencioso — autocomplete é opcional */ }
+  }
+
+  function onCcChange(val) {
+    f("nrContratoOS", val.toUpperCase())
+    const q = val.toUpperCase().trim()
+    if (q.length < 2) { setCcSugestoes([]); return }
+    const sugs = centrosCusto.filter(c => c.includes(q)).slice(0, 8)
+    setCcSugestoes(sugs)
+  }
+
+  function selecionarCc(nome) {
+    f("nrContratoOS", nome)
+    setCcSugestoes([])
+    setCcFocado(false)
   }
 
   async function travarOPP() {
@@ -538,16 +570,32 @@ export default function PlanejamentoFinanceiro() {
                     <div style={{ flex: 1, position: "relative" }}>
                       <input
                         value={form.nrContratoOS}
-                        onChange={e => !planTravado && f("nrContratoOS", e.target.value.toUpperCase())}
+                        onChange={e => !planTravado && onCcChange(e.target.value)}
+                        onFocus={() => { setCcFocado(true); if (!planTravado) carregarCentrosCusto() }}
+                        onBlur={() => setTimeout(() => setCcFocado(false), 180)}
                         readOnly={planTravado}
                         maxLength={45}
                         style={{ ...INPUT, width: "100%", background: planTravado ? "#F0FDF4" : undefined, color: planTravado ? "#15803D" : undefined, cursor: planTravado ? "not-allowed" : undefined, paddingRight: 48, boxSizing: "border-box" }}
                         placeholder="Ex: ARQ CROATÁ HOSPITAL MUNICIPAL"
+                        autoComplete="off"
                       />
                       {!planTravado && (
                         <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 10, fontWeight: 700, color: (form.nrContratoOS || "").length >= 40 ? "#DC2626" : "#94A3B8" }}>
                           {(form.nrContratoOS || "").length}/45
                         </span>
+                      )}
+                      {/* Dropdown autocomplete */}
+                      {ccFocado && ccSugestoes.length > 0 && (
+                        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: "#fff", border: "1.5px solid #BAE6FD", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", marginTop: 2, maxHeight: 220, overflowY: "auto" }}>
+                          {ccSugestoes.map((s, i) => (
+                            <div key={i} onMouseDown={() => selecionarCc(s)}
+                              style={{ padding: "9px 14px", fontSize: 12, fontWeight: 600, color: "#0F172A", cursor: "pointer", borderBottom: i < ccSugestoes.length - 1 ? "1px solid #F1F5F9" : "none" }}
+                              onMouseEnter={e => e.currentTarget.style.background = "#F0F9FF"}
+                              onMouseLeave={e => e.currentTarget.style.background = ""}>
+                              {s}
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
                     {planTravado ? (
