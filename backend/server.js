@@ -66,11 +66,12 @@ app.get('/api/debug-clickup-campos', async (req, res) => {
     // Busca espaços do time
     const spacesRes = await axios.get(`https://api.clickup.com/api/v2/team/${teamId}/space`, { headers });
     const spaces = spacesRes.data.spaces || [];
-    const gestao = spaces.find(s => s.name?.toLowerCase().includes('gest')) || spaces[0];
+    const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const gestao = spaces.find(s => norm(s.name) === 'gestao') || spaces.find(s => norm(s.name).includes('gestao') && !norm(s.name).includes('demanda')) || spaces[0];
     // Busca pastas do espaço
     const foldersRes = await axios.get(`https://api.clickup.com/api/v2/space/${gestao.id}/folder`, { headers });
     const folders = foldersRes.data.folders || [];
-    const tercFolder = folders.find(f => f.name?.toLowerCase().includes('terceirizado'));
+    const tercFolder = folders.find(f => f.name?.toLowerCase().includes('terceiriz'));
     if (!tercFolder) return res.json({ espacos: spaces.map(s=>s.name), pastas: folders.map(f=>f.name), erro: 'Pasta Terceirizados não encontrada' });
     // Busca listas da pasta
     const listsRes = await axios.get(`https://api.clickup.com/api/v2/folder/${tercFolder.id}/list`, { headers });

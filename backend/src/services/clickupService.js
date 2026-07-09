@@ -623,7 +623,9 @@ async function syncTerceirizadosClickUp() {
   let gestaoSpaceId = process.env.CLICKUP_GESTAO_SPACE_ID;
   if (!gestaoSpaceId) {
     const spaces = await getSpaces(teamId);
-    const gestaoSpace = spaces.find(s => s.name?.toLowerCase().includes('gestão') || s.name?.toLowerCase().includes('gestao'));
+    // Prioriza match exato "Gestão", depois fallback para contains
+    const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const gestaoSpace = spaces.find(s => norm(s.name) === 'gestao') || spaces.find(s => norm(s.name).includes('gestao') && !norm(s.name).includes('de ') && !norm(s.name).includes('demanda'));
     if (!gestaoSpace) throw new Error('Espaço "Gestão" não encontrado no ClickUp. Configure CLICKUP_GESTAO_SPACE_ID.');
     gestaoSpaceId = gestaoSpace.id;
     console.log(`[ClickUp Terc] Espaço Gestão encontrado automaticamente: ${gestaoSpace.name} (${gestaoSpaceId})`);
@@ -632,7 +634,7 @@ async function syncTerceirizadosClickUp() {
   try {
     console.log('[ClickUp Terc] Sincronizando terceirizados do espaço Gestão...');
     const folders = await getFolders(gestaoSpaceId);
-    const tercFolder = folders.find(f => f.name?.toLowerCase().includes('terceirizado'));
+    const tercFolder = folders.find(f => f.name?.toLowerCase().includes('terceiriz'));
     if (!tercFolder) { console.log('[ClickUp Terc] Pasta Terceirizados não encontrada no espaço Gestão.'); return 0; }
 
     const LISTAS_ALVO = ['solicitação', 'contratação', 'execução', 'execucao', 'pagamento'];
