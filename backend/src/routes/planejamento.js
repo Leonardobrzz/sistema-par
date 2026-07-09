@@ -100,7 +100,7 @@ function calcularTotais(dados) {
 
 
 // GET /api/planejamento/debug-valor — diagnóstico do valor por projeto
-router.get('/debug-valor', authMiddleware, async (req, res, next) => {
+router.get('/debug-valor', async (req, res, next) => {
   try {
     const [planejamentos, terceirizados, ocs] = await Promise.all([
       db.readSheet('Planejamentos'),
