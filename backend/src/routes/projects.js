@@ -66,8 +66,12 @@ router.get('/', async (req, res, next) => {
         return p.Setor || ''
       })()
 
+      const valorPlanejamento = parseFloat(plan?.Valor_Contrato || 0);
+      const valorExibido = valorPlanejamento > 0 ? valorPlanejamento : parseFloat(p.Valor_Global || 0);
+
       return {
         ...p,
+        Valor_Global: String(valorExibido),
         Setor: setorNorm,
         temPlanejamento: !!plan,
         statusPlanejamento: plan?.Status || null,
