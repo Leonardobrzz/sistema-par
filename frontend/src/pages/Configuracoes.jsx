@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { toast } from "react-hot-toast"
-import { Settings, RefreshCw, Database, Bell, Link, CheckCircle, AlertTriangle, Users } from "lucide-react"
+import { Settings, RefreshCw, Database, Bell, Link, CheckCircle, AlertTriangle, Users, Trash2 } from "lucide-react"
 import api from "../utils/api"
 
 const PERFIS = ['Admin', 'PO', 'Coordenador', 'Comercial', 'Financeiro', 'Diretoria', 'Visualizador']
@@ -89,6 +89,16 @@ export default function Configuracoes() {
     } catch { toast.error("Erro ao atualizar usuário") }
   }
 
+  async function excluirUsuario(user) {
+    if (!window.confirm(`Excluir permanentemente o usuário "${user.nome}"?\n\nEsta ação libera o e-mail "${user.email}" para ser reutilizado.`)) return
+    try {
+      await api.delete(`/auth/usuarios/${user.id}`)
+      toast.success(`Usuário ${user.nome} excluído.`)
+      const r = await api.get("/auth/usuarios")
+      setUsuarios(r.data)
+    } catch (err) { toast.error(err.response?.data?.error || "Erro ao excluir usuário") }
+  }
+
   const inputStyle = { padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#0F172A", fontSize: 13, fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box" }
   const btnPrimary = { padding: "10px 20px", borderRadius: 8, border: "none", background: "#7C3AED", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }
   const btnSecondary = { padding: "10px 20px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#fff", color: "#475569", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }
@@ -147,6 +157,9 @@ export default function Configuracoes() {
                   </span>
                   <button onClick={() => toggleAtivo(u)} style={{ fontSize: 11, padding: "5px 12px", borderRadius: 6, border: "1.5px solid #E2E8F0", background: "#fff", color: "#64748B", cursor: "pointer", fontWeight: 600 }}>
                     {u.ativo === "true" ? "Desativar" : "Ativar"}
+                  </button>
+                  <button onClick={() => excluirUsuario(u)} title="Excluir usuário" style={{ fontSize: 11, padding: "5px 8px", borderRadius: 6, border: "1.5px solid #FCA5A5", background: "#FFF1F2", color: "#DC2626", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                    <Trash2 size={13} />
                   </button>
                 </div>
               </div>

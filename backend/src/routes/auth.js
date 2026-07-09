@@ -159,4 +159,16 @@ router.put('/usuarios/:id', require('../middleware/auth').authMiddleware, async 
   } catch (err) { next(err); }
 });
 
+// DELETE /api/auth/usuarios/:id — Admin exclui usuário permanentemente
+router.delete('/usuarios/:id', require('../middleware/auth').authMiddleware, async (req, res, next) => {
+  try {
+    if (!['Admin'].includes(req.user.perfil)) return res.status(403).json({ error: 'Sem permissão.' });
+    if (req.user.id === req.params.id) return res.status(400).json({ error: 'Não é possível excluir o próprio usuário.' });
+    const user = await db.findOne('USER', u => u.ID === req.params.id);
+    if (!user) return res.status(404).json({ error: 'Usuário não encontrado.' });
+    await db.deleteRowById('USER', 'ID', req.params.id);
+    res.json({ message: 'Usuário excluído com sucesso.' });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
