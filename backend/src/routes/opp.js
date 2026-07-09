@@ -510,14 +510,20 @@ router.get('/debug-categoria', async (req, res, next) => {
         'secret-access-token': process.env.OPP_SECRET || process.env.OPP_API_SECRET,
         'cache-control': 'no-cache',
       };
-      const r = await axios.get(`${BASE_URL}/contas-pagar?limit=3`, { headers });
+      const hoje = new Date();
+      const umAnoAtras = new Date(hoje); umAnoAtras.setFullYear(umAnoAtras.getFullYear() - 1);
+      const fmt = d => d.toISOString().split('T')[0];
+      const r = await axios.get(`${BASE_URL}/contas-pagar?limit=3&data_inicio=${fmt(umAnoAtras)}&data_fim=${fmt(hoje)}`, { headers });
       const items = Array.isArray(r.data?.data) ? r.data.data : (Array.isArray(r.data) ? r.data : []);
       camposBrutos = items.map(d => ({
         nome_conta: d.nome_conta,
-        categoria: d.categoria,
-        nome_categoria: d.nome_categoria,
-        categoria_pag: d.categoria_pag,
-        id_categoria: d.id_categoria,
+        id_pedido: d.id_pedido,
+        id_pedido_compra: d.id_pedido_compra,
+        id_ordem_compra: d.id_ordem_compra,
+        numero_pedido: d.numero_pedido,
+        nr_pedido: d.nr_pedido,
+        liquidado_pag: d.liquidado_pag,
+        situacao: d.situacao,
         todos_campos: Object.keys(d),
       }));
     } catch (e) {
