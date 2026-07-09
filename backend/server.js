@@ -60,7 +60,7 @@ app.use('/api/extrato', extratoRoutes);
 app.get('/api/debug-clickup-campos', async (req, res) => {
   try {
     const axios = require('axios');
-    const TOKEN = process.env.CLICKUP_TOKEN;
+    const TOKEN = process.env.CLICKUP_API_TOKEN;
     const teamId = process.env.CLICKUP_TEAM_ID;
     const headers = { Authorization: TOKEN };
     // Busca espaços do time
