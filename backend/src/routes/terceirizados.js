@@ -52,8 +52,8 @@ router.get('/', async (req, res, next) => {
       const key = String(oc.ID_OC);
       if (!liquidadoMap[key]) {
         const sit = (oc.Situacao || '').toLowerCase();
-        if (sit.includes('liquid') || sit.includes('pago') || sit.includes('entregue') ||
-            sit.includes('conclu') || sit.includes('aprovado')) {
+        if (sit.includes('atendido') || sit.includes('liquid') || sit.includes('pago') ||
+            sit.includes('entregue') || sit.includes('conclu') || sit.includes('aprovado')) {
           liquidadoMap[key] = parseFloat(oc.Valor_Total || 0);
         }
       }
