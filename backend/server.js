@@ -89,6 +89,15 @@ app.get('/api/debug-clickup-campos', async (req, res) => {
   } catch (err) { res.status(500).json({ erro: err.message, status: err.response?.status, data: err.response?.data }); }
 });
 
+// Trigger público temporário para sync ClickUp
+app.post('/api/debug-sync-clickup', async (req, res) => {
+  try {
+    const { syncTerceirizadosClickUp } = require('./src/services/clickupService');
+    const count = await syncTerceirizadosClickUp();
+    res.json({ ok: true, sincronizados: count });
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
 // Debug público: inspeciona OSs do OPP
 app.get('/api/debug-os-opp', async (req, res) => {
   try {
