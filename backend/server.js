@@ -56,6 +56,15 @@ app.use('/api/relatorio-final', relatorioFinalRoutes);
 app.use('/api/checklist', checklistRoutes);
 app.use('/api/extrato', extratoRoutes);
 
+// Debug público: inspeciona OSs do OPP
+app.get('/api/debug-os-opp', async (req, res) => {
+  try {
+    const opp = require('./src/services/oppService');
+    const data = await opp.oppRequest('GET', '/ordens_servico?limit=5');
+    res.json({ amostra: data });
+  } catch (err) { res.status(500).json({ erro: err.message, stack: err.stack }); }
+});
+
 // Debug público: diagnóstico valor planejamento via OC
 app.get('/api/debug-valor-oc', async (req, res) => {
   try {
