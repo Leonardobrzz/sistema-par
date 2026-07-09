@@ -539,16 +539,47 @@ router.get('/debug-categoria', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// GET /api/opp/debug-oc — mostra OrdensCompra_OPP (amostra) para diagnóstico
+// GET /api/opp/debug-oc — inspeciona OrdensCompra_OPP e tenta buscar campos de pagamento da API
 router.get('/debug-oc', async (req, res, next) => {
   try {
     const db = process.env.USE_POSTGRES === 'true' ? require('../services/postgresService') : require('../services/googleSheetsService');
     const ocs = await db.readSheet('OrdensCompra_OPP');
     const situacoes = [...new Set(ocs.map(o => o.Situacao).filter(Boolean))];
+
+    // Tenta buscar detalhe de uma OC da API para ver campos disponíveis
+    let ocDetalheAPI = null;
+    let contasPagarPorOC = null;
+    const ocTeste = ocs.find(o => o.ID_OC && o.Situacao === 'Atendido') || ocs[0];
+    if (ocTeste) {
+      try {
+        ocDetalheAPI = await opp.oppRequest('GET', `/ordens-compra/${ocTeste.ID_OC}`);
+      } catch (e) { ocDetalheAPI = { erro: e.message }; }
+
+      try {
+        // Tenta contas-pagar filtrado por id_pedido
+        const hoje = new Date().toISOString().split('T')[0];
+        const umAnoAtras = new Date(); umAnoAtras.setFullYear(umAnoAtras.getFullYear() - 1);
+        const inicio = umAnoAtras.toISOString().split('T')[0];
+        const r1 = await opp.oppRequest('GET', `/contas-pagar?id_pedido=${ocTeste.ID_OC}&data_inicio=${inicio}&data_fim=${hoje}&limit=5`);
+        contasPagarPorOC = { filtro: `id_pedido=${ocTeste.ID_OC}`, resultado: r1 };
+      } catch (e) {
+        try {
+          // Fallback: tenta endpoint de itens da OC
+          const r2 = await opp.oppRequest('GET', `/ordens-compra/${ocTeste.ID_OC}/pagamentos`);
+          contasPagarPorOC = { filtro: 'endpoint /pagamentos', resultado: r2 };
+        } catch (e2) {
+          contasPagarPorOC = { erro: e.message, erroPagamentos: e2.message };
+        }
+      }
+    }
+
     res.json({
       total: ocs.length,
       situacoesUnicas: situacoes,
-      amostra: ocs.slice(0, 15).map(o => ({ ID_OC: o.ID_OC, Nome_Fornecedor: o.Nome_Fornecedor, Valor_Total: o.Valor_Total, Situacao: o.Situacao })),
+      ocTeste: ocTeste ? { ID_OC: ocTeste.ID_OC, Situacao: ocTeste.Situacao } : null,
+      ocDetalheAPI,
+      contasPagarPorOC,
+      amostra: ocs.slice(0, 10).map(o => ({ ID_OC: o.ID_OC, Nome_Fornecedor: o.Nome_Fornecedor, Valor_Total: o.Valor_Total, Situacao: o.Situacao })),
     });
   } catch (err) { next(err); }
 });
