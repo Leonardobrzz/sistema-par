@@ -102,8 +102,22 @@ function calcularTotais(dados) {
 // GET /api/planejamento — lista todos os planejamentos
 router.get('/', async (req, res, next) => {
   try {
-    const planejamentos = await db.readSheet('Planejamentos');
-    res.json(planejamentos);
+    const [planejamentos, projetos] = await Promise.all([
+      db.readSheet('Planejamentos'),
+      db.readSheet('Projetos_Contratos'),
+    ]);
+    const projMap = Object.fromEntries(projetos.map(p => [p.ID_Projeto, p]));
+    const enriched = planejamentos.map(p => {
+      const proj = projMap[p.ID_Projeto] || {};
+      const valorContrato = parseFloat(p.Valor_Contrato || 0);
+      return {
+        ...p,
+        Valor_Contrato: valorContrato > 0
+          ? p.Valor_Contrato
+          : (proj.Valor_Global || '0'),
+      };
+    });
+    res.json(enriched);
   } catch (err) {
     next(err);
   }
