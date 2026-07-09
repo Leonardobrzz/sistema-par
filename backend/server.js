@@ -56,29 +56,35 @@ app.use('/api/relatorio-final', relatorioFinalRoutes);
 app.use('/api/checklist', checklistRoutes);
 app.use('/api/extrato', extratoRoutes);
 
-// Debug público: inspeciona campos customizados das tarefas do ClickUp (Terceirizados)
+// Debug público: inspeciona custom_fields das tarefas de Terceirizados no ClickUp
 app.get('/api/debug-clickup-campos', async (req, res) => {
   try {
     const axios = require('axios');
-    const CLICKUP_TOKEN = process.env.CLICKUP_TOKEN;
-    // Busca tarefas da lista de Terceirizados (Solicitação) — pega 3 tarefas para ver campos
-    // Primeiro busca as listas do time
-    const spacesRes = await axios.get('https://api.clickup.com/api/v2/team', {
-      headers: { Authorization: CLICKUP_TOKEN }
-    });
-    const teamId = spacesRes.data.teams?.[0]?.id;
-    // Busca tarefas com custom fields visíveis
-    const tasksRes = await axios.get(`https://api.clickup.com/api/v2/team/${teamId}/task?include_closed=false&custom_fields=true&subtasks=true&limit=3`, {
-      headers: { Authorization: CLICKUP_TOKEN }
-    });
+    const TOKEN = process.env.CLICKUP_TOKEN;
+    const teamId = process.env.CLICKUP_TEAM_ID;
+    const headers = { Authorization: TOKEN };
+    // Busca espaços do time
+    const spacesRes = await axios.get(`https://api.clickup.com/api/v2/team/${teamId}/space`, { headers });
+    const spaces = spacesRes.data.spaces || [];
+    const gestao = spaces.find(s => s.name?.toLowerCase().includes('gest')) || spaces[0];
+    // Busca pastas do espaço
+    const foldersRes = await axios.get(`https://api.clickup.com/api/v2/space/${gestao.id}/folder`, { headers });
+    const folders = foldersRes.data.folders || [];
+    const tercFolder = folders.find(f => f.name?.toLowerCase().includes('terceirizado'));
+    if (!tercFolder) return res.json({ espacos: spaces.map(s=>s.name), pastas: folders.map(f=>f.name), erro: 'Pasta Terceirizados não encontrada' });
+    // Busca listas da pasta
+    const listsRes = await axios.get(`https://api.clickup.com/api/v2/folder/${tercFolder.id}/list`, { headers });
+    const lists = listsRes.data.lists || [];
+    const list = lists[0];
+    if (!list) return res.json({ pastas: folders.map(f=>f.name), listas: [], erro: 'Sem listas' });
+    // Busca tarefas com custom_fields
+    const tasksRes = await axios.get(`https://api.clickup.com/api/v2/list/${list.id}/task?include_closed=true&custom_fields=true&limit=3`, { headers });
     const tasks = tasksRes.data.tasks || [];
     const amostra = tasks.map(t => ({
-      id: t.id,
       name: t.name,
-      list: t.list?.name,
       custom_fields: (t.custom_fields || []).map(f => ({ name: f.name, type: f.type, value: f.value }))
     }));
-    res.json({ teamId, totalTasks: tasks.length, amostra });
+    res.json({ espaco: gestao.name, pasta: tercFolder.name, lista: list.name, totalTasks: tasks.length, amostra });
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
 
