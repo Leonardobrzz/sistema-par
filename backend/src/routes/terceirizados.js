@@ -47,14 +47,18 @@ router.get('/', async (req, res, next) => {
         liquidadoMap[key] = (liquidadoMap[key] || 0) + parseFloat(f.Valor || 0);
       }
     }
-    // Fonte 2: OrdensCompra_OPP — quando a OC está liquidada/entregue, usa Valor_Total
+    // Fonte 2: OrdensCompra_OPP — usa Valor_Liquidado quando já sincronizado, ou
+    // fallback para Valor_Total quando Situacao = 'Atendido' (100% pago)
     for (const oc of ocs) {
       const key = String(oc.ID_OC);
       if (!liquidadoMap[key]) {
-        const sit = (oc.Situacao || '').toLowerCase();
-        if (sit.includes('atendido') || sit.includes('liquid') || sit.includes('pago') ||
-            sit.includes('entregue') || sit.includes('conclu') || sit.includes('aprovado')) {
-          liquidadoMap[key] = parseFloat(oc.Valor_Total || 0);
+        if (oc.Valor_Liquidado && parseFloat(oc.Valor_Liquidado) > 0) {
+          liquidadoMap[key] = parseFloat(oc.Valor_Liquidado);
+        } else {
+          const sit = (oc.Situacao || '').toLowerCase();
+          if (sit.includes('atendido')) {
+            liquidadoMap[key] = parseFloat(oc.Valor_Total || 0);
+          }
         }
       }
     }

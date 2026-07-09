@@ -92,7 +92,7 @@ const REQUIRED_SHEETS = [
   { name: 'Log_Importacoes', headers: ['ID', 'Data_Upload', 'Arquivo', 'Usuario', 'Registros_Processados', 'Erros', 'Status', 'Detalhes'] },
   { name: 'Configuracoes', headers: ['Chave', 'Valor', 'Descricao'] },
   { name: 'Financeiro_OPP', headers: ['ID_OPP', 'Tipo', 'Profissional', 'Categoria', 'Descricao', 'Valor', 'Data_Vencimento', 'Data_Competencia', 'Situacao', 'ID_Cliente_OPP', 'Nome_Cliente', 'Nr_Documento', 'Nr_OS_OPP', 'OC', 'Sincronizado_Em'] },
-  { name: 'OrdensCompra_OPP', headers: ['ID_OC', 'ID_Ordem_OPP', 'Nome_Fornecedor', 'Valor_Total', 'Data_Pedido', 'Situacao', 'Observacao', 'Sincronizado_Em'] },
+  { name: 'OrdensCompra_OPP', headers: ['ID_OC', 'ID_Ordem_OPP', 'Nome_Fornecedor', 'Valor_Total', 'Valor_Liquidado', 'Data_Pedido', 'Situacao', 'Observacao', 'Sincronizado_Em'] },
 ];
 
 async function ensureSheetsExist() {
