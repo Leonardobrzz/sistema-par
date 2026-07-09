@@ -20,7 +20,18 @@ async function initialize() {
 }
 
 async function ensureSheetsExist() {
-  // No-op: o schema SQL já garante as tabelas
+  const p = getPool();
+  // Migração incremental: adiciona colunas que faltam sem recriar tabelas
+  const migrations = [
+    `ALTER TABLE "Planejamentos" ADD COLUMN IF NOT EXISTS "Nr_OS_OPP" TEXT`,
+    `ALTER TABLE "Planejamentos" ADD COLUMN IF NOT EXISTS "Data_OS_Externa" TEXT`,
+    `ALTER TABLE "Planejamentos" ADD COLUMN IF NOT EXISTS "Travado" TEXT`,
+    `ALTER TABLE "Planejamentos" ADD COLUMN IF NOT EXISTS "Travado_Em" TEXT`,
+    `ALTER TABLE "Planejamentos" ADD COLUMN IF NOT EXISTS "Travado_Por" TEXT`,
+  ];
+  for (const sql of migrations) {
+    try { await p.query(sql); } catch (e) { console.warn('[Migration]', e.message); }
+  }
 }
 
 // Serializa valores para garantir compatibilidade com o comportamento do Sheets (tudo string)

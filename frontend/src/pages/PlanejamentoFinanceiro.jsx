@@ -244,16 +244,21 @@ export default function PlanejamentoFinanceiro() {
   const SETORES_PAR = ['Arquitetura', 'Saneamento', 'Infraestrutura', 'Administrativo']
   const clientesUnicos = useMemo(() => [...new Set(projetos.map(p => p.Cliente).filter(Boolean))].sort(), [projetos])
   const statusUnicos = useMemo(() => [...new Set(projetos.map(p => p.Status).filter(Boolean))].sort(), [projetos])
-  const projetosFiltrados = useMemo(() => projetos.filter(p => {
-    if (filtroSetor && !(p.Setor || '').toLowerCase().includes(filtroSetor.toLowerCase())) return false
-    if (filtroCliente && p.Cliente !== filtroCliente) return false
-    if (filtroStatus && p.Status !== filtroStatus) return false
-    if (filtroBusca) {
-      const b = filtroBusca.toLowerCase()
-      if (!(p.Nome || '').toLowerCase().includes(b) && !(p.Cliente || '').toLowerCase().includes(b)) return false
-    }
-    return true
-  }), [projetos, filtroSetor, filtroCliente, filtroStatus, filtroBusca])
+  const projetosFiltrados = useMemo(() => {
+    const seen = new Set()
+    return projetos.filter(p => {
+      if (seen.has(p.ID_Projeto)) return false
+      seen.add(p.ID_Projeto)
+      if (filtroSetor && !(p.Setor || '').toLowerCase().includes(filtroSetor.toLowerCase())) return false
+      if (filtroCliente && p.Cliente !== filtroCliente) return false
+      if (filtroStatus && p.Status !== filtroStatus) return false
+      if (filtroBusca) {
+        const b = filtroBusca.toLowerCase()
+        if (!(p.Nome || '').toLowerCase().includes(b) && !(p.Cliente || '').toLowerCase().includes(b)) return false
+      }
+      return true
+    })
+  }, [projetos, filtroSetor, filtroCliente, filtroStatus, filtroBusca])
 
   async function salvar(status = "Rascunho") {
     if (!projetoId) return toast.error("Selecione um projeto")

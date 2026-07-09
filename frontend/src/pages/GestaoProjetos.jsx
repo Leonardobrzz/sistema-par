@@ -142,12 +142,6 @@ export default function GestaoProjetos() {
             <FunnelIcon className="w-4 h-4" />
             Filtros {filters.status.length > 0 && <span className="w-2 h-2 rounded-full bg-par-500 pulse-dot ml-1" />}
           </button>
-          <button
-            onClick={() => setShowNewModal(true)}
-            className="btn-primary flex items-center gap-2"
-          >
-            <PlusIcon className="w-4 h-4" /> Novo Projeto
-          </button>
         </div>
       </div>
 
