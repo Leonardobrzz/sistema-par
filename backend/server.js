@@ -78,7 +78,7 @@ app.get('/api/debug-clickup-campos', async (req, res) => {
     const list = lists[0];
     if (!list) return res.json({ pastas: folders.map(f=>f.name), listas: [], erro: 'Sem listas' });
     // Busca tarefas com custom_fields
-    const tasksRes = await axios.get(`https://api.clickup.com/api/v2/list/${list.id}/task?include_closed=true&custom_fields=true&limit=3`, { headers });
+    const tasksRes = await axios.get(`https://api.clickup.com/api/v2/list/${list.id}/task?include_closed=true&limit=3`, { headers });
     const tasks = tasksRes.data.tasks || [];
     const amostra = tasks.map(t => ({
       name: t.name,
