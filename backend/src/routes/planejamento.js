@@ -102,19 +102,40 @@ function calcularTotais(dados) {
 // GET /api/planejamento — lista todos os planejamentos
 router.get('/', async (req, res, next) => {
   try {
-    const [planejamentos, projetos] = await Promise.all([
+    const [planejamentos, projetos, terceirizados, ocs] = await Promise.all([
       db.readSheet('Planejamentos'),
       db.readSheet('Projetos_Contratos'),
+      db.readSheet('Terceirizados'),
+      db.readSheet('OrdensCompra_OPP'),
     ]);
     const projMap = Object.fromEntries(projetos.map(p => [p.ID_Projeto, p]));
+    // Mapa ID_OC -> Valor_Total (apenas OCs não canceladas)
+    const ocValorMap = {};
+    for (const oc of ocs) {
+      if ((oc.Situacao || '').toLowerCase() !== 'cancelado') {
+        ocValorMap[String(oc.ID_OC)] = parseFloat(oc.Valor_Total || 0);
+      }
+    }
+    // Soma dos valores de OC por projeto (via Terceirizados.OC)
+    const valorOCPorProjeto = {};
+    for (const t of terceirizados) {
+      if (!t.ID_Projeto || !t.OC) continue;
+      const val = ocValorMap[String(t.OC)];
+      if (val > 0) {
+        valorOCPorProjeto[t.ID_Projeto] = (valorOCPorProjeto[t.ID_Projeto] || 0) + val;
+      }
+    }
+
     const enriched = planejamentos.map(p => {
       const proj = projMap[p.ID_Projeto] || {};
       const valorContrato = parseFloat(p.Valor_Contrato || 0);
+      const valorGlobal = parseFloat(proj.Valor_Global || 0);
+      const valorOC = valorOCPorProjeto[p.ID_Projeto] || 0;
+      // Prioridade: planejamento > Projetos_Contratos > soma das OCs no OPP
+      const valorFinal = valorContrato > 0 ? valorContrato : valorGlobal > 0 ? valorGlobal : valorOC;
       return {
         ...p,
-        Valor_Contrato: valorContrato > 0
-          ? p.Valor_Contrato
-          : (proj.Valor_Global || '0'),
+        Valor_Contrato: String(valorFinal),
       };
     });
     res.json(enriched);
