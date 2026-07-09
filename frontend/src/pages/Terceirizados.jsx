@@ -66,11 +66,12 @@ export default function Terceirizados() {
   const [projetos, setProjetos] = useState([])
   const [filtroSetor, setFiltroSetor] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('ativos')
-  const [filtroProjeto, setFiltroProjeto] = useState('')
   const [filtroFornecedor, setFiltroFornecedor] = useState('')
-  const [filtroBusca, setFiltroBusca] = useState('')
-  const [filtroEtapa, setFiltroEtapa] = useState('')        // ex: 'solicitação'
-  const [filtroStatusClickUp, setFiltroStatusClickUp] = useState('') // status dentro da etapa
+  const [filtroCliente, setFiltroCliente] = useState('')
+  const [filtroVencimentoDe, setFiltroVencimentoDe] = useState('')
+  const [filtroVencimentoAte, setFiltroVencimentoAte] = useState('')
+  const [filtroEtapa, setFiltroEtapa] = useState('')
+  const [filtroStatusClickUp, setFiltroStatusClickUp] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -80,7 +81,7 @@ export default function Terceirizados() {
         api.get('/projetos'),
       ])
       setTerceirizados(Array.isArray(tercRes.data) ? tercRes.data : (tercRes.data.terceirizados || []))
-      setProjetos(projRes.data.projetos || [])
+      setProjetos(Array.isArray(projRes.data) ? projRes.data : (projRes.data.projetos || []))
     } catch {
       toast.error('Erro ao carregar terceirizados')
     } finally {
@@ -118,24 +119,23 @@ export default function Terceirizados() {
     [...new Set(terceirizados.filter(t => t.Fornecedor).map(t => t.Fornecedor))].sort(),
     [terceirizados])
 
+  const clientesUnicos = useMemo(() =>
+    [...new Set(terceirizados.filter(t => t.Cliente).map(t => t.Cliente))].sort(),
+    [terceirizados])
+
   const tercFiltrados = useMemo(() => terceirizados.filter(t => {
     if (filtroSetor && !(t.Setor || '').toLowerCase().includes(filtroSetor.toLowerCase())) return false
-    if (filtroProjeto && t.ID_Projeto !== filtroProjeto) return false
     if (filtroFornecedor && t.Fornecedor !== filtroFornecedor) return false
+    if (filtroCliente && t.Cliente !== filtroCliente) return false
     if (filtroStatus === 'ativos' && (t.Status === 'Solicitado' || t.Status === 'Cancelado')) return false
     if (filtroStatus === 'solicitado' && t.Status !== 'Solicitado') return false
     if (filtroStatus === 'cancelado' && t.Status !== 'Cancelado') return false
-    if (filtroBusca) {
-      const b = filtroBusca.toLowerCase()
-      if (!(t.Fornecedor || '').toLowerCase().includes(b) &&
-          !(t.Descricao_Servico || '').toLowerCase().includes(b) &&
-          !(t.nomeProjeto || '').toLowerCase().includes(b) &&
-          !(t.Nr_Contrato || '').toLowerCase().includes(b)) return false
-    }
+    if (filtroVencimentoDe && t.Data_Vencimento && t.Data_Vencimento < filtroVencimentoDe) return false
+    if (filtroVencimentoAte && t.Data_Vencimento && t.Data_Vencimento > filtroVencimentoAte) return false
     if (filtroEtapa && getEtapaKey(t.Etapa_ClickUp) !== filtroEtapa) return false
     if (filtroStatusClickUp && (t.Status_ClickUp || '').toLowerCase() !== filtroStatusClickUp.toLowerCase()) return false
     return true
-  }), [terceirizados, filtroSetor, filtroProjeto, filtroFornecedor, filtroStatus, filtroBusca, filtroEtapa, filtroStatusClickUp])
+  }), [terceirizados, filtroSetor, filtroFornecedor, filtroCliente, filtroStatus, filtroVencimentoDe, filtroVencimentoAte, filtroEtapa, filtroStatusClickUp])
 
   function selecionarEtapaStatus(etapaKey, status) {
     if (filtroEtapa === etapaKey && filtroStatusClickUp === status) {
@@ -155,7 +155,15 @@ export default function Terceirizados() {
     }
   }
 
+  function limparFiltros() {
+    setFiltroSetor(''); setFiltroFornecedor(''); setFiltroCliente('')
+    setFiltroVencimentoDe(''); setFiltroVencimentoAte('')
+    setFiltroEtapa(''); setFiltroStatusClickUp('')
+    setFiltroStatus('ativos')
+  }
+
   const ativoEtapaBadge = filtroEtapa || filtroStatusClickUp
+  const temFiltroAtivo = filtroSetor || filtroFornecedor || filtroCliente || filtroVencimentoDe || filtroVencimentoAte
 
   return (
     <div style={{ padding: "28px 32px" }}>
@@ -251,43 +259,51 @@ export default function Terceirizados() {
         </div>
       )}
 
-      {/* Filtros setor */}
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
-        {SETORES_PAR.map(s => (
-          <button key={s} onClick={() => setFiltroSetor(filtroSetor === s ? '' : s)}
-            style={{ padding: "5px 14px", borderRadius: 20, border: `1.5px solid ${filtroSetor === s ? "#00B5CC" : "#E2E8F0"}`, background: filtroSetor === s ? "rgba(0,181,204,0.08)" : "#fff", color: filtroSetor === s ? "#007A8A" : "#64748B", fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
-            {s}
-          </button>
-        ))}
-      </div>
-
-      {/* Filtros linha */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+      {/* Filtros */}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16, alignItems: "center" }}>
+        {/* Status PAR */}
         <select value={filtroStatus} onChange={e => { setFiltroStatus(e.target.value); setFiltroEtapa(''); setFiltroStatusClickUp('') }}
           style={{ ...inp, width: "auto", paddingRight: 32 }}>
           <option value="ativos">Contratos ativos</option>
-          <option value="">Todos os registros</option>
           <option value="solicitado">Só cotações (Solicitado)</option>
           <option value="cancelado">Cancelados</option>
         </select>
-        <select value={filtroProjeto} onChange={e => setFiltroProjeto(e.target.value)}
-          style={{ ...inp, width: "auto", paddingRight: 32 }}>
-          <option value="">Projeto: Todos</option>
-          {projetos.filter(p => !filtroSetor || (p.Setor || '').toLowerCase().includes(filtroSetor.toLowerCase())).map(p => (
-            <option key={p.ID_Projeto} value={p.ID_Projeto}>{p.Nome}</option>
-          ))}
-        </select>
+
+        {/* Fornecedor */}
         <select value={filtroFornecedor} onChange={e => setFiltroFornecedor(e.target.value)}
           style={{ ...inp, width: "auto", paddingRight: 32 }}>
           <option value="">Fornecedor: Todos</option>
           {fornecedoresUnicos.map(f => <option key={f} value={f}>{f}</option>)}
         </select>
-        <input value={filtroBusca} onChange={e => setFiltroBusca(e.target.value)} placeholder="Buscar projeto, fornecedor, serviço, nº contrato..."
-          style={{ ...inp, width: 280 }} />
-        {(filtroSetor || filtroFornecedor || filtroBusca || filtroProjeto) && (
-          <button onClick={() => { setFiltroSetor(''); setFiltroFornecedor(''); setFiltroBusca(''); setFiltroProjeto('') }}
+
+        {/* Cliente */}
+        <select value={filtroCliente} onChange={e => setFiltroCliente(e.target.value)}
+          style={{ ...inp, width: "auto", paddingRight: 32 }}>
+          <option value="">Cliente: Todos</option>
+          {clientesUnicos.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+
+        {/* Setor */}
+        <select value={filtroSetor} onChange={e => setFiltroSetor(e.target.value)}
+          style={{ ...inp, width: "auto", paddingRight: 32 }}>
+          <option value="">Setor: Todos</option>
+          {SETORES_PAR.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+
+        {/* Vencimento */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ fontSize: 12, color: "#64748B", fontWeight: 600, whiteSpace: "nowrap" }}>Venc. de</span>
+          <input type="date" value={filtroVencimentoDe} onChange={e => setFiltroVencimentoDe(e.target.value)}
+            style={{ ...inp, width: 140 }} />
+          <span style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>até</span>
+          <input type="date" value={filtroVencimentoAte} onChange={e => setFiltroVencimentoAte(e.target.value)}
+            style={{ ...inp, width: 140 }} />
+        </div>
+
+        {temFiltroAtivo && (
+          <button onClick={limparFiltros}
             style={{ padding: "9px 14px", borderRadius: 8, border: "1.5px solid #FEE2E2", background: "#FFF5F5", color: "#DC2626", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
-            Limpar
+            Limpar filtros
           </button>
         )}
       </div>
@@ -303,54 +319,115 @@ export default function Terceirizados() {
             <table style={{ width: "100%", borderCollapse: "collapse", whiteSpace: "nowrap" }}>
               <thead>
                 <tr style={{ background: "#F8FAFC" }}>
-                  {["Etapa", "Projeto", "Fornecedor", "Serviço / Nº Contrato", "Valor Contrat.", "% Contrato", "Status ClickUp", "Vencimento", "Doc.", "Ações"].map(h => (
-                    <th key={h} style={{ padding: "12px 14px", fontSize: 11, fontWeight: 700, color: "#64748B", textAlign: h.includes("Valor") || h === "% Contrato" ? "right" : h === "Status ClickUp" || h === "Etapa" || h === "Vencimento" || h === "Doc." ? "center" : "left", letterSpacing: 0.5, textTransform: "uppercase", borderBottom: "1px solid #E2E8F0" }}>{h}</th>
+                  {[
+                    { h: "Projeto",         align: "left"   },
+                    { h: "Cliente",         align: "left"   },
+                    { h: "Fornecedor",      align: "left"   },
+                    { h: "Serviço",         align: "left"   },
+                    { h: "Vencimento",      align: "center" },
+                    { h: "Valor Cont.",     align: "right"  },
+                    { h: "Valor Liquid.",   align: "right"  },
+                    { h: "Saldo",           align: "right"  },
+                    { h: "Setor",           align: "center" },
+                    { h: "Status",          align: "center" },
+                    { h: "Doc.",            align: "center" },
+                    { h: "Ações",           align: "right"  },
+                  ].map(({ h, align }) => (
+                    <th key={h} style={{ padding: "12px 14px", fontSize: 11, fontWeight: 700, color: "#64748B", textAlign: align, letterSpacing: 0.5, textTransform: "uppercase", borderBottom: "1px solid #E2E8F0" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {tercFiltrados.length === 0 ? (
                   <tr>
-                    <td colSpan={10} style={{ textAlign: "center", padding: 48, color: "#64748B", fontSize: 13 }}>
+                    <td colSpan={12} style={{ textAlign: "center", padding: 48, color: "#64748B", fontSize: 13 }}>
                       <UsersIcon style={{ width: 36, height: 36, margin: "0 auto 10px", opacity: 0.3 }} />
                       <div>Nenhum registro encontrado</div>
                     </td>
                   </tr>
                 ) : tercFiltrados.map(t => {
-                  const perc = parseFloat(t.Percentual_Contrato || 0)
-                  const percColor = perc > 20 ? "#DC2626" : perc > 15 ? "#D97706" : "#16A34A"
                   const valorC = parseFloat(t.Valor_Contratado || 0)
+                  const valorL = parseFloat(t.Valor_Liquidado || 0)
+                  const saldo  = parseFloat(t.Saldo ?? (valorC - valorL))
+                  const saldoNeg = saldo < 0
+                  const sCUp = t.Status_ClickUp || t.Status || ''
+                  const sSt = statusStyle(sCUp)
                   const ek = getEtapaKey(t.Etapa_ClickUp)
                   const etapaCfg = ETAPAS.find(e => e.key === ek)
-                  const sCUp = t.Status_ClickUp || ''
-                  const sSt = statusStyle(sCUp)
+                  const setorMap = { arq: '#3B82F6', san: '#10B981', inf: '#F59E0B', adm: '#8B5CF6' }
+                  const setorColor = setorMap[Object.keys(setorMap).find(k => (t.Setor || '').toLowerCase().includes(k)) || ''] || '#94A3B8'
                   return (
                     <tr key={t.ID_Terceirizado || t.ID} style={{ borderBottom: "1px solid #F1F5F9", transition: "background 0.12s" }}
                       onMouseEnter={e => e.currentTarget.style.background = "#F8FAFC"}
                       onMouseLeave={e => e.currentTarget.style.background = ""}>
-                      <td style={{ padding: "11px 14px", textAlign: "center" }}>
-                        {etapaCfg ? (
-                          <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 20, fontSize: 10, fontWeight: 800, background: etapaCfg.bg, color: etapaCfg.color, border: `1px solid ${etapaCfg.border}`, whiteSpace: 'nowrap' }}>
+
+                      {/* Projeto */}
+                      <td style={{ padding: "11px 14px" }}>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: "#0F172A", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis" }} title={t.nomeProjeto}>
+                          {t.nomeProjeto || <span style={{ color: "#CBD5E1" }}>—</span>}
+                        </div>
+                        {etapaCfg && (
+                          <span style={{ display: "inline-block", marginTop: 2, padding: "1px 7px", borderRadius: 20, fontSize: 10, fontWeight: 800, background: etapaCfg.bg, color: etapaCfg.color, border: `1px solid ${etapaCfg.border}` }}>
                             {etapaCfg.label === 'Execução & Pagamento' ? 'Execução' : etapaCfg.label}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Cliente */}
+                      <td style={{ padding: "11px 14px", fontSize: 12, color: "#334155", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis" }} title={t.Cliente}>
+                        {t.Cliente || <span style={{ color: "#CBD5E1" }}>—</span>}
+                      </td>
+
+                      {/* Fornecedor */}
+                      <td style={{ padding: "11px 14px" }}>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: "#00788A", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis" }} title={t.Fornecedor}>
+                          {t.Fornecedor || <span style={{ color: "#CBD5E1" }}>—</span>}
+                        </div>
+                        {t.CNPJ_CPF && <div style={{ fontSize: 11, color: "#94A3B8" }}>{t.CNPJ_CPF}</div>}
+                      </td>
+
+                      {/* Serviço */}
+                      <td style={{ padding: "11px 14px", maxWidth: 220 }}>
+                        <div style={{ fontSize: 12, color: "#0F172A", overflow: "hidden", textOverflow: "ellipsis" }} title={t.Descricao_Servico}>
+                          {t.Descricao_Servico || t.Servico || <span style={{ color: "#CBD5E1" }}>—</span>}
+                        </div>
+                        {t.Nr_Contrato && <div style={{ fontSize: 11, color: "#7C3AED", fontWeight: 600, marginTop: 2 }}>Nº {t.Nr_Contrato}</div>}
+                      </td>
+
+                      {/* Vencimento */}
+                      <td style={{ padding: "11px 14px", textAlign: "center", fontSize: 12, color: "#64748B" }}>
+                        {formatDate(t.Data_Vencimento) || "—"}
+                      </td>
+
+                      {/* Valor Contratado */}
+                      <td style={{ padding: "11px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: valorC > 0 ? "#0F172A" : "#CBD5E1" }}>
+                        {valorC > 0 ? formatBRL(valorC) : "—"}
+                      </td>
+
+                      {/* Valor Liquidado */}
+                      <td style={{ padding: "11px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: valorL > 0 ? "#15803D" : "#CBD5E1" }}>
+                        {valorL > 0 ? formatBRL(valorL) : "—"}
+                      </td>
+
+                      {/* Saldo */}
+                      <td style={{ padding: "11px 14px", textAlign: "right" }}>
+                        {valorC > 0 ? (
+                          <span style={{ fontSize: 13, fontWeight: 800, color: saldoNeg ? "#DC2626" : "#475569" }}>
+                            {formatBRL(saldo)}
                           </span>
                         ) : <span style={{ color: "#CBD5E1" }}>—</span>}
                       </td>
-                      <td style={{ padding: "11px 14px" }}>
-                        <div style={{ fontWeight: 700, fontSize: 13, color: "#0F172A", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis" }} title={t.nomeProjeto}>{t.nomeProjeto || t.ID_Projeto || <span style={{ color: "#CBD5E1" }}>—</span>}</div>
-                        {t.Setor && <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 1 }}>{t.Setor}</div>}
+
+                      {/* Setor */}
+                      <td style={{ padding: "11px 14px", textAlign: "center" }}>
+                        {t.Setor ? (
+                          <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 20, background: `${setorColor}18`, color: setorColor, border: `1px solid ${setorColor}40` }}>
+                            {t.Setor}
+                          </span>
+                        ) : <span style={{ color: "#CBD5E1" }}>—</span>}
                       </td>
-                      <td style={{ padding: "11px 14px" }}>
-                        <div style={{ fontWeight: 700, fontSize: 13, color: "#00788A", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis" }} title={t.Fornecedor}>{t.Fornecedor || <span style={{ color: "#CBD5E1" }}>—</span>}</div>
-                        {t.CNPJ_CPF && <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 1 }}>{t.CNPJ_CPF}</div>}
-                      </td>
-                      <td style={{ padding: "11px 14px", maxWidth: 240 }}>
-                        <div style={{ fontSize: 12, color: "#0F172A", overflow: "hidden", textOverflow: "ellipsis" }} title={t.Descricao_Servico}>{t.Descricao_Servico || t.Servico || <span style={{ color: "#CBD5E1" }}>—</span>}</div>
-                        {t.Nr_Contrato && <div style={{ fontSize: 11, color: "#7C3AED", fontWeight: 600, marginTop: 2 }}>Nº {t.Nr_Contrato}</div>}
-                      </td>
-                      <td style={{ padding: "11px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: valorC > 0 ? "#0F172A" : "#CBD5E1" }}>{valorC > 0 ? formatBRL(valorC) : "—"}</td>
-                      <td style={{ padding: "11px 14px", textAlign: "right" }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: percColor }}>{perc > 0 ? `${perc.toFixed(1)}%` : "—"}</span>
-                      </td>
+
+                      {/* Status ClickUp */}
                       <td style={{ padding: "11px 14px", textAlign: "center" }}>
                         {sCUp ? (
                           <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: sSt.bg, color: sSt.color, whiteSpace: 'nowrap' }}>
@@ -358,7 +435,8 @@ export default function Terceirizados() {
                           </span>
                         ) : <span style={{ color: "#CBD5E1" }}>—</span>}
                       </td>
-                      <td style={{ padding: "11px 14px", textAlign: "center", fontSize: 12, color: "#64748B" }}>{formatDate(t.Data_Vencimento) || "—"}</td>
+
+                      {/* Doc */}
                       <td style={{ padding: "11px 14px", textAlign: "center" }}>
                         {t.Link_Contrato ? (
                           <a href={t.Link_Contrato} target="_blank" rel="noopener noreferrer" title="Ver documento" style={{ color: "#7C3AED", display: "inline-flex", alignItems: "center" }}>
@@ -366,6 +444,8 @@ export default function Terceirizados() {
                           </a>
                         ) : <span style={{ color: "#E2E8F0" }}>—</span>}
                       </td>
+
+                      {/* Ações */}
                       <td style={{ padding: "11px 14px", textAlign: "right" }}>
                         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                           <button onClick={() => handleEdit(t)} style={{ fontSize: 11, color: "#00788A", fontWeight: 700, background: "none", border: "none", cursor: "pointer" }}>EDITAR</button>

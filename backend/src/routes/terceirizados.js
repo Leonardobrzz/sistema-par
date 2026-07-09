@@ -34,8 +34,18 @@ router.get('/', async (req, res, next) => {
     // Enriquece com nome do projeto e nome do fornecedor via OC
     const projetos = await db.readSheet('Projetos_Contratos');
     const ocs = await db.readSheet('OrdensCompra_OPP');
+    const financeiro = await db.readSheet('Financeiro_OPP');
     const projMap = Object.fromEntries(projetos.map(p => [p.ID_Projeto, p]));
     const ocMap = Object.fromEntries(ocs.map(o => [String(o.ID_OC), o]));
+
+    // Mapa OC -> valor já liquidado (pago) no Financeiro_OPP
+    const liquidadoMap = {};
+    for (const f of financeiro) {
+      if (f.OC && (f.Situacao === 'Liquidado' || f.Situacao === 'Pago')) {
+        const key = String(f.OC);
+        liquidadoMap[key] = (liquidadoMap[key] || 0) + parseFloat(f.Valor || 0);
+      }
+    }
 
     rows = rows.map(r => {
       const proj = projMap[r.ID_Projeto];
@@ -49,13 +59,18 @@ router.get('/', async (req, res, next) => {
         : (r.Percentual_Contrato || r.Percentual_do_Total || '0');
       // Fornecedor: OPP (quando tem OC) > manual > ClickUp responsável
       const fornecedor = (oc ? oc.Nome_Fornecedor : null) || r.Fornecedor || r.Responsavel || '';
+      const valorLiquidado = r.OC ? (liquidadoMap[String(r.OC)] || 0) : 0;
+      const saldo = valorContratado - valorLiquidado;
       return {
         ...r,
         nomeProjeto: proj?.Nome || r.ID_Projeto || '',
+        Cliente: r.Cliente || proj?.Cliente || proj?.Nome_Cliente || '',
         Setor: proj?.Setor || r.Setor || '',
         Descricao_Servico: r.Descricao_Servico || r.Servico || '',
         Fornecedor: fornecedor,
         Valor_Contratado: String(valorContratado || ''),
+        Valor_Liquidado: String(valorLiquidado),
+        Saldo: String(saldo),
         Valor_Estimado: String(valorEstimado || ''),
         Percentual_Contrato: percCalc,
         Data_Vencimento: r.Data_Vencimento || r.Data_Entrega_Prevista || '',
