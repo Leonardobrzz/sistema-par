@@ -533,6 +533,20 @@ router.get('/debug-categoria', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET /api/opp/debug-oc — mostra OrdensCompra_OPP (amostra) para diagnóstico
+router.get('/debug-oc', async (req, res, next) => {
+  try {
+    const db = process.env.USE_POSTGRES === 'true' ? require('../services/postgresService') : require('../services/googleSheetsService');
+    const ocs = await db.readSheet('OrdensCompra_OPP');
+    const situacoes = [...new Set(ocs.map(o => o.Situacao).filter(Boolean))];
+    res.json({
+      total: ocs.length,
+      situacoesUnicas: situacoes,
+      amostra: ocs.slice(0, 15).map(o => ({ ID_OC: o.ID_OC, Nome_Fornecedor: o.Nome_Fornecedor, Valor_Total: o.Valor_Total, Situacao: o.Situacao })),
+    });
+  } catch (err) { next(err); }
+});
+
 // GET /api/opp/centros-custo — lista centros de custo do OPP
 router.get('/centros-custo', async (req, res, next) => {
   try {
