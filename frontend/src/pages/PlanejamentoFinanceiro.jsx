@@ -331,7 +331,7 @@ export default function PlanejamentoFinanceiro() {
     try {
       toast.loading("Buscando dados no OPP...", { id: "opp-import" })
       const cc = encodeURIComponent(form.nrContratoOS)
-      const r = await api.get(`/planejamento/${projetoId}/despesas-opp?centroCusto=${cc}`)
+      const r = await api.get(`/planejamento/${projetoId}/despesas-opp?centroCusto=${cc}`, { timeout: 120000 })
       toast.dismiss("opp-import")
       const data = r.data
       if (!data.centroCustoEncontrado) {

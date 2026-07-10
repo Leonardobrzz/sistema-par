@@ -705,21 +705,44 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
 
     const { oppRequest } = require('../services/oppService');
 
-    // Busca lista de centros de custo e encontra o ID pelo nome
-    const centros = await oppRequest('GET', '/centros-custo?limit=500');
-    const listaCC = Array.isArray(centros) ? centros : (centros?.data || []);
+    // Busca centros de custo filtrando pelo nome para reduzir payload
     const ccNorm = centroCusto.toLowerCase().trim();
-    const cc = listaCC.find(c =>
-      (c.desc_centro_custos || '').toLowerCase().trim() === ccNorm ||
-      (c.desc_centro_custos || '').toLowerCase().includes(ccNorm) ||
-      ccNorm.includes((c.desc_centro_custos || '').toLowerCase())
-    );
+    let cc = null;
+
+    // Tenta buscar filtrando pelo nome primeiro (se a API suportar)
+    try {
+      const busca = await oppRequest('GET', `/centros-custo?desc_centro_custos=${encodeURIComponent(centroCusto)}&limit=50`);
+      const listaBusca = Array.isArray(busca) ? busca : (busca?.data || []);
+      cc = listaBusca.find(c =>
+        (c.desc_centro_custos || '').toLowerCase().trim() === ccNorm ||
+        (c.desc_centro_custos || '').toLowerCase().includes(ccNorm) ||
+        ccNorm.includes((c.desc_centro_custos || '').toLowerCase())
+      ) || null;
+    } catch (_) {}
+
+    // Fallback: busca paginada até encontrar
+    if (!cc) {
+      let pagCC = 1;
+      outer: while (pagCC <= 10) {
+        const centros = await oppRequest('GET', `/centros-custo?limit=100&pagina=${pagCC}`);
+        const lista = Array.isArray(centros) ? centros : (centros?.data || []);
+        if (!lista.length) break;
+        for (const c of lista) {
+          const desc = (c.desc_centro_custos || '').toLowerCase().trim();
+          if (desc === ccNorm || desc.includes(ccNorm) || ccNorm.includes(desc)) {
+            cc = c; break outer;
+          }
+        }
+        if (lista.length < 100) break;
+        pagCC++;
+      }
+    }
 
     if (!cc) return res.json({ centroCusto, centroCustoEncontrado: false, lancamentos: [], total: 0 });
 
-    // Busca contas a pagar filtradas pelo centro de custo (com paginação)
+    // Busca contas a pagar filtradas pelo centro de custo (máx 3 páginas para não travar)
     let pagina = 1, todos = [];
-    while (true) {
+    while (pagina <= 5) {
       const r = await oppRequest('GET', `/contas-pagar?id_centro_custos=${cc.id_centro_custos}&limit=100&pagina=${pagina}`);
       const lista = Array.isArray(r) ? r : (r?.data || []);
       if (lista.length === 0) break;
