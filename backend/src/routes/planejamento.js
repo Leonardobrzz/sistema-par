@@ -766,6 +766,33 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET /api/planejamento/opp/ordens-servico — lista O.S. do OPP para pesquisa
+router.get('/opp/ordens-servico', async (req, res, next) => {
+  try {
+    const { oppRequest } = require('../services/oppService');
+    const busca = (req.query.busca || '').toLowerCase().trim();
+    const data = await oppRequest('GET', '/ordens-servico?limit=200');
+    const lista = Array.isArray(data) ? data : (data?.data || []);
+    const resultado = lista
+      .filter(os => {
+        if (!busca) return true;
+        const texto = [os.nr_os, os.numero_os, os.id_os, os.problema_ordem, os.descricao_os, os.nome_cliente, os.obs_pedido]
+          .map(v => String(v || '').toLowerCase()).join(' ');
+        return texto.includes(busca);
+      })
+      .map(os => ({
+        id: os.id_os || os.id_pedido || os.id,
+        nr_os: os.nr_os || os.numero_os || '',
+        descricao: os.problema_ordem || os.descricao_os || '',
+        cliente: os.nome_cliente || '',
+        situacao: os.situacao || os.situacao_pedido || '',
+        data_pedido: os.data_pedido || '',
+      }))
+      .slice(0, 50);
+    res.json({ total: resultado.length, ordens: resultado });
+  } catch (err) { next(err); }
+});
+
 // GET /api/planejamento/:id/importar-os — importa terceirizados via número da O.S. no OPP
 router.get('/:id/importar-os', async (req, res, next) => {
   try {
