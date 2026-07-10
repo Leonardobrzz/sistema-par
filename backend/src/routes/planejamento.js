@@ -721,12 +721,13 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
 
     if (!cc) return res.json({ centroCusto, centroCustoEncontrado: false, lancamentos: [], total: 0, debug: listaCC.slice(0,5).map(c => c.desc_centro_custos) });
 
-    // Busca contas a pagar com filtro de data (últimos 2 anos) para reduzir volume
+    // Busca contas a pagar dos últimos 2 anos (data_inicio/data_fim são os params corretos do OPP)
     const dataInicio = new Date(); dataInicio.setFullYear(dataInicio.getFullYear() - 2);
-    const dataInicioStr = dataInicio.toISOString().split('T')[0];
+    const dataFim = new Date();
+    const fmt = d => d.toISOString().split('T')[0];
     let offset = 0, todos = [];
     while (offset <= 1000) {
-      const r = await oppRequest('GET', `/contas-pagar?limit=100&offset=${offset}&data_emissao_inicio=${dataInicioStr}`);
+      const r = await oppRequest('GET', `/contas-pagar?limit=100&offset=${offset}&data_inicio=${fmt(dataInicio)}&data_fim=${fmt(dataFim)}`);
       const lista = Array.isArray(r) ? r : (r?.data || []);
       console.log(`[OPP] contas-pagar offset=${offset}: ${lista.length} registros`);
       if (lista.length === 0) break;
