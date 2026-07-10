@@ -735,16 +735,9 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
       if (lista.length < 100) break;
       offset += 100;
     }
-    console.log(`[OPP] Total buscado: ${todos.length}, filtrando por CC ID=${ccId}`);
-
-    // Log do primeiro registro para ver campos disponíveis
-    if (todos.length > 0) {
-      const amostra = todos[0];
-      console.log(`[OPP] amostra contas-pagar: id_centro_custos=${amostra.id_centro_custos}, centro_custos_pag=${amostra.centro_custos_pag}, nome_conta=${amostra.nome_conta}`);
-    }
-
     // Filtra localmente pelo campo centro_custo (array) ou id_centro_custos
     const ccId = String(cc.id_centro_custos);
+    console.log(`[OPP] Total buscado: ${todos.length}, filtrando por CC ID=${ccId}`);
     const lancamentos = todos
       .filter(d => {
         if ((d.situacao || '').toLowerCase().includes('estornada') || d.lixeira === 'Sim') return false;
