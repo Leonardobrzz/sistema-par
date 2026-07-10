@@ -65,11 +65,24 @@ app.get('/api/health', (req, res) => {
 app.get('/api/diagnostico-opp', async (req, res) => {
   try {
     const { oppRequest } = require('./src/services/oppService');
-    const amostra = await oppRequest('GET', '/contas-pagar?limit=3&offset=0');
-    const lista = Array.isArray(amostra) ? amostra : (amostra?.data || []);
+    const ccId = req.query.ccId || '230748';
+    const dataInicio = new Date(); dataInicio.setFullYear(dataInicio.getFullYear() - 2);
+    const fmt = d => d.toISOString().split('T')[0];
+    // Busca primeiros 100 com filtro de data
+    const r = await oppRequest('GET', `/contas-pagar?limit=100&offset=0&data_inicio=${fmt(dataInicio)}&data_fim=${fmt(new Date())}`);
+    const lista = Array.isArray(r) ? r : (r?.data || []);
+    // Filtra pelo ccId no campo centro_custo (array)
+    const filtrados = lista.filter(d => {
+      const arr = Array.isArray(d.centro_custo) ? d.centro_custo : [];
+      return arr.some(c => String(c.id_centro_custos || '') === ccId);
+    });
     res.json({
+      total_buscados: lista.length,
+      total_filtrados_cc: filtrados.length,
+      ccId_buscado: ccId,
+      amostra_centro_custo_primeiro_registro: lista[0]?.centro_custo ?? 'campo ausente',
       campos_disponiveis: lista[0] ? Object.keys(lista[0]) : [],
-      primeiro_registro: lista[0] || null,
+      registros_encontrados: filtrados.slice(0, 3),
     });
   } catch (err) {
     res.status(500).json({ erro: err.message });
