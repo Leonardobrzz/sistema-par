@@ -733,8 +733,19 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
       offset += 100;
     }
 
+    // Log do primeiro registro para ver campos disponíveis
+    if (todos.length > 0) {
+      const amostra = todos[0];
+      console.log(`[OPP] amostra contas-pagar: id_centro_custos=${amostra.id_centro_custos}, centro_custos_pag=${amostra.centro_custos_pag}, nome_conta=${amostra.nome_conta}`);
+    }
+
+    // Filtra localmente pelo ID do centro de custo (a API ignora o filtro id_centro_custos)
+    const ccId = String(cc.id_centro_custos);
     const lancamentos = todos
-      .filter(d => !(d.situacao || '').toLowerCase().includes('estornada') && d.lixeira !== 'Sim')
+      .filter(d => {
+        const matchCC = String(d.id_centro_custos || '') === ccId || String(d.centro_custos_pag || '') === ccId || String(d.centro_custos_pag || '').toLowerCase() === ccNorm;
+        return matchCC && !(d.situacao || '').toLowerCase().includes('estornada') && d.lixeira !== 'Sim';
+      })
       .map(d => ({
         id: d.id_conta_pag,
         descricao: d.nome_conta || '',
