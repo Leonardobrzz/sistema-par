@@ -61,26 +61,15 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', version: '1.0.0', timestamp: new Date().toISOString() });
 });
 
-// Diagnóstico público: prova que OPP não preenche centro de custo em contas-pagar
+// Diagnóstico público: mostra TODOS os campos de contas-pagar do OPP
 app.get('/api/diagnostico-opp', async (req, res) => {
   try {
     const { oppRequest } = require('./src/services/oppService');
-    const amostra = await oppRequest('GET', '/contas-pagar?limit=10&offset=0');
+    const amostra = await oppRequest('GET', '/contas-pagar?limit=3&offset=0');
     const lista = Array.isArray(amostra) ? amostra : (amostra?.data || []);
-    const todosZero = lista.every(d => !d.id_centro_custos || String(d.id_centro_custos) === '0');
     res.json({
-      conclusao: todosZero
-        ? '❌ CONFIRMADO: O OPP não preenche o campo centro de custo nas contas a pagar. Impossível filtrar por projeto automaticamente.'
-        : '✅ Alguns registros têm id_centro_custos preenchido.',
-      total_amostrado: lista.length,
-      registros: lista.map(d => ({
-        id_conta_pag: d.id_conta_pag,
-        nome_conta: d.nome_conta,
-        nome_fornecedor: d.nome_fornecedor,
-        valor_pag: d.valor_pag,
-        id_centro_custos: d.id_centro_custos ?? 'AUSENTE',
-        centro_custos_pag: d.centro_custos_pag ?? 'AUSENTE',
-      })),
+      campos_disponiveis: lista[0] ? Object.keys(lista[0]) : [],
+      primeiro_registro: lista[0] || null,
     });
   } catch (err) {
     res.status(500).json({ erro: err.message });
