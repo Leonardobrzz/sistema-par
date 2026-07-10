@@ -116,6 +116,27 @@ router.get('/me', require('../middleware/auth').authMiddleware, (req, res) => {
   res.json({ user: req.user });
 });
 
+// PUT /api/auth/me/senha — usuário troca a própria senha
+router.put('/me/senha', require('../middleware/auth').authMiddleware, async (req, res, next) => {
+  try {
+    const { senhaAtual, novaSenha } = req.body;
+    if (!senhaAtual || !novaSenha) return res.status(400).json({ error: 'Senha atual e nova senha são obrigatórias.' });
+    if (novaSenha.length < 6) return res.status(400).json({ error: 'A nova senha deve ter no mínimo 6 caracteres.' });
+
+    const user = await db.findOne('USER', u => u.ID === req.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuário não encontrado.' });
+
+    let senhaValida = false;
+    if (user.Senha_Hash) senhaValida = await bcrypt.compare(senhaAtual, user.Senha_Hash);
+    else if (user.Senha) senhaValida = senhaAtual === user.Senha;
+    if (!senhaValida) return res.status(401).json({ error: 'Senha atual incorreta.' });
+
+    const novoHash = await bcrypt.hash(novaSenha, 12);
+    await db.updateRowById('USER', 'ID', user.ID, { ...user, Senha_Hash: novoHash });
+    res.json({ message: 'Senha alterada com sucesso.' });
+  } catch (err) { next(err); }
+});
+
 // GET /api/auth/usuarios — lista todos os usuários (só Admin)
 router.get('/usuarios', require('../middleware/auth').authMiddleware, async (req, res, next) => {
   try {

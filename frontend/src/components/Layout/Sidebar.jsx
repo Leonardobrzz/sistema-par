@@ -5,10 +5,12 @@ import {
   ChartBarIcon, DocumentTextIcon, Cog6ToothIcon,
   ArrowUpTrayIcon, BellAlertIcon, ShieldCheckIcon, BuildingOffice2Icon,
   PresentationChartLineIcon, ClipboardDocumentCheckIcon, ClipboardDocumentListIcon,
-  BanknotesIcon,
+  BanknotesIcon, KeyIcon,
 } from '@heroicons/react/24/outline'
 import { useAuth } from '../../contexts/AuthContext'
 import { useAlerts } from '../../contexts/AlertContext'
+import { toast } from 'react-hot-toast'
+import api from '../../utils/api'
 
 const NAV_ITEMS = [
   { to: '/dashboard',        label: 'Dashboard',                          icon: HomeIcon                   },
@@ -54,6 +56,23 @@ export default function Sidebar() {
   const { user } = useAuth()
   const { unreadCount } = useAlerts()
   const [expanded, setExpanded] = useState(false)
+  const [showSenhaModal, setShowSenhaModal] = useState(false)
+  const [senhaForm, setSenhaForm] = useState({ senhaAtual: '', novaSenha: '', confirmar: '' })
+  const [salvandoSenha, setSalvandoSenha] = useState(false)
+
+  async function alterarSenha(e) {
+    e.preventDefault()
+    if (senhaForm.novaSenha !== senhaForm.confirmar) { toast.error('As senhas não coincidem.'); return }
+    setSalvandoSenha(true)
+    try {
+      await api.put('/auth/me/senha', { senhaAtual: senhaForm.senhaAtual, novaSenha: senhaForm.novaSenha })
+      toast.success('Senha alterada com sucesso!')
+      setShowSenhaModal(false)
+      setSenhaForm({ senhaAtual: '', novaSenha: '', confirmar: '' })
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erro ao alterar senha')
+    } finally { setSalvandoSenha(false) }
+  }
 
   const visibleItems = NAV_ITEMS.filter(
     item => !item.perfis || item.perfis.includes(user?.perfil)
@@ -174,44 +193,77 @@ export default function Sidebar() {
 
         {/* User avatar */}
         <div style={{ padding: '0 8px 18px', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 4px' }}>
-            <div
-              title={`${user?.nome} · ${user?.perfil}`}
-              style={{
-                width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                background: 'linear-gradient(135deg, #00B5CC, #007A8C)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', fontWeight: 800, fontSize: 14,
-                cursor: 'default',
-                boxShadow: '0 2px 12px rgba(0,181,204,0.35)',
-              }}
-            >
+          <div
+            onClick={() => setShowSenhaModal(true)}
+            title="Alterar senha"
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 4px', borderRadius: 10, cursor: 'pointer', transition: 'background 0.18s' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            <div style={{
+              width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+              background: 'linear-gradient(135deg, #00B5CC, #007A8C)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontWeight: 800, fontSize: 14,
+              boxShadow: '0 2px 12px rgba(0,181,204,0.35)',
+            }}>
               {(user?.nome || 'U')[0].toUpperCase()}
             </div>
             <div style={{
-              minWidth: 0,
+              minWidth: 0, flex: 1,
               opacity: expanded ? 1 : 0,
               transform: expanded ? 'translateX(0)' : 'translateX(-6px)',
               transition: 'opacity 0.22s ease 80ms, transform 0.22s ease 80ms',
               pointerEvents: expanded ? 'auto' : 'none',
             }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 170 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>
                 {user?.nome}
               </div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
-                {user?.perfil}
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                {user?.perfil} · <KeyIcon style={{ width: 10, height: 10 }} /> alterar senha
               </div>
             </div>
           </div>
-          {!expanded && (
-            <div style={{ textAlign: 'center', marginTop: 6 }}>
-              <span style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.25)', fontWeight: 600, letterSpacing: '0.05em' }}>
-                v2026.05
-              </span>
-            </div>
-          )}
         </div>
       </aside>
+
+      {/* Modal alterar senha */}
+      {showSenhaModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <form onSubmit={alterarSenha} style={{ background: '#fff', borderRadius: 16, padding: 28, width: 360, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+              <KeyIcon style={{ width: 20, height: 20, color: '#7C3AED' }} />
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0F172A' }}>Alterar Senha</h2>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[
+                { label: 'Senha atual', key: 'senhaAtual' },
+                { label: 'Nova senha', key: 'novaSenha' },
+                { label: 'Confirmar nova senha', key: 'confirmar' },
+              ].map(({ label, key }) => (
+                <div key={key}>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>{label}</label>
+                  <input
+                    type="password"
+                    required
+                    value={senhaForm[key]}
+                    onChange={e => setSenhaForm(p => ({ ...p, [key]: e.target.value }))}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1.5px solid #E2E8F0', background: '#F8FAFC', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                  />
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+              <button type="button" onClick={() => { setShowSenhaModal(false); setSenhaForm({ senhaAtual: '', novaSenha: '', confirmar: '' }) }} style={{ flex: 1, padding: '10px', borderRadius: 8, border: '1.5px solid #E2E8F0', background: '#fff', color: '#64748B', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                Cancelar
+              </button>
+              <button type="submit" disabled={salvandoSenha} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: '#7C3AED', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                {salvandoSenha ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </>
   )
 }
