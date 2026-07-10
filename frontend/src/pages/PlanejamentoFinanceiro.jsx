@@ -126,6 +126,8 @@ export default function PlanejamentoFinanceiro() {
   const [tab, setTab] = useState("planejamento")
   const [comparativo, setComparativo] = useState(null)
   const [loadingComp, setLoadingComp] = useState(false)
+  const [despesasOPP, setDespesasOPP] = useState(null)
+  const [loadingDespesas, setLoadingDespesas] = useState(false)
   const [form, setForm] = useState(FORM0)
   const [editingMedicao, setEditingMedicao] = useState(null)
   const [sections, setSections] = useState({ geral: true, financeiro: true, medicoes: false, terceirizados: false, equipe: false, despesas: false })
@@ -201,6 +203,18 @@ export default function PlanejamentoFinanceiro() {
   }, [projetoId])
 
   useEffect(() => { if (tab === "real") carregarComparativo() }, [tab, carregarComparativo])
+
+  const carregarDespesasOPP = useCallback(async () => {
+    if (!projetoId || !form.nrContratoOS) return
+    setLoadingDespesas(true)
+    try {
+      const r = await api.get(`/planejamento/${projetoId}/despesas-opp`)
+      setDespesasOPP(r.data)
+    } catch { setDespesasOPP(null) }
+    setLoadingDespesas(false)
+  }, [projetoId, form.nrContratoOS])
+
+  useEffect(() => { if (tab === "despesas") carregarDespesasOPP() }, [tab, carregarDespesasOPP])
 
   const f = (k, v) => setForm(prev => ({ ...prev, [k]: v }))
   const addRow = (key, obj) => setForm(prev => ({ ...prev, [key]: [...(prev[key] || []), obj] }))
@@ -515,6 +529,7 @@ export default function PlanejamentoFinanceiro() {
           {[
             { id: "planejamento", label: "Planejamento", icon: <BadgeDollarSign size={14} /> },
             { id: "real", label: "Plan vs Real", icon: <TrendingUp size={14} />, dot: comparativo?.temBaseline },
+            { id: "despesas", label: "Despesas OPP", icon: <FileSpreadsheet size={14} />, dot: !!form.nrContratoOS },
           ].map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 18px", borderRadius: 9, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "inherit", transition: "all 0.15s",
@@ -1144,6 +1159,84 @@ export default function PlanejamentoFinanceiro() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════
+          TAB: DESPESAS OPP
+      ══════════════════════════════════════════════════════════ */}
+      {tab === "despesas" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {!form.nrContratoOS ? (
+            <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 12, padding: 20, color: "#92400E", fontSize: 13 }}>
+              Preencha o campo <strong>Nome do Centro de Custo</strong> na aba Planejamento para vincular as despesas do OPP.
+            </div>
+          ) : loadingDespesas ? (
+            <div style={{ textAlign: "center", padding: 40, color: "#94A3B8", fontSize: 13 }}>Buscando despesas no OPP...</div>
+          ) : !despesasOPP ? (
+            <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 12, padding: 20, color: "#991B1B", fontSize: 13 }}>
+              Erro ao buscar despesas. Verifique a conexão com o OPP.
+            </div>
+          ) : !despesasOPP.centroCustoEncontrado ? (
+            <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 12, padding: 20, color: "#9A3412", fontSize: 13 }}>
+              Centro de custo <strong>"{form.nrContratoOS}"</strong> não encontrado no OPP. Verifique o nome exato.
+            </div>
+          ) : (
+            <>
+              {/* Resumo */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
+                {[
+                  { label: "Total de Despesas", val: fmt(despesasOPP.total), color: "#EF4444" },
+                  { label: "Total Pago", val: fmt(despesasOPP.totalPago), color: "#15803D" },
+                  { label: "A Pagar", val: fmt(despesasOPP.total - despesasOPP.totalPago), color: "#B45309" },
+                ].map(k => (
+                  <div key={k.label} style={{ background: "#fff", borderRadius: 12, border: "1.5px solid #E2E8F0", padding: "14px 18px" }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{k.label}</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: k.color }}>{k.val}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tabela */}
+              <div style={{ background: "#fff", borderRadius: 12, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
+                <div style={{ padding: "12px 18px", borderBottom: "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontWeight: 700, fontSize: 13, color: "#0F172A" }}>Lançamentos — {despesasOPP.centroCusto}</span>
+                  <span style={{ fontSize: 12, color: "#94A3B8" }}>{despesasOPP.lancamentos.length} registros</span>
+                </div>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ background: "#F8FAFC" }}>
+                        {["OC", "Descrição", "Fornecedor", "Vencimento", "Valor", "Status"].map(h => (
+                          <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontWeight: 700, color: "#64748B", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {despesasOPP.lancamentos.map((l, i) => (
+                        <tr key={i} style={{ borderTop: "1px solid #F1F5F9" }}>
+                          <td style={{ padding: "10px 14px", fontWeight: 700, color: "#7C3AED" }}>{l.oc || "—"}</td>
+                          <td style={{ padding: "10px 14px", color: "#0F172A", maxWidth: 260 }}>{l.descricao}</td>
+                          <td style={{ padding: "10px 14px", color: "#475569" }}>{l.fornecedor || "—"}</td>
+                          <td style={{ padding: "10px 14px", color: "#64748B", whiteSpace: "nowrap" }}>{l.data ? new Date(l.data).toLocaleDateString("pt-BR") : "—"}</td>
+                          <td style={{ padding: "10px 14px", fontWeight: 700, color: "#0F172A", whiteSpace: "nowrap" }}>{fmt(l.valor)}</td>
+                          <td style={{ padding: "10px 14px" }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: l.liquidado ? "#DCFCE7" : "#FEF9C3", color: l.liquidado ? "#15803D" : "#92400E" }}>
+                              {l.liquidado ? "Pago" : "Pendente"}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+
+          <button onClick={carregarDespesasOPP} disabled={loadingDespesas} style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#fff", color: "#475569", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+            <RefreshCw size={13} style={{ animation: loadingDespesas ? "spin 1s linear infinite" : "none" }} /> Atualizar
+          </button>
         </div>
       )}
     </div>

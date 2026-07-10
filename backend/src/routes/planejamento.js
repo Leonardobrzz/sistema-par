@@ -691,6 +691,62 @@ router.get('/:id/comparativo', async (req, res, next) => {
   }
 });
 
+// GET /api/planejamento/:id/despesas-opp — busca despesas reais do OPP pelo centro de custo
+router.get('/:id/despesas-opp', async (req, res, next) => {
+  try {
+    const plan = await db.findOne('Planejamentos', p => p.ID === req.params.id || p.ID_Projeto === req.params.id);
+    if (!plan) return res.status(404).json({ error: 'Planejamento não encontrado.' });
+
+    const centroCusto = plan.Nr_Contrato_OS || '';
+    if (!centroCusto) return res.json({ centroCusto: '', lancamentos: [], total: 0 });
+
+    const { oppRequest } = require('../services/oppService');
+
+    // Busca lista de centros de custo e encontra o ID pelo nome
+    const centros = await oppRequest('GET', '/centros-custo?limit=500');
+    const listaCC = Array.isArray(centros) ? centros : (centros?.data || []);
+    const ccNorm = centroCusto.toLowerCase().trim();
+    const cc = listaCC.find(c =>
+      (c.desc_centro_custos || '').toLowerCase().trim() === ccNorm ||
+      (c.desc_centro_custos || '').toLowerCase().includes(ccNorm) ||
+      ccNorm.includes((c.desc_centro_custos || '').toLowerCase())
+    );
+
+    if (!cc) return res.json({ centroCusto, centroCustoEncontrado: false, lancamentos: [], total: 0 });
+
+    // Busca contas a pagar filtradas pelo centro de custo (com paginação)
+    let pagina = 1, todos = [];
+    while (true) {
+      const r = await oppRequest('GET', `/contas-pagar?id_centro_custos=${cc.id_centro_custos}&limit=100&pagina=${pagina}`);
+      const lista = Array.isArray(r) ? r : (r?.data || []);
+      if (lista.length === 0) break;
+      todos.push(...lista);
+      if (lista.length < 100) break;
+      pagina++;
+    }
+
+    const lancamentos = todos
+      .filter(d => !(d.situacao || '').toLowerCase().includes('estornada') && d.lixeira !== 'Sim')
+      .map(d => ({
+        id: d.id_conta_pag,
+        descricao: d.nome_conta || '',
+        fornecedor: d.nome_fornecedor || '',
+        valor: parseFloat(d.valor_pag || 0),
+        valorPago: parseFloat(d.valor_pago || 0),
+        situacao: d.situacao || '',
+        liquidado: d.liquidado_pag === 'Sim',
+        data: d.vencimento_pag || d.data_emissao || '',
+        oc: d.id_registro || '',
+        nrDocumento: d.n_documento_pag || '',
+      }));
+
+    const total = lancamentos.reduce((s, l) => s + l.valor, 0);
+    const totalPago = lancamentos.filter(l => l.liquidado).reduce((s, l) => s + l.valorPago, 0);
+
+    res.json({ centroCusto, centroCustoId: cc.id_centro_custos, centroCustoEncontrado: true, lancamentos, total, totalPago });
+  } catch (err) { next(err); }
+});
+
 // POST /api/planejamento/calcular — calcula totais sem salvar (preview)
 router.post('/calcular', async (req, res, next) => {
   try {
