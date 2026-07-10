@@ -721,19 +721,19 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
 
     if (!cc) return res.json({ centroCusto, centroCustoEncontrado: false, lancamentos: [], total: 0, debug: listaCC.slice(0,5).map(c => c.desc_centro_custos) });
 
-    // Busca contas a pagar dos últimos 2 anos (data_inicio/data_fim são os params corretos do OPP)
-    const dataInicio = new Date(); dataInicio.setFullYear(dataInicio.getFullYear() - 2);
-    const dataFim = new Date();
-    const fmt = d => d.toISOString().split('T')[0];
+    // Busca contas a pagar com filtro de vencimento (parâmetro válido da API VHSys/OPP)
+    // data_vencimento aceita range: "YYYY-MM-DD,YYYY-MM-DD"
+    const anoInicio = new Date().getFullYear() - 3;
+    const dataVencRange = `${anoInicio}-01-01,${new Date().getFullYear() + 1}-12-31`;
     let offset = 0, todos = [];
-    while (offset <= 1000) {
-      const r = await oppRequest('GET', `/contas-pagar?limit=100&offset=${offset}&data_inicio=${fmt(dataInicio)}&data_fim=${fmt(dataFim)}`);
+    while (true) {
+      const r = await oppRequest('GET', `/contas-pagar?limit=250&offset=${offset}&data_vencimento=${dataVencRange}&lixeira=Nao`);
       const lista = Array.isArray(r) ? r : (r?.data || []);
       console.log(`[OPP] contas-pagar offset=${offset}: ${lista.length} registros`);
       if (lista.length === 0) break;
       todos.push(...lista);
-      if (lista.length < 100) break;
-      offset += 100;
+      if (lista.length < 250) break;
+      offset += 250;
     }
     // Filtra localmente pelo campo centro_custo (array) ou id_centro_custos
     const ccId = String(cc.id_centro_custos);
