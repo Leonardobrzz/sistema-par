@@ -721,10 +721,10 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
 
     if (!cc) return res.json({ centroCusto, centroCustoEncontrado: false, lancamentos: [], total: 0, debug: listaCC.slice(0,5).map(c => c.desc_centro_custos) });
 
-    // Busca contas a pagar filtradas pelo centro de custo (paginação por offset)
+    // Busca todas as contas a pagar (sem filtro, pois id_centro_custos é ignorado pela API)
     let offset = 0, todos = [];
-    while (offset <= 400) {
-      const r = await oppRequest('GET', `/contas-pagar?id_centro_custos=${cc.id_centro_custos}&limit=100&offset=${offset}`);
+    while (offset <= 2000) {
+      const r = await oppRequest('GET', `/contas-pagar?limit=100&offset=${offset}`);
       const lista = Array.isArray(r) ? r : (r?.data || []);
       console.log(`[OPP] contas-pagar offset=${offset}: ${lista.length} registros`);
       if (lista.length === 0) break;
@@ -732,6 +732,7 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
       if (lista.length < 100) break;
       offset += 100;
     }
+    console.log(`[OPP] Total buscado: ${todos.length}, filtrando por CC ID=${ccId}`);
 
     // Log do primeiro registro para ver campos disponíveis
     if (todos.length > 0) {
@@ -739,12 +740,19 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
       console.log(`[OPP] amostra contas-pagar: id_centro_custos=${amostra.id_centro_custos}, centro_custos_pag=${amostra.centro_custos_pag}, nome_conta=${amostra.nome_conta}`);
     }
 
-    // Filtra localmente pelo ID do centro de custo (a API ignora o filtro id_centro_custos)
+    // Filtra localmente pelo campo centro_custo (array) ou id_centro_custos
     const ccId = String(cc.id_centro_custos);
     const lancamentos = todos
       .filter(d => {
-        const matchCC = String(d.id_centro_custos || '') === ccId || String(d.centro_custos_pag || '') === ccId || String(d.centro_custos_pag || '').toLowerCase() === ccNorm;
-        return matchCC && !(d.situacao || '').toLowerCase().includes('estornada') && d.lixeira !== 'Sim';
+        if ((d.situacao || '').toLowerCase().includes('estornada') || d.lixeira === 'Sim') return false;
+        // centro_custo é um array de objetos [{id_centro_custos, desc_centro_custos}]
+        const arr = Array.isArray(d.centro_custo) ? d.centro_custo : [];
+        if (arr.length > 0) {
+          return arr.some(c => String(c.id_centro_custos || c.id || '') === ccId ||
+            (c.desc_centro_custos || c.nome || '').toLowerCase().includes(ccNorm));
+        }
+        // Fallback: id_centro_custos direto
+        return String(d.id_centro_custos || '') === ccId || (d.centro_custos_pag || '').toLowerCase().includes(ccNorm);
       })
       .map(d => ({
         id: d.id_conta_pag,
