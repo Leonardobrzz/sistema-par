@@ -710,14 +710,16 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
     let cc = null;
 
     // Busca todos centros de custo e filtra localmente
-    const todosCC = await oppRequest('GET', '/centros_custos');
-    const listaCC = Array.isArray(todosCC) ? todosCC : (todosCC?.data || todosCC?.centros_custos || []);
+    const todosCC = await oppRequest('GET', '/centros-custo?limit=500');
+    const listaCC = Array.isArray(todosCC) ? todosCC : (todosCC?.data || []);
     cc = listaCC.find(c => {
       const desc = (c.desc_centro_custos || '').toLowerCase().trim();
       return desc === ccNorm || desc.includes(ccNorm) || ccNorm.includes(desc);
     }) || null;
 
-    if (!cc) return res.json({ centroCusto, centroCustoEncontrado: false, lancamentos: [], total: 0 });
+    console.log(`[OPP] centros encontrados: ${listaCC.length}, buscando: "${ccNorm}", encontrou: ${cc ? cc.id_centro_custos : 'NÃO'}`);
+
+    if (!cc) return res.json({ centroCusto, centroCustoEncontrado: false, lancamentos: [], total: 0, debug: listaCC.slice(0,5).map(c => c.desc_centro_custos) });
 
     // Busca contas a pagar filtradas pelo centro de custo (máx 3 páginas para não travar)
     let pagina = 1, todos = [];
