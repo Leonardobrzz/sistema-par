@@ -224,4 +224,15 @@ router.put('/:id', async (req, res, next) => {
 
 
 
+router.delete('/:id', async (req, res, next) => {
+  try {
+    const project = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === req.params.id);
+    if (!project) return res.status(404).json({ error: 'Projeto não encontrado.' });
+    await db.deleteRowById('Projetos_Contratos', 'ID_Projeto', req.params.id);
+    res.json({ ok: true, message: 'Projeto excluído com sucesso.' });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
