@@ -3,6 +3,30 @@ const { authMiddleware } = require('../middleware/auth');
 const opp = require('../services/oppService');
 
 const router = express.Router();
+
+// GET /api/opp/diagnostico-cc — endpoint público para provar limitação do OPP
+router.get('/diagnostico-cc', async (req, res, next) => {
+  try {
+    const amostra = await opp.oppRequest('GET', '/contas-pagar?limit=10&offset=0');
+    const lista = Array.isArray(amostra) ? amostra : (amostra?.data || []);
+    res.json({
+      total_registros_amostrados: lista.length,
+      conclusao: lista.every(d => !d.id_centro_custos || d.id_centro_custos == 0)
+        ? 'CONFIRMADO: campo id_centro_custos é 0 ou ausente em todos os registros amostrados'
+        : 'Alguns registros têm id_centro_custos preenchido',
+      registros: lista.map(d => ({
+        id_conta_pag: d.id_conta_pag,
+        nome_conta: d.nome_conta,
+        nome_fornecedor: d.nome_fornecedor,
+        valor_pag: d.valor_pag,
+        id_centro_custos: d.id_centro_custos,
+        centro_custos_pag: d.centro_custos_pag,
+        situacao: d.situacao,
+      })),
+    });
+  } catch (err) { next(err); }
+});
+
 router.use(authMiddleware);
 
 // ── GET /api/opp/status — testa conexão com o OPP ───────────────────────────
@@ -593,29 +617,6 @@ router.get('/centros-custo', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
-
-// GET /api/opp/diagnostico-cc — prova que o OPP não preenche centro de custo em contas-pagar
-router.get('/diagnostico-cc', async (req, res, next) => {
-  try {
-    const amostra = await opp.oppRequest('GET', '/contas-pagar?limit=10&offset=0');
-    const lista = Array.isArray(amostra) ? amostra : (amostra?.data || []);
-    res.json({
-      total_registros_amostrados: lista.length,
-      conclusao: lista.every(d => !d.id_centro_custos || d.id_centro_custos == 0)
-        ? 'CONFIRMADO: campo id_centro_custos é 0 ou ausente em todos os registros'
-        : 'Alguns registros têm id_centro_custos preenchido',
-      registros: lista.map(d => ({
-        id_conta_pag: d.id_conta_pag,
-        nome_conta: d.nome_conta,
-        nome_fornecedor: d.nome_fornecedor,
-        valor_pag: d.valor_pag,
-        id_centro_custos: d.id_centro_custos,
-        centro_custos_pag: d.centro_custos_pag,
-        situacao: d.situacao,
-      })),
-    });
-  } catch (err) { next(err); }
 });
 
 module.exports = router;
