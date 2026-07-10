@@ -329,6 +329,32 @@ export default function PlanejamentoFinanceiro() {
     setCcFocado(false)
   }
 
+  async function importarDespesasOPP() {
+    const cc = form.nrContratoOS?.trim()
+    if (!cc) return toast.error("Preencha o campo 'Nome do Centro de Custo' antes de importar.")
+    if (!projetoId) return toast.error("Selecione um projeto")
+    try {
+      toast.loading("Buscando despesas no OPP...", { id: "opp-cc-import" })
+      const r = await api.get(`/planejamento/${projetoId}/despesas-opp?centroCusto=${encodeURIComponent(cc)}`, { timeout: 120000 })
+      toast.dismiss("opp-cc-import")
+      const { lancamentos, centroCustoEncontrado } = r.data
+      if (!centroCustoEncontrado) return toast.error(`Centro de custo "${cc}" não encontrado no OPP.`)
+      if (!lancamentos?.length) return toast("Nenhuma despesa encontrada para este centro de custo.")
+      const terceirizados = lancamentos.map(l => ({
+        servico: l.descricao || l.fornecedor || "",
+        vinculo: "",
+        valorRef: l.valor ? l.valor.toFixed(2).replace(".", ",") : "",
+        custo: l.valor ? l.valor.toFixed(2).replace(".", ",") : "",
+      }))
+      setForm(prev => ({ ...prev, terceirizados }))
+      setSections(s => ({ ...s, terceirizados: true }))
+      toast.success(`${terceirizados.length} serviços terceirizados importados do OPP!`)
+    } catch (err) {
+      toast.dismiss("opp-cc-import")
+      toast.error(err.response?.data?.error || err.message || "Erro ao importar do OPP")
+    }
+  }
+
   async function importarDoOPP() {
     if (!form.nrOsOpp) return toast.error("Preencha o campo 'O.S. OPP' com o número da Ordem de Serviço do OPP")
     if (!projetoId) return toast.error("Selecione um projeto")
@@ -860,9 +886,16 @@ export default function PlanejamentoFinanceiro() {
                   <button onClick={() => delRow("terceirizados", i)} style={{ padding: "9px 10px", borderRadius: 8, border: "1px solid #FECACA", background: "#FEF2F2", color: "#DC2626", cursor: "pointer", alignSelf: "end" }}><Trash2 size={14} /></button>
                 </div>
               )})}
-              <button onClick={() => addRow("terceirizados", { servico: "", vinculo: "", valorRef: "", custo: "" })} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1.5px dashed #FDE68A", background: "#FFFBEB", color: "#B45309", fontWeight: 700, fontSize: 13, cursor: "pointer", marginTop: 4 }}>
-                <Plus size={14} /> Adicionar Terceirizado
-              </button>
+              <div style={{ display: "flex", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
+                <button onClick={() => addRow("terceirizados", { servico: "", vinculo: "", valorRef: "", custo: "" })} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1.5px dashed #FDE68A", background: "#FFFBEB", color: "#B45309", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                  <Plus size={14} /> Adicionar Terceirizado
+                </button>
+                {form.nrContratoOS && (
+                  <button onClick={importarDespesasOPP} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1.5px solid #6366F1", background: "#EEF2FF", color: "#4338CA", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                    ⬇ Importar do OPP ({form.nrContratoOS.slice(0, 20)}{form.nrContratoOS.length > 20 ? "…" : ""})
+                  </button>
+                )}
+              </div>
             </div>
           </Section>
 
