@@ -361,7 +361,9 @@ export default function PlanejamentoFinanceiro() {
       toast.success(`${terceirizados.length} serviços terceirizados importados do OPP!`)
     } catch (err) {
       toast.dismiss("opp-import")
-      toast.error(err.response?.data?.error || "Erro ao importar do OPP")
+      const msg = err.response?.data?.error || err.response?.data?.message || err.message || "Erro ao importar do OPP"
+      console.error("[importarDoOPP]", err.response?.status, msg, err)
+      toast.error(msg)
     }
   }
 
