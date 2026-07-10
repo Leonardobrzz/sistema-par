@@ -328,13 +328,10 @@ export default function PlanejamentoFinanceiro() {
   async function importarDoOPP() {
     if (!form.nrContratoOS) return toast.error("Preencha o Nome do Centro de Custo primeiro")
     if (!projetoId) return toast.error("Selecione um projeto")
-    // Usa o ID do projeto para chamar o endpoint, mas passa o centro de custo via query
     try {
       toast.loading("Buscando dados no OPP...", { id: "opp-import" })
-      // Salva rascunho primeiro para garantir que Nr_Contrato_OS está no banco
-      const payload = { ...form, idProjeto: projetoId, status: "Rascunho", nomeProjeto: form.nomeProjeto || projetoSelecionado?.Nome || "", cliente: form.cliente || projetoSelecionado?.Cliente || "", setor: form.setor || projetoSelecionado?.Setor || "" }
-      await api.post("/planejamento", payload)
-      const r = await api.get(`/planejamento/${projetoId}/despesas-opp`)
+      const cc = encodeURIComponent(form.nrContratoOS)
+      const r = await api.get(`/planejamento/${projetoId}/despesas-opp?centroCusto=${cc}`)
       toast.dismiss("opp-import")
       const data = r.data
       if (!data.centroCustoEncontrado) {

@@ -694,10 +694,13 @@ router.get('/:id/comparativo', async (req, res, next) => {
 // GET /api/planejamento/:id/despesas-opp — busca despesas reais do OPP pelo centro de custo
 router.get('/:id/despesas-opp', async (req, res, next) => {
   try {
-    const plan = await db.findOne('Planejamentos', p => p.ID === req.params.id || p.ID_Projeto === req.params.id);
-    if (!plan) return res.status(404).json({ error: 'Planejamento não encontrado.' });
-
-    const centroCusto = plan.Nr_Contrato_OS || '';
+    // Aceita centro de custo direto via query param (para importação sem salvar antes)
+    let centroCusto = req.query.centroCusto || '';
+    if (!centroCusto) {
+      const plan = await db.findOne('Planejamentos', p => p.ID === req.params.id || p.ID_Projeto === req.params.id);
+      if (!plan) return res.status(404).json({ error: 'Planejamento não encontrado.' });
+      centroCusto = plan.Nr_Contrato_OS || '';
+    }
     if (!centroCusto) return res.json({ centroCusto: '', lancamentos: [], total: 0 });
 
     const { oppRequest } = require('../services/oppService');
