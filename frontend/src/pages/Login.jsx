@@ -88,24 +88,12 @@ export default function Login() {
         </div>
 
         {/* Company logo */}
-        <div style={{
-          width: 160, height: 160,
-          background: 'rgba(255,255,255,0.08)',
-          borderRadius: 18,
-          border: '1px solid rgba(255,255,255,0.12)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: 40,
-          overflow: 'hidden',
-        }}>
-          <img
-            src="/image.png"
-            alt="Jota Barros"
-            style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 8 }}
-            onError={e => { e.currentTarget.style.display = 'none' }}
-          />
-        </div>
+        <img
+          src="/image.png"
+          alt="Jota Barros"
+          style={{ width: 160, objectFit: 'contain', marginBottom: 40 }}
+          onError={e => { e.currentTarget.style.display = 'none' }}
+        />
 
         {/* Divider */}
         <div style={{ height: 1, background: 'rgba(255,255,255,0.12)', marginBottom: 32 }} />
