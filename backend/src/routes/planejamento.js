@@ -711,7 +711,7 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
 
     // Tenta buscar filtrando pelo nome primeiro (se a API suportar)
     try {
-      const busca = await oppRequest('GET', `/centros-custo?desc_centro_custos=${encodeURIComponent(centroCusto)}&limit=50`);
+      const busca = await oppRequest('GET', `/centros_custos?desc_centro_custos=${encodeURIComponent(centroCusto)}&limit=50`);
       const listaBusca = Array.isArray(busca) ? busca : (busca?.data || []);
       cc = listaBusca.find(c =>
         (c.desc_centro_custos || '').toLowerCase().trim() === ccNorm ||
@@ -724,7 +724,7 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
     if (!cc) {
       let pagCC = 1;
       outer: while (pagCC <= 10) {
-        const centros = await oppRequest('GET', `/centros-custo?limit=100&pagina=${pagCC}`);
+        const centros = await oppRequest('GET', `/centros_custos?limit=100&pagina=${pagCC}`);
         const lista = Array.isArray(centros) ? centros : (centros?.data || []);
         if (!lista.length) break;
         for (const c of lista) {
