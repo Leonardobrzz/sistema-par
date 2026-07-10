@@ -709,34 +709,13 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
     const ccNorm = centroCusto.toLowerCase().trim();
     let cc = null;
 
-    // Tenta buscar filtrando pelo nome primeiro (se a API suportar)
-    try {
-      const busca = await oppRequest('GET', `/centros_custos?desc_centro_custos=${encodeURIComponent(centroCusto)}&limit=50`);
-      const listaBusca = Array.isArray(busca) ? busca : (busca?.data || []);
-      cc = listaBusca.find(c =>
-        (c.desc_centro_custos || '').toLowerCase().trim() === ccNorm ||
-        (c.desc_centro_custos || '').toLowerCase().includes(ccNorm) ||
-        ccNorm.includes((c.desc_centro_custos || '').toLowerCase())
-      ) || null;
-    } catch (_) {}
-
-    // Fallback: busca paginada até encontrar
-    if (!cc) {
-      let pagCC = 1;
-      outer: while (pagCC <= 10) {
-        const centros = await oppRequest('GET', `/centros_custos?limit=100&pagina=${pagCC}`);
-        const lista = Array.isArray(centros) ? centros : (centros?.data || []);
-        if (!lista.length) break;
-        for (const c of lista) {
-          const desc = (c.desc_centro_custos || '').toLowerCase().trim();
-          if (desc === ccNorm || desc.includes(ccNorm) || ccNorm.includes(desc)) {
-            cc = c; break outer;
-          }
-        }
-        if (lista.length < 100) break;
-        pagCC++;
-      }
-    }
+    // Busca todos centros de custo e filtra localmente
+    const todosCC = await oppRequest('GET', '/centros_custos');
+    const listaCC = Array.isArray(todosCC) ? todosCC : (todosCC?.data || todosCC?.centros_custos || []);
+    cc = listaCC.find(c => {
+      const desc = (c.desc_centro_custos || '').toLowerCase().trim();
+      return desc === ccNorm || desc.includes(ccNorm) || ccNorm.includes(desc);
+    }) || null;
 
     if (!cc) return res.json({ centroCusto, centroCustoEncontrado: false, lancamentos: [], total: 0 });
 
