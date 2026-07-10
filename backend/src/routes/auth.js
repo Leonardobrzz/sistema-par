@@ -119,7 +119,7 @@ router.get('/me', require('../middleware/auth').authMiddleware, (req, res) => {
 // GET /api/auth/usuarios — lista todos os usuários (só Admin)
 router.get('/usuarios', require('../middleware/auth').authMiddleware, async (req, res, next) => {
   try {
-    if (!['Admin'].includes(req.user.perfil)) return res.status(403).json({ error: 'Sem permissão.' });
+    if (!['Admin', 'Diretoria', 'Comercial'].includes(req.user.perfil)) return res.status(403).json({ error: 'Sem permissão.' });
     const users = await db.readSheet('USER');
     res.json(users.map(u => ({ id: u.ID, nome: u.Nome, email: u.Email, perfil: u.Perfil, ativo: u.Ativo, criado_em: u.Criado_Em, ultimo_login: u.Ultimo_Login })));
   } catch (err) { next(err); }
@@ -128,7 +128,7 @@ router.get('/usuarios', require('../middleware/auth').authMiddleware, async (req
 // POST /api/auth/usuarios — Admin cria novo usuário
 router.post('/usuarios', require('../middleware/auth').authMiddleware, async (req, res, next) => {
   try {
-    if (!['Admin'].includes(req.user.perfil)) return res.status(403).json({ error: 'Sem permissão.' });
+    if (!['Admin', 'Diretoria', 'Comercial'].includes(req.user.perfil)) return res.status(403).json({ error: 'Sem permissão.' });
     const { nome, email, senha, perfil } = req.body;
     if (!nome || !email || !senha || !perfil) return res.status(400).json({ error: 'Nome, e-mail, senha e perfil são obrigatórios.' });
 
@@ -148,7 +148,7 @@ router.post('/usuarios', require('../middleware/auth').authMiddleware, async (re
 // PUT /api/auth/usuarios/:id — Admin atualiza usuário
 router.put('/usuarios/:id', require('../middleware/auth').authMiddleware, async (req, res, next) => {
   try {
-    if (!['Admin'].includes(req.user.perfil)) return res.status(403).json({ error: 'Sem permissão.' });
+    if (!['Admin', 'Diretoria', 'Comercial'].includes(req.user.perfil)) return res.status(403).json({ error: 'Sem permissão.' });
     const user = await db.findOne('USER', u => u.ID === req.params.id);
     if (!user) return res.status(404).json({ error: 'Usuário não encontrado.' });
     const { nome, perfil, ativo, senha } = req.body;
@@ -162,7 +162,7 @@ router.put('/usuarios/:id', require('../middleware/auth').authMiddleware, async 
 // DELETE /api/auth/usuarios/:id — Admin exclui usuário permanentemente
 router.delete('/usuarios/:id', require('../middleware/auth').authMiddleware, async (req, res, next) => {
   try {
-    if (!['Admin'].includes(req.user.perfil)) return res.status(403).json({ error: 'Sem permissão.' });
+    if (!['Admin', 'Diretoria', 'Comercial'].includes(req.user.perfil)) return res.status(403).json({ error: 'Sem permissão.' });
     if (req.user.id === req.params.id) return res.status(400).json({ error: 'Não é possível excluir o próprio usuário.' });
     const user = await db.findOne('USER', u => u.ID === req.params.id);
     if (!user) return res.status(404).json({ error: 'Usuário não encontrado.' });

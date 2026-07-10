@@ -42,7 +42,7 @@ export default function Configuracoes() {
 
   useEffect(() => {
     api.get("/health").then(r => setHealth(r.data)).catch(() => setHealth(null))
-    if (userAtual.perfil === "Admin") {
+    if (["Admin", "Diretoria", "Comercial"].includes(userAtual.perfil)) {
       api.get("/auth/usuarios").then(r => setUsuarios(r.data)).catch(() => {})
     }
   }, [])
@@ -119,7 +119,7 @@ export default function Configuracoes() {
         <InfoRow label="Última verificação" value={health?.timestamp ? new Date(health.timestamp).toLocaleString("pt-BR") : "—"} />
       </Section>
 
-      {userAtual.perfil === "Admin" && (
+      {["Admin", "Diretoria", "Comercial"].includes(userAtual.perfil) && (
         <Section title="Gestão de Usuários" icon={Users}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <span style={{ fontSize: 13, color: "#64748B" }}>{usuarios.length} usuário(s) cadastrado(s)</span>
