@@ -7,6 +7,14 @@ function getPool() {
     pool = new Pool({
       connectionString: process.env.DATABASE_URL,
       ssl: process.env.DATABASE_URL?.includes('supabase') ? { rejectUnauthorized: false } : false,
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10000,
+    });
+    pool.on('error', (err) => {
+      console.error('[PostgreSQL] Erro no pool (conexão idle descartada):', err.message);
     });
   }
   return pool;

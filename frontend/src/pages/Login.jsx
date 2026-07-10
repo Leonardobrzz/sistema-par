@@ -38,7 +38,13 @@ export default function Login() {
       }
       navigate('/dashboard')
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Credenciais inválidas')
+      if (!err.response) {
+        toast.error('Erro de conexão com o servidor. Tente novamente.')
+      } else if (err.response.status === 401 || err.response.status === 403) {
+        toast.error(err.response.data?.error || 'Credenciais inválidas')
+      } else {
+        toast.error('Erro interno do servidor. Tente novamente em instantes.')
+      }
     } finally {
       setLoading(false)
     }
