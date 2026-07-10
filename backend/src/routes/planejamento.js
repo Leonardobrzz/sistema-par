@@ -766,6 +766,88 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET /api/planejamento/:id/importar-os — importa terceirizados via número da O.S. no OPP
+router.get('/:id/importar-os', async (req, res, next) => {
+  try {
+    const { oppRequest } = require('../services/oppService');
+
+    // Aceita nrOs direto via query param ou lê do planejamento salvo
+    let nrOs = (req.query.nrOs || '').trim();
+    if (!nrOs) {
+      const plan = await db.findOne('Planejamentos', p => p.ID === req.params.id || p.ID_Projeto === req.params.id);
+      if (!plan) return res.status(404).json({ error: 'Planejamento não encontrado.' });
+      nrOs = (plan.Nr_OS_OPP || plan.Nr_Contrato_OS || '').trim();
+    }
+    if (!nrOs) return res.status(400).json({ error: 'Informe o número da O.S. do OPP.' });
+
+    console.log(`[OPP Import OS] Buscando OS: "${nrOs}"`);
+
+    // 1. Busca a OS pelo número
+    const ossData = await oppRequest('GET', `/ordens-servico?limit=200`);
+    const ossList = Array.isArray(ossData) ? ossData : (ossData?.data || []);
+    const nrNorm = nrOs.toLowerCase().replace(/\s/g, '');
+
+    const osEncontrada = ossList.find(os => {
+      const campos = [os.nr_os, os.numero_os, os.id_os, os.problema_ordem, os.obs_pedido, os.descricao_os]
+        .map(v => String(v || '').toLowerCase().replace(/\s/g, ''));
+      return campos.some(c => c === nrNorm || c.includes(nrNorm));
+    });
+
+    console.log(`[OPP Import OS] OS encontrada: ${osEncontrada ? JSON.stringify({ id: osEncontrada.id_os || osEncontrada.id_pedido, nr: osEncontrada.nr_os }) : 'NÃO'}`);
+    console.log(`[OPP Import OS] Campos da 1ª OS: ${ossList[0] ? Object.keys(ossList[0]).join(', ') : 'lista vazia'}`);
+
+    if (!osEncontrada) {
+      return res.json({
+        osEncontrada: false,
+        nrOs,
+        debug_campos: ossList[0] ? Object.keys(ossList[0]) : [],
+        debug_primeiros: ossList.slice(0, 3).map(o => ({ nr_os: o.nr_os, id_os: o.id_os, problema: o.problema_ordem })),
+      });
+    }
+
+    const idOs = osEncontrada.id_os || osEncontrada.id_pedido || osEncontrada.id;
+
+    // 2. Busca ordens de compra vinculadas à OS
+    let ocs = [];
+    try {
+      const ocsData = await oppRequest('GET', `/ordens-compra?id_os=${idOs}&limit=200`);
+      ocs = Array.isArray(ocsData) ? ocsData : (ocsData?.data || []);
+      console.log(`[OPP Import OS] OCs via id_os=${idOs}: ${ocs.length}`);
+    } catch (e) {
+      console.log(`[OPP Import OS] Fallback: buscando todas as OCs`);
+    }
+
+    // Fallback: busca todas as OCs e filtra pelo id da OS
+    if (!ocs.length) {
+      const todasOcs = await oppRequest('GET', `/ordens-compra?limit=500`);
+      const listaOcs = Array.isArray(todasOcs) ? todasOcs : (todasOcs?.data || []);
+      ocs = listaOcs.filter(oc => String(oc.id_os || oc.id_ordem || '') === String(idOs));
+      console.log(`[OPP Import OS] OCs após filtro local: ${ocs.length} de ${listaOcs.length}`);
+      if (!ocs.length && listaOcs.length > 0) {
+        console.log(`[OPP Import OS] Campos de OC: ${Object.keys(listaOcs[0]).join(', ')}`);
+      }
+    }
+
+    const terceirizados = ocs
+      .filter(oc => (oc.situacao_pedido || '').toLowerCase() !== 'cancelado')
+      .map(oc => ({
+        descricao: oc.problema_ordem || oc.descricao_os || oc.obs_pedido || '',
+        fornecedor: oc.nome_cliente || oc.nome_fornecedor || '',
+        oc: String(oc.id_pedido || ''),
+        custo: String(parseFloat(oc.valor_total_nota || oc.valor_total || 0).toFixed(2)).replace('.', ','),
+        vinculo: '',
+      }));
+
+    res.json({
+      osEncontrada: true,
+      nrOs,
+      idOs,
+      totalOCs: ocs.length,
+      terceirizados,
+    });
+  } catch (err) { next(err); }
+});
+
 // POST /api/planejamento/calcular — calcula totais sem salvar (preview)
 router.post('/calcular', async (req, res, next) => {
   try {

@@ -326,39 +326,26 @@ export default function PlanejamentoFinanceiro() {
   }
 
   async function importarDoOPP() {
-    if (!form.nrContratoOS) return toast.error("Preencha o Nome do Centro de Custo primeiro")
+    if (!form.nrOsOpp) return toast.error("Preencha o campo 'O.S. OPP' com o número da Ordem de Serviço do OPP")
     if (!projetoId) return toast.error("Selecione um projeto")
     try {
-      toast.loading("Buscando dados no OPP...", { id: "opp-import" })
-      const cc = encodeURIComponent(form.nrContratoOS)
-      const r = await api.get(`/planejamento/${projetoId}/despesas-opp?centroCusto=${cc}`, { timeout: 120000 })
+      toast.loading("Buscando Ordens de Compra no OPP...", { id: "opp-import" })
+      const nr = encodeURIComponent(form.nrOsOpp)
+      const r = await api.get(`/planejamento/${projetoId}/importar-os?nrOs=${nr}`, { timeout: 120000 })
       toast.dismiss("opp-import")
       const data = r.data
-      if (!data.centroCustoEncontrado) {
-        toast.error(`Centro de custo "${form.nrContratoOS}" não encontrado no OPP`)
+      if (!data.osEncontrada) {
+        toast.error(`O.S. "${form.nrOsOpp}" não encontrada no OPP`)
+        console.warn("[importarDoOPP] OS não encontrada. Debug:", data)
         return
       }
-      if (!data.lancamentos?.length) {
-        toast("Nenhuma despesa encontrada no OPP para este centro de custo.")
+      if (!data.terceirizados?.length) {
+        toast("Nenhuma Ordem de Compra encontrada para esta O.S.")
         return
       }
-      // Agrupa lançamentos por fornecedor + OC → monta lista de terceirizados
-      const tercMap = {}
-      for (const l of data.lancamentos) {
-        const key = `${l.oc || ""}|${l.fornecedor || l.descricao}`
-        if (!tercMap[key]) tercMap[key] = { descricao: l.descricao, fornecedor: l.fornecedor, oc: l.oc, custo: 0, vinculo: "" }
-        tercMap[key].custo += l.valor
-      }
-      const terceirizados = Object.values(tercMap).map(t => ({
-        descricao: t.descricao || t.fornecedor || "",
-        fornecedor: t.fornecedor || "",
-        oc: String(t.oc || ""),
-        custo: String(t.custo.toFixed(2)).replace(".", ","),
-        vinculo: t.vinculo,
-      }))
-      setForm(prev => ({ ...prev, terceirizados }))
+      setForm(prev => ({ ...prev, terceirizados: data.terceirizados }))
       setSections(s => ({ ...s, terceirizados: true }))
-      toast.success(`${terceirizados.length} serviços terceirizados importados do OPP!`)
+      toast.success(`${data.terceirizados.length} serviços terceirizados importados do OPP!`)
     } catch (err) {
       toast.dismiss("opp-import")
       const msg = err.response?.data?.error || err.response?.data?.message || err.message || "Erro ao importar do OPP"
@@ -676,7 +663,12 @@ export default function PlanejamentoFinanceiro() {
                       ⚠️ Use <strong>exatamente</strong> o mesmo nome do Centro de Custo no Opportune (Financeiro › Parâmetros › Centros de Custos). Padrão: <em>SIGLA CLIENTE DESCRIÇÃO</em> — ex: <em>ARQ CROATÁ HOSPITAL MUNICIPAL</em>. Limite: 45 caracteres.
                     </p>
                   )}
-                  {!planTravado && form.nrContratoOS && (
+                </div>
+              </Field>
+              <Field label="O.S. OPP">
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <input value={form.nrOsOpp || ""} onChange={e => f("nrOsOpp", e.target.value)} style={{ ...INPUT, background: "#FFFBEB" }} placeholder="Nº da O.S. criada no OPP (ex: 2026/0142)" />
+                  {form.nrOsOpp && (
                     <button
                       type="button"
                       onClick={importarDoOPP}
@@ -685,10 +677,10 @@ export default function PlanejamentoFinanceiro() {
                       ⬇️ Importar do OPP
                     </button>
                   )}
+                  <p style={{ margin: 0, fontSize: 11, color: "#94A3B8", lineHeight: 1.4 }}>
+                    Preencha com o número da O.S. criada no OPP para importar os serviços terceirizados automaticamente.
+                  </p>
                 </div>
-              </Field>
-              <Field label="O.S. OPP (preencher após aprovação)">
-                <input value={form.nrOsOpp || ""} onChange={e => f("nrOsOpp", e.target.value)} style={{ ...INPUT, background: "#FFFBEB" }} placeholder="Nº da O.S. criada no OPP" />
               </Field>
               <Field label="Empresa">
                 <select value={form.empresa} onChange={e => f("empresa", e.target.value)} style={INPUT}>
