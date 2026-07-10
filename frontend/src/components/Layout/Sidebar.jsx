@@ -105,21 +105,7 @@ export default function Sidebar() {
 
         {/* Company logo */}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '0 10px 10px', flexShrink: 0 }}>
-          <div style={{
-            width: 44, height: 44, borderRadius: 11,
-            background: 'rgba(255,255,255,0.07)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            overflow: 'hidden',
-            transition: 'box-shadow 0.28s',
-            boxShadow: expanded ? '0 0 0 3px rgba(0,181,204,0.18)' : 'none',
-          }}>
-            <img
-              src="/image.png"
-              alt="Logo"
-              style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 5 }}
-            />
-          </div>
+          <img src="/image.png" alt="Logo" style={{ width: 44, height: 44, objectFit: 'contain' }} />
         </div>
 
         {/* Divider */}
