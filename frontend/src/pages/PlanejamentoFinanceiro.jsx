@@ -325,6 +325,49 @@ export default function PlanejamentoFinanceiro() {
     setCcFocado(false)
   }
 
+  async function importarDoOPP() {
+    if (!form.nrContratoOS) return toast.error("Preencha o Nome do Centro de Custo primeiro")
+    if (!projetoId) return toast.error("Selecione um projeto")
+    // Usa o ID do projeto para chamar o endpoint, mas passa o centro de custo via query
+    try {
+      toast.loading("Buscando dados no OPP...", { id: "opp-import" })
+      // Salva rascunho primeiro para garantir que Nr_Contrato_OS está no banco
+      const payload = { ...form, idProjeto: projetoId, status: "Rascunho", nomeProjeto: form.nomeProjeto || projetoSelecionado?.Nome || "", cliente: form.cliente || projetoSelecionado?.Cliente || "", setor: form.setor || projetoSelecionado?.Setor || "" }
+      await api.post("/planejamento", payload)
+      const r = await api.get(`/planejamento/${projetoId}/despesas-opp`)
+      toast.dismiss("opp-import")
+      const data = r.data
+      if (!data.centroCustoEncontrado) {
+        toast.error(`Centro de custo "${form.nrContratoOS}" não encontrado no OPP`)
+        return
+      }
+      if (!data.lancamentos?.length) {
+        toast("Nenhuma despesa encontrada no OPP para este centro de custo.")
+        return
+      }
+      // Agrupa lançamentos por fornecedor + OC → monta lista de terceirizados
+      const tercMap = {}
+      for (const l of data.lancamentos) {
+        const key = `${l.oc || ""}|${l.fornecedor || l.descricao}`
+        if (!tercMap[key]) tercMap[key] = { descricao: l.descricao, fornecedor: l.fornecedor, oc: l.oc, custo: 0, vinculo: "" }
+        tercMap[key].custo += l.valor
+      }
+      const terceirizados = Object.values(tercMap).map(t => ({
+        descricao: t.descricao || t.fornecedor || "",
+        fornecedor: t.fornecedor || "",
+        oc: String(t.oc || ""),
+        custo: String(t.custo.toFixed(2)).replace(".", ","),
+        vinculo: t.vinculo,
+      }))
+      setForm(prev => ({ ...prev, terceirizados }))
+      setSections(s => ({ ...s, terceirizados: true }))
+      toast.success(`${terceirizados.length} serviços terceirizados importados do OPP!`)
+    } catch (err) {
+      toast.dismiss("opp-import")
+      toast.error(err.response?.data?.error || "Erro ao importar do OPP")
+    }
+  }
+
   async function travarOPP() {
     if (!planId) return toast.error("Salve o planejamento primeiro")
     if (!form.nrContratoOS) return toast.error("Preencha o Nome do Centro de Custo antes de travar")
@@ -633,6 +676,15 @@ export default function PlanejamentoFinanceiro() {
                     <p style={{ margin: 0, fontSize: 11, color: "#94A3B8", lineHeight: 1.4 }}>
                       ⚠️ Use <strong>exatamente</strong> o mesmo nome do Centro de Custo no Opportune (Financeiro › Parâmetros › Centros de Custos). Padrão: <em>SIGLA CLIENTE DESCRIÇÃO</em> — ex: <em>ARQ CROATÁ HOSPITAL MUNICIPAL</em>. Limite: 45 caracteres.
                     </p>
+                  )}
+                  {!planTravado && form.nrContratoOS && (
+                    <button
+                      type="button"
+                      onClick={importarDoOPP}
+                      style={{ alignSelf: "flex-start", padding: "8px 14px", borderRadius: 8, border: "1.5px solid #BAE6FD", background: "#F0F9FF", color: "#0369A1", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+                    >
+                      ⬇️ Importar do OPP
+                    </button>
                   )}
                 </div>
               </Field>
