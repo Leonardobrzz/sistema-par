@@ -89,6 +89,38 @@ app.get('/api/diagnostico-opp', async (req, res) => {
   }
 });
 
+// Exporta todos os centros de custo do OPP
+app.get('/api/diagnostico-opp/centros-custo', async (req, res) => {
+  try {
+    const { oppRequest } = require('./src/services/oppService');
+    const r = await oppRequest('GET', '/centros-custo?limit=500');
+    const lista = Array.isArray(r) ? r : (r?.data || []);
+    res.json({ total: lista.length, data: lista });
+  } catch (err) {
+    res.status(500).json({ erro: err.message });
+  }
+});
+
+// Exporta base completa de contas a pagar do OPP (pagina automaticamente)
+app.get('/api/diagnostico-opp/contas-pagar', async (req, res) => {
+  try {
+    const { oppRequest } = require('./src/services/oppService');
+    let offset = 0, todos = [];
+    while (true) {
+      const r = await oppRequest('GET', `/contas-pagar?limit=250&offset=${offset}&lixeira=Nao`);
+      const lista = Array.isArray(r) ? r : (r?.data || []);
+      if (lista.length === 0) break;
+      todos.push(...lista);
+      if (lista.length < 250) break;
+      offset += 250;
+      if (offset > 5000) break; // segurança
+    }
+    res.json({ total: todos.length, data: todos });
+  } catch (err) {
+    res.status(500).json({ erro: err.message });
+  }
+});
+
 // ── WebSocket ─────────────────────────────────────────────────────────────────
 initWebSocket(server);
 
