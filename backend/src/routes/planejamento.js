@@ -721,34 +721,24 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
 
     if (!cc) return res.json({ centroCusto, centroCustoEncontrado: false, lancamentos: [], total: 0, debug: listaCC.slice(0,5).map(c => c.desc_centro_custos) });
 
-    // Busca contas a pagar com filtro de vencimento (parâmetro válido da API VHSys/OPP)
-    // data_vencimento aceita range: "YYYY-MM-DD,YYYY-MM-DD"
-    const anoInicio = new Date().getFullYear() - 3;
-    const dataVencRange = `${anoInicio}-01-01,${new Date().getFullYear() + 1}-12-31`;
+    // Busca todos os registros (1.8k total) e filtra localmente por id_centro_custos
+    // A API VHSys não suporta filtro por CC — usamos id_centro_custos (campo escalar)
     let offset = 0, todos = [];
     while (true) {
-      const r = await oppRequest('GET', `/contas-pagar?limit=250&offset=${offset}&data_vencimento=${dataVencRange}&lixeira=Nao`);
+      const r = await oppRequest('GET', `/contas-pagar?limit=250&offset=${offset}&lixeira=Nao`);
       const lista = Array.isArray(r) ? r : (r?.data || []);
-      console.log(`[OPP] contas-pagar offset=${offset}: ${lista.length} registros`);
       if (lista.length === 0) break;
       todos.push(...lista);
       if (lista.length < 250) break;
       offset += 250;
     }
-    // Filtra localmente pelo campo centro_custo (array) ou id_centro_custos
     const ccId = String(cc.id_centro_custos);
     console.log(`[OPP] Total buscado: ${todos.length}, filtrando por CC ID=${ccId}`);
     const lancamentos = todos
       .filter(d => {
-        if ((d.situacao || '').toLowerCase().includes('estornada') || d.lixeira === 'Sim') return false;
-        // centro_custo é um array de objetos [{id_centro_custos, desc_centro_custos}]
-        const arr = Array.isArray(d.centro_custo) ? d.centro_custo : [];
-        if (arr.length > 0) {
-          return arr.some(c => String(c.id_centro_custos || c.id || '') === ccId ||
-            (c.desc_centro_custos || c.nome || '').toLowerCase().includes(ccNorm));
-        }
-        // Fallback: id_centro_custos direto
-        return String(d.id_centro_custos || '') === ccId || (d.centro_custos_pag || '').toLowerCase().includes(ccNorm);
+        if (d.lixeira === 'Sim') return false;
+        if ((d.situacao || '').toLowerCase().includes('estornada')) return false;
+        return String(d.id_centro_custos || '') === ccId;
       })
       .map(d => ({
         id: d.id_conta_pag,
