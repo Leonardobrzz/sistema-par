@@ -95,6 +95,13 @@ app.get('/api/diagnostico-opp/centros-custo', async (req, res) => {
     const { oppRequest } = require('./src/services/oppService');
     const r = await oppRequest('GET', '/centros-custo?limit=500');
     const lista = Array.isArray(r) ? r : (r?.data || []);
+    if (req.query.formato === 'csv') {
+      const linhas = ['ID;Descrição;Status;Lixeira;Criado Em'];
+      lista.forEach(c => linhas.push(`${c.id_centro_custos};"${c.desc_centro_custos}";${c.status_centro_custos};${c.lixeira};${c.data_cad_centro}`));
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="centros-custo-opp.csv"');
+      return res.send('﻿' + linhas.join('\n'));
+    }
     res.json({ total: lista.length, data: lista });
   } catch (err) {
     res.status(500).json({ erro: err.message });
@@ -113,7 +120,24 @@ app.get('/api/diagnostico-opp/contas-pagar', async (req, res) => {
       todos.push(...lista);
       if (lista.length < 250) break;
       offset += 250;
-      if (offset > 5000) break; // segurança
+      if (offset > 5000) break;
+    }
+    if (req.query.formato === 'csv') {
+      const linhas = ['ID;Registro;Nome da Conta;Fornecedor;Vencimento;Valor;Valor Pago;Situação;Liquidado;Centro de Custo ID;Centro de Custo;Categoria;Data Emissão'];
+      todos.forEach(d => linhas.push([
+        d.id_conta_pag, d.id_registro,
+        `"${(d.nome_conta||'').replace(/"/g,'')}"`,
+        `"${(d.nome_fornecedor||'').replace(/"/g,'')}"`,
+        d.vencimento_pag, d.valor_pag, d.valor_pago,
+        `"${(d.situacao||'').replace(/"/g,'')}"`,
+        d.liquidado_pag, d.id_centro_custos,
+        `"${(d.centro_custos_pag||'').replace(/"/g,'')}"`,
+        `"${(d.categoria_pag||'').replace(/"/g,'')}"`,
+        d.data_emissao
+      ].join(';')));
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="contas-pagar-opp.csv"');
+      return res.send('﻿' + linhas.join('\n'));
     }
     res.json({ total: todos.length, data: todos });
   } catch (err) {
