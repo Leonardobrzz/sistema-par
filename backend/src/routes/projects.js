@@ -10,7 +10,7 @@ router.use(authMiddleware);
 router.get('/', async (req, res, next) => {
   try {
     const { status, setor, cliente, busca } = req.query;
-    let projects = (await db.readSheet('Projetos_Contratos')).filter((p) => /^(ARQ|INF|SAN)-\d{4}-/i.test(p.Nome || '') && p.Status !== 'Concluído' && p.Status !== 'Arquivado');
+    let projects = (await db.readSheet('Projetos_Contratos')).filter((p) => /^(ARQ|INF|SAN)-/i.test(p.Nome || '') && p.Status !== 'Concluído' && p.Status !== 'Arquivado');
 
     if (status) {
       const statusArr = status.split(',');
@@ -101,7 +101,7 @@ router.get('/stats/dashboard', async (req, res, next) => {
   try {
     const allProjects = await db.readSheet('Projetos_Contratos');
     // Apenas projetos do espaço PROJETOS 2025 (prefixo ARQ, INF ou SAN no nome)
-    const projects = allProjects.filter((p) => /^(ARQ|INF|SAN)[-_]/i.test(p.Nome || '') && p.Status !== 'Concluído' && p.Status !== 'Arquivado');
+    const projects = allProjects.filter((p) => /^(ARQ|INF|SAN)-/i.test(p.Nome || '') && p.Status !== 'Concluído' && p.Status !== 'Arquivado');
     const alertas = await db.findRows('Alertas', (a) => a.Status?.toLowerCase() === 'ativo');
     const medicoes = await db.readSheet('Medicoes');
 
