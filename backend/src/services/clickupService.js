@@ -571,12 +571,43 @@ async function _doSync() {
   // 2. Auto-importar novas pastas/listas como projetos (ANTES de buscar tasks)
   await autoImportProjects(allLists);
 
-  // 3. Recarregar projetos após import — apenas ATIVOS para economizar memória
+  // 3. Recarregar projetos após import
   const todosProjectos = await db.readSheet('Projetos_Contratos');
+
+  // 3a. Passagem leve: atualiza status de TODOS os projetos com base no status da lista no ClickUp
+  // (não busca tasks — apenas usa allLists que já está em memória)
+  const allListsById = {};
+  for (const l of allLists) { if (!l._isFolder) allListsById[l.id] = l; }
+
+  for (const projeto of todosProjectos) {
+    if (!projeto.ID_ClickUp) continue;
+    const listItem = allListsById[projeto.ID_ClickUp];
+    if (!listItem) continue;
+    const listStatusRaw = (listItem?.status?.status || '').toLowerCase().trim();
+    if (!listStatusRaw) continue;
+
+    const statusMap = {
+      'closed': 'Concluído', 'complete': 'Concluído', 'concluído': 'Concluído', 'concluido': 'Concluído', 'fechado': 'Concluído',
+      'backlog': 'Backlog', 'a planejar': 'Backlog',
+      'paralisado': 'Paralisado',
+      'em analise': 'Em Análise', 'em análise': 'Em Análise',
+      'arquivado': 'Arquivado',
+      'aguardando faturamento': 'Aguardando Faturamento',
+      'pendencia': 'Pendência', 'pendência': 'Pendência',
+    };
+    const novoStatus = statusMap[listStatusRaw];
+    // Só atualiza se o status mudou E o novo status é conhecido (não sobrescreve com undefined)
+    if (novoStatus && novoStatus !== projeto.Status) {
+      console.log(`[ClickUp] Status leve: "${projeto.Nome}" ${projeto.Status} → ${novoStatus}`);
+      await db.updateRowById('Projetos_Contratos', 'ID_Projeto', projeto.ID_Projeto, {
+        ...projeto, Status: novoStatus, Atualizado_Em: new Date().toISOString(),
+      });
+      projeto.Status = novoStatus; // atualiza em memória para a fase seguinte
+    }
+  }
+
   const STATUS_ATIVOS = ['Em Andamento', 'Em Andamento (Atrasado)', 'Backlog', 'A Planejar'];
-  const projetos = todosProjectos.filter(p =>
-    p.ID_ClickUp && STATUS_ATIVOS.includes(p.Status)
-  );
+  const projetos = todosProjectos.filter(p => p.ID_ClickUp && STATUS_ATIVOS.includes(p.Status));
   console.log(`[ClickUp] Sincronizando ${projetos.length}/${todosProjectos.length} projetos ativos.`);
 
   // 1b. FASE 2: processar tarefas projeto a projeto (sem acumular tudo na memória)
