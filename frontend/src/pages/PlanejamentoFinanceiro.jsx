@@ -874,8 +874,9 @@ export default function PlanejamentoFinanceiro() {
                 const vCusto = parseBR(t.custo)
                 const percRef = vc > 0 ? ((vRef / vc) * 100).toFixed(1) : "—"
                 const percImpacto = vc > 0 ? ((vCusto / vc) * 100).toFixed(1) : "—"
+                const percCustoSobreRef = vRef > 0 ? ((vCusto / vRef) * 100).toFixed(1) : "—"
                 return (
-                <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 0.7fr 0.7fr auto", gap: 8, marginBottom: 8, alignItems: "end" }}>
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 0.7fr 0.7fr 0.7fr auto", gap: 8, marginBottom: 8, alignItems: "end" }}>
                   <Field label={i === 0 ? "Serviço / Descrição" : ""}><input value={t.servico || ""} onChange={e => editRow("terceirizados", i, "servico", e.target.value)} style={INPUT} placeholder="ex: Sondagem SPT" /></Field>
                   <Field label={i === 0 ? "Vínculo (medição)" : ""}>
                     <select value={t.vinculo || ""} onChange={e => editRow("terceirizados", i, "vinculo", e.target.value)} style={INPUT}>
@@ -892,6 +893,9 @@ export default function PlanejamentoFinanceiro() {
                   </Field>
                   <Field label={i === 0 ? "% Impacto" : ""}>
                     <div style={{ ...INPUT, background: "#FFF7ED", color: "#C2410C", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 13 }}>{percImpacto !== "—" ? `${percImpacto}%` : "—"}</div>
+                  </Field>
+                  <Field label={i === 0 ? "% Custo/Ref." : ""}>
+                    <div style={{ ...INPUT, background: "#F0FDF4", color: "#15803D", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 13 }}>{percCustoSobreRef !== "—" ? `${percCustoSobreRef}%` : "—"}</div>
                   </Field>
                   <button onClick={() => delRow("terceirizados", i)} style={{ padding: "9px 10px", borderRadius: 8, border: "1px solid #FECACA", background: "#FEF2F2", color: "#DC2626", cursor: "pointer", alignSelf: "end" }}><Trash2 size={14} /></button>
                 </div>
