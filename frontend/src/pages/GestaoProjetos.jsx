@@ -79,10 +79,11 @@ export default function GestaoProjetos() {
     if (searchParams.get('novo') === '1') setShowNewModal(true)
   }, [searchParams])
 
-  const loadProjects = useCallback(async () => {
+  const loadProjects = useCallback(async (statusSelecionado) => {
     setLoading(true)
     try {
-      const res = await api.get('/projetos')
+      const incluirTodos = statusSelecionado?.some(s => s === 'Concluído' || s === 'Arquivado')
+      const res = await api.get(incluirTodos ? '/projetos?incluirTodos=true' : '/projetos')
       setAllProjects(res.data.projetos || [])
     } catch {
       toast.error('Erro ao carregar projetos')
@@ -259,22 +260,34 @@ export default function GestaoProjetos() {
               )
             })}
             <span style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', marginLeft: 8, marginRight: 2 }}>Status:</span>
-            {statusReais.map((s) => {
+            {[
+              { label: 'A Planejar',             color: '#64748B', bg: '#F1F5F9' },
+              { label: 'Backlog',                color: '#7C3AED', bg: '#EDE9FE' },
+              { label: 'Em Andamento',           color: '#D97706', bg: '#FEF3C7' },
+              { label: 'Em Análise',             color: '#0891B2', bg: '#CFFAFE' },
+              { label: 'Paralisado',             color: '#DC2626', bg: '#FEE2E2' },
+              { label: 'Concluído',              color: '#16A34A', bg: '#DCFCE7' },
+              { label: 'Arquivado',              color: '#475569', bg: '#E2E8F0' },
+              { label: 'Aguardando Faturamento', color: '#1D4ED8', bg: '#DBEAFE' },
+              { label: 'Pendência',              color: '#BE185D', bg: '#FCE7F3' },
+              { label: 'Planejado',              color: '#059669', bg: '#D1FAE5' },
+            ].map(({ label, color, bg }) => {
               const emAndamentoAtivo = filters.status.includes('Em Andamento') && filters.status.includes('Em Andamento (Atrasado)')
-              const active = s === 'Em Andamento' ? emAndamentoAtivo : (filters.status.length === 1 && filters.status[0] === s)
+              const active = label === 'Em Andamento' ? emAndamentoAtivo : (filters.status.length === 1 && filters.status[0] === label)
               return (
-                <button key={s} onClick={() => {
-                  const novoStatus = s === 'Em Andamento'
+                <button key={label} onClick={() => {
+                  const novoStatus = label === 'Em Andamento'
                     ? ['Em Andamento', 'Em Andamento (Atrasado)']
-                    : [s]
-                  setFilters({ ...filters, status: novoStatus })
+                    : [label]
+                  setFilters(f => ({ ...f, status: novoStatus }))
+                  loadProjects(novoStatus)
                 }}
                   style={{ padding: '4px 12px', borderRadius: 8, border: '1.5px solid', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
-                    borderColor: active ? '#4338CA' : '#E2E8F0',
-                    background: active ? '#EEF2FF' : '#fff',
-                    color: active ? '#4338CA' : '#64748B',
+                    borderColor: active ? color : '#E2E8F0',
+                    background: active ? bg : '#fff',
+                    color: active ? color : '#64748B',
                   }}>
-                  {s}
+                  {label}
                 </button>
               )
             })}

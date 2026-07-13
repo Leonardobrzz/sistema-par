@@ -9,12 +9,14 @@ router.use(authMiddleware);
 // GET /api/projetos — lista todos os projetos com filtros
 router.get('/', async (req, res, next) => {
   try {
-    const { status, setor, cliente, busca } = req.query;
+    const { status, setor, cliente, busca, incluirTodos } = req.query;
     let projects = (await db.readSheet('Projetos_Contratos')).filter((p) => {
       const nome = p.Nome || '';
       const temPrefixo = /^(ARQ|INF|SAN)-/i.test(nome);
       const excecao = /CENTRO ESPECIALIZADO DE REABILITA/i.test(nome);
-      return (temPrefixo || excecao) && p.Status !== 'Concluído' && p.Status !== 'Arquivado';
+      if (!temPrefixo && !excecao) return false;
+      if (incluirTodos === 'true') return true;
+      return p.Status !== 'Concluído' && p.Status !== 'Arquivado';
     });
 
     if (status) {
