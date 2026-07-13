@@ -136,11 +136,17 @@ async function getAllListsFromSpace(spaceId) {
   const result = [];
   try {
     const folders = await getFolders(spaceId);
+    console.log(`[ClickUp] Space ${spaceId}: ${folders.length} pasta(s) encontradas: ${folders.map(f => f.name).join(', ')}`);
     for (const folder of folders) {
-      // Pasta = Cliente — não vira projeto, apenas as listas dentro viram
-      const lists = await getLists(folder.id);
-      for (const list of lists) {
-        result.push({ ...list, _isFolder: false, _folderId: folder.id, _folderName: folder.name, _spaceId: spaceId });
+      try {
+        // Pasta = Cliente — não vira projeto, apenas as listas dentro viram
+        const lists = await getLists(folder.id);
+        console.log(`[ClickUp] Pasta "${folder.name}": ${lists.length} lista(s)`);
+        for (const list of lists) {
+          result.push({ ...list, _isFolder: false, _folderId: folder.id, _folderName: folder.name, _spaceId: spaceId });
+        }
+      } catch (err) {
+        console.error(`[ClickUp] Erro ao buscar listas da pasta "${folder.name}" (${folder.id}):`, err.message);
       }
     }
   } catch (err) {
