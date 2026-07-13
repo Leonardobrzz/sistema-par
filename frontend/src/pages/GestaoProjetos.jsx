@@ -17,18 +17,31 @@ const STATUS_LIST = [
 ]
 
 function StatusMultiSelect({ value, onChange, options = STATUS_LIST }) {
+  // Grupo "Em Andamento" cobre os dois subtipos
+  const activeKey = value.includes('Em Andamento') && value.includes('Em Andamento (Atrasado)')
+    ? 'Em Andamento'
+    : value[0] || ''
+
+  function handleClick(s) {
+    if (s === 'Em Andamento') {
+      onChange(['Em Andamento', 'Em Andamento (Atrasado)'])
+    } else {
+      onChange([s])
+    }
+  }
+
   return (
     <div className="flex flex-wrap gap-2">
-      {options.map((s) => {
-        const active = value.includes(s)
+      {options.filter(s => s !== 'Em Andamento (Atrasado)').map((s) => {
+        const active = s === 'Em Andamento' ? activeKey === 'Em Andamento' : value.includes(s)
         return (
           <button
             key={s}
             type="button"
-            onClick={() => onChange(active ? value.filter((v) => v !== s) : [...value, s])}
+            onClick={() => handleClick(s)}
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all duration-200 ${
-              active 
-                ? 'bg-par-500 text-white border-par-500 ring-1 ring-par-500/30' 
+              active
+                ? 'bg-par-500 text-white border-par-500 ring-1 ring-par-500/30'
                 : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:text-slate-900'
             }`}
           >
