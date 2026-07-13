@@ -260,9 +260,15 @@ export default function GestaoProjetos() {
             })}
             <span style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', marginLeft: 8, marginRight: 2 }}>Status:</span>
             {statusReais.map((s) => {
-              const active = filters.status.includes(s)
+              const emAndamentoAtivo = filters.status.includes('Em Andamento') && filters.status.includes('Em Andamento (Atrasado)')
+              const active = s === 'Em Andamento' ? emAndamentoAtivo : (filters.status.length === 1 && filters.status[0] === s)
               return (
-                <button key={s} onClick={() => setFilters({ ...filters, status: active ? filters.status.filter(v => v !== s) : [...filters.status, s] })}
+                <button key={s} onClick={() => {
+                  const novoStatus = s === 'Em Andamento'
+                    ? ['Em Andamento', 'Em Andamento (Atrasado)']
+                    : [s]
+                  setFilters({ ...filters, status: novoStatus })
+                }}
                   style={{ padding: '4px 12px', borderRadius: 8, border: '1.5px solid', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
                     borderColor: active ? '#4338CA' : '#E2E8F0',
                     background: active ? '#EEF2FF' : '#fff',
