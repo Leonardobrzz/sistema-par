@@ -823,15 +823,25 @@ export default function PlanejamentoFinanceiro() {
                       ? <input value={m.etapa || ""} onChange={e => editRow("medicoes", i, "etapa", e.target.value)} style={INPUT} placeholder="ex: Medição 1 - Levantamento" autoFocus />
                       : <div style={CELL}>{m.etapa || <span style={{ color: "#CBD5E1" }}>—</span>}</div>}
                   </Field>
-                  <Field label={i === 0 ? "%" : ""}>
-                    {isEditing
-                      ? <input type="text" inputMode="decimal" value={m.percentual || ""} onChange={e => editRow("medicoes", i, "percentual", e.target.value)} style={INPUT} placeholder="ex: 25,50" />
-                      : <div style={CELL}>{m.percentual ? `${m.percentual}%` : <span style={{ color: "#CBD5E1" }}>—</span>}</div>}
-                  </Field>
                   <Field label={i === 0 ? "Valor (R$)" : ""}>
                     {isEditing
-                      ? <input type="text" inputMode="decimal" value={m.valor || ""} onChange={e => editRow("medicoes", i, "valor", e.target.value)} style={INPUT} placeholder="ex: 1.500,00" />
+                      ? <input type="text" inputMode="decimal" value={m.valor || ""} onChange={e => {
+                          const novoValor = e.target.value
+                          const vc = parseBR(form.valorContrato)
+                          const vNum = parseBR(novoValor)
+                          const percAuto = vc > 0 && vNum > 0 ? (vNum / vc * 100).toFixed(2).replace('.', ',') : m.percentual
+                          setForm(prev => {
+                            const updated = [...prev.medicoes]
+                            updated[i] = { ...updated[i], valor: novoValor, percentual: percAuto }
+                            return { ...prev, medicoes: updated }
+                          })
+                        }} style={INPUT} placeholder="ex: 1.500,00" />
                       : <div style={CELL}>{m.valor ? fmt(parseBR(m.valor)) : <span style={{ color: "#CBD5E1" }}>—</span>}</div>}
+                  </Field>
+                  <Field label={i === 0 ? "%" : ""}>
+                    {isEditing
+                      ? <input type="text" inputMode="decimal" value={m.percentual || ""} onChange={e => editRow("medicoes", i, "percentual", e.target.value)} style={{ ...INPUT, background: '#F0FDF4', color: '#15803D' }} placeholder="auto" />
+                      : <div style={CELL}>{m.percentual ? `${m.percentual}%` : <span style={{ color: "#CBD5E1" }}>—</span>}</div>}
                   </Field>
                   <Field label={i === 0 ? "Data Prevista" : ""}>
                     {isEditing
