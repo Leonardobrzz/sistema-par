@@ -846,7 +846,7 @@ export default function PlanejamentoFinanceiro() {
                   <Field label={i === 0 ? "Data Prevista" : ""}>
                     {isEditing
                       ? <input type="date" value={m.dataPrevisao || ""} onChange={e => editRow("medicoes", i, "dataPrevisao", e.target.value)} style={INPUT} />
-                      : <div style={CELL}>{m.dataPrevisao || <span style={{ color: "#CBD5E1" }}>—</span>}</div>}
+                      : <div style={CELL}>{m.dataPrevisao ? m.dataPrevisao.split('-').reverse().join('/') : <span style={{ color: "#CBD5E1" }}>—</span>}</div>}
                   </Field>
                   <div style={{ display: "flex", gap: 4, alignSelf: "end" }}>
                     {isEditing ? (<>
