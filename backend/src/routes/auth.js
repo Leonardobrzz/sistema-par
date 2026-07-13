@@ -27,9 +27,12 @@ router.post('/login', async (req, res, next) => {
       return res.status(401).json({ error: 'Credenciais inválidas.' });
     }
 
-    // Se 'Ativo' existir na planilha, checa. Senão, pula a validação (legado)
-    if (user.Ativo && user.Ativo !== 'true' && user.Ativo !== '1') {
-      return res.status(403).json({ error: 'Usuário inativo. Contate o administrador.' });
+    // Se 'Ativo' existir, checa. Converte para string para suportar boolean (PostgreSQL) e string (Sheets)
+    if (user.Ativo !== undefined && user.Ativo !== null && user.Ativo !== '') {
+      const ativoStr = String(user.Ativo).toLowerCase();
+      if (ativoStr !== 'true' && ativoStr !== '1') {
+        return res.status(403).json({ error: 'Usuário inativo. Contate o administrador.' });
+      }
     }
 
     // Verifica a senha. Se houver Senha (texto puro no legado), compara direto. Se houver Senha_Hash, usa bcrypt.
