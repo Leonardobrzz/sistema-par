@@ -261,7 +261,6 @@ export default function GestaoProjetos() {
             })}
             <span style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', marginLeft: 8, marginRight: 2 }}>Status:</span>
             {[
-              { label: 'A Planejar',             color: '#64748B', bg: '#F1F5F9' },
               { label: 'Backlog',                color: '#7C3AED', bg: '#EDE9FE' },
               { label: 'Em Andamento',           color: '#D97706', bg: '#FEF3C7' },
               { label: 'Em Análise',             color: '#0891B2', bg: '#CFFAFE' },
@@ -270,7 +269,6 @@ export default function GestaoProjetos() {
               { label: 'Arquivado',              color: '#475569', bg: '#E2E8F0' },
               { label: 'Aguardando Faturamento', color: '#1D4ED8', bg: '#DBEAFE' },
               { label: 'Pendência',              color: '#BE185D', bg: '#FCE7F3' },
-              { label: 'Planejado',              color: '#059669', bg: '#D1FAE5' },
             ].map(({ label, color, bg }) => {
               const emAndamentoAtivo = filters.status.includes('Em Andamento') && filters.status.includes('Em Andamento (Atrasado)')
               const active = label === 'Em Andamento' ? emAndamentoAtivo : (filters.status.length === 1 && filters.status[0] === label)
