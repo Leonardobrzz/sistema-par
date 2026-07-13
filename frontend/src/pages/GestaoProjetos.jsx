@@ -12,7 +12,8 @@ import { useAuth } from '../contexts/AuthContext'
 
 const SETORES = ['ARQ', 'INF', 'SAN']
 const STATUS_LIST = [
-  'Backlog', 'Em Andamento', 'Em Andamento (Atrasado)', 'Paralisado', 'Concluído'
+  'Backlog', 'Em Andamento', 'Em Andamento (Atrasado)', 'Paralisado', 'Concluído',
+  'Em Análise', 'Arquivado', 'Aguardando Faturamento', 'Pendência'
 ]
 
 function StatusMultiSelect({ value, onChange, options = STATUS_LIST }) {

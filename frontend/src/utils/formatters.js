@@ -69,6 +69,8 @@ export function statusBadgeClass(status) {
   if (s.includes('paralisado'))                                                   return 'badge badge-orange'
   if (s.includes('arquivado') || s.includes('rascunho'))                          return 'badge badge-gray'
   if (s.includes('negociação') || s.includes('backlog'))                          return 'badge badge-purple'
+  if (s.includes('pendênc') || s.includes('pendenc'))                             return 'badge badge-red'
+  if (s.includes('análise') || s.includes('analise'))                             return 'badge badge-yellow'
   return 'badge badge-gray'
 }
 
