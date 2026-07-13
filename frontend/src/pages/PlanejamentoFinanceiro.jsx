@@ -835,7 +835,7 @@ export default function PlanejamentoFinanceiro() {
                             updated[i] = { ...updated[i], valor: novoValor, percentual: percAuto }
                             return { ...prev, medicoes: updated }
                           })
-                        }} style={INPUT} placeholder="ex: 1.500,00" />
+                        }} onBlur={e => { const v = parseBR(e.target.value); if (v > 0) { const fmt2 = v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); setForm(prev => { const updated = [...prev.medicoes]; updated[i] = { ...updated[i], valor: fmt2 }; return { ...prev, medicoes: updated } }) } }} style={INPUT} placeholder="ex: 1.500,00" />
                       : <div style={CELL}>{m.valor ? fmt(parseBR(m.valor)) : <span style={{ color: "#CBD5E1" }}>—</span>}</div>}
                   </Field>
                   <Field label={i === 0 ? "%" : ""}>
@@ -886,8 +886,8 @@ export default function PlanejamentoFinanceiro() {
                       ))}
                     </select>
                   </Field>
-                  <Field label={i === 0 ? "Ref. Contrato (R$)" : ""}><input type="text" inputMode="decimal" value={t.valorRef || ""} onChange={e => editRow("terceirizados", i, "valorRef", e.target.value)} style={INPUT} placeholder="ex: 5.000,00" /></Field>
-                  <Field label={i === 0 ? "Custo (R$)" : ""}><input type="text" inputMode="decimal" value={t.custo || ""} onChange={e => editRow("terceirizados", i, "custo", e.target.value)} style={INPUT} placeholder="ex: 4.500,00" /></Field>
+                  <Field label={i === 0 ? "Ref. Contrato (R$)" : ""}><input type="text" inputMode="decimal" value={t.valorRef || ""} onChange={e => editRow("terceirizados", i, "valorRef", e.target.value)} onBlur={e => { const v = parseBR(e.target.value); if (v > 0) editRow("terceirizados", i, "valorRef", v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')) }} style={INPUT} placeholder="ex: 5.000,00" /></Field>
+                  <Field label={i === 0 ? "Custo (R$)" : ""}><input type="text" inputMode="decimal" value={t.custo || ""} onChange={e => editRow("terceirizados", i, "custo", e.target.value)} onBlur={e => { const v = parseBR(e.target.value); if (v > 0) editRow("terceirizados", i, "custo", v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')) }} style={INPUT} placeholder="ex: 4.500,00" /></Field>
                   <Field label={i === 0 ? "% Ref." : ""}>
                     <div style={{ ...INPUT, background: "#F8FAFC", color: "#475569", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 13 }}>{percRef !== "—" ? `${percRef}%` : "—"}</div>
                   </Field>
