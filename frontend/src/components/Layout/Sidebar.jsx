@@ -14,7 +14,7 @@ import api from '../../utils/api'
 
 const NAV_ITEMS = [
   { to: '/dashboard',        label: 'Dashboard',                          icon: HomeIcon                   },
-  { to: '/projetos',         label: 'Planejamento Físico/Financeiro',      icon: FolderIcon                 },
+  { to: '/projetos',         label: 'Planejamento Físico',                 icon: FolderIcon                 },
   { to: '/planejamento',     label: 'Planejamento Financeiro',            icon: CalculatorIcon,            perfis: ['PO', 'Coordenador', 'Admin', 'Diretoria'] },
   { to: '/aprovacao',        label: 'Aprovações & Baseline',              icon: ShieldCheckIcon,           perfis: ['PO', 'Coordenador', 'Admin', 'Diretoria'], badge: 'aprovacao' },
   { to: '/terceirizados',    label: 'Terceirizados',                      icon: UsersIcon,                 perfis: ['PO', 'Comercial', 'Coordenador', 'Admin', 'Diretoria'] },
