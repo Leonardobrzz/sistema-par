@@ -282,10 +282,12 @@ export default function GestaoProjetos() {
                   setFilters(f => ({ ...f, status: novoStatus }))
                   loadProjects(novoStatus)
                 }}
-                  style={{ padding: '4px 12px', borderRadius: 8, border: '1.5px solid', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
-                    borderColor: active ? color : '#E2E8F0',
-                    background: active ? bg : '#fff',
-                    color: active ? color : '#64748B',
+                  style={{ padding: '4px 12px', borderRadius: 8, border: '2px solid', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
+                    borderColor: color,
+                    background: active ? bg : `${bg}55`,
+                    color: color,
+                    opacity: active ? 1 : 0.75,
+                    boxShadow: active ? `0 0 0 2px ${color}33` : 'none',
                   }}>
                   {label}
                 </button>
