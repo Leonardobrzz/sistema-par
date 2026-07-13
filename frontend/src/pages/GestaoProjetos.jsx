@@ -49,7 +49,7 @@ export default function GestaoProjetos() {
   const topScrollRef  = useRef(null)
   const bodyScrollRef = useRef(null)
   const [showNewModal, setShowNewModal] = useState(false)
-  const DEFAULT_STATUS = ['Backlog', 'Em Andamento', 'Em Andamento (Atrasado)', 'Paralisado']
+  const DEFAULT_STATUS = ['Em Andamento', 'Em Andamento (Atrasado)']
   const [filters, setFilters] = useState({
     busca: searchParams.get('busca') || '',
     setor: '',

@@ -182,9 +182,14 @@ async function autoImportProjects(items) {
       ID_ClickUp: item.id,
       Centro_Custo_OPP: '',
       Status: (() => {
-        const s = (item.status?.status || '').toLowerCase();
-        if (s === 'closed' || s === 'complete' || s === 'fechado' || s === 'concluído') return 'Concluído';
+        const s = (item.status?.status || '').toLowerCase().trim();
+        if (s === 'closed' || s === 'complete' || s === 'concluído' || s === 'concluido' || s === 'fechado') return 'Concluído';
         if (s === 'backlog' || s === 'a planejar') return 'Backlog';
+        if (s === 'paralisado') return 'Paralisado';
+        if (s === 'em analise' || s === 'em análise') return 'Em Análise';
+        if (s === 'arquivado') return 'Arquivado';
+        if (s === 'aguardando faturamento') return 'Aguardando Faturamento';
+        if (s === 'pendencia' || s === 'pendência') return 'Pendência';
         return 'Em Andamento';
       })(),
       Progresso_Perc: '0',
@@ -375,13 +380,23 @@ async function syncProjectStatuses(tasks, projetos, lists = []) {
     // Status da lista no ClickUp tem prioridade
     const itemInfo2 = itemById[project.ID_ClickUp];
     const listStatusRaw = (itemInfo2?.status?.status || '').toLowerCase();
-    const listStatusClosed = listStatusRaw === 'closed' || listStatusRaw === 'complete' || listStatusRaw === 'fechado' || listStatusRaw === 'arquivado' || listStatusRaw === 'concluído';
+    const listStatusClosed = listStatusRaw === 'closed' || listStatusRaw === 'complete' || listStatusRaw === 'fechado' || listStatusRaw === 'concluído' || listStatusRaw === 'concluido';
 
     let novoStatus = project.Status;
     if (listStatusClosed || done === total) {
       novoStatus = 'Concluído';
     } else if (listStatusRaw === 'backlog' || listStatusRaw === 'a planejar') {
       novoStatus = 'Backlog';
+    } else if (listStatusRaw === 'paralisado') {
+      novoStatus = 'Paralisado';
+    } else if (listStatusRaw === 'em analise' || listStatusRaw === 'em análise') {
+      novoStatus = 'Em Análise';
+    } else if (listStatusRaw === 'arquivado') {
+      novoStatus = 'Arquivado';
+    } else if (listStatusRaw === 'aguardando faturamento') {
+      novoStatus = 'Aguardando Faturamento';
+    } else if (listStatusRaw === 'pendencia' || listStatusRaw === 'pendência') {
+      novoStatus = 'Pendência';
     } else if (atrasadas > 0) {
       novoStatus = 'Em Andamento (Atrasado)';
     } else {
