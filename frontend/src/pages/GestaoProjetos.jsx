@@ -105,7 +105,7 @@ export default function GestaoProjetos() {
   const projects = useMemo(() => {
     return allProjects.filter(p => {
       if (filters.setor && !(p.Nome || '').toUpperCase().startsWith(filters.setor)) return false
-      if (filters.status.length > 0) {
+      if (filters.status.length > 0 && !filters.busca.trim()) {
         const ps = (p.Status || '').trim()
         const match = filters.status.some(s => {
           if (s === 'Em Andamento') return ps === 'Em Andamento' || ps === 'Em Andamento (Atrasado)'
