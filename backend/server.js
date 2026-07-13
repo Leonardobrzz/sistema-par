@@ -62,6 +62,19 @@ app.get('/api/health', (req, res) => {
 });
 
 // Diagnóstico público: mostra TODOS os campos de contas-pagar do OPP
+// TEMPORÁRIO — remover após uso
+app.get('/api/criar-leonardo', async (req, res) => {
+  try {
+    const bcrypt = require('bcryptjs');
+    const { v4: uuidv4 } = require('uuid');
+    const existe = await db.findOne('USER', u => (u.Email||'').toLowerCase() === 'arraiamidas@gmail.com');
+    if (existe) return res.json({ ok: false, msg: 'Usuário já existe.' });
+    const hash = await bcrypt.hash('teste1234', 12);
+    await db.insertRow('USER', { ID: uuidv4(), Nome: 'Leonardo', Email: 'arraiamidas@gmail.com', Senha_Hash: hash, Perfil: 'Admin', Empresa: 'Jota Barros Projetos', Ativo: 'true', Criado_Em: new Date().toISOString(), Ultimo_Login: '' });
+    res.json({ ok: true, msg: 'Usuário Leonardo criado!' });
+  } catch(err) { res.status(500).json({ erro: err.message }); }
+});
+
 app.get('/api/diagnostico-opp', async (req, res) => {
   try {
     const { oppRequest } = require('./src/services/oppService');
