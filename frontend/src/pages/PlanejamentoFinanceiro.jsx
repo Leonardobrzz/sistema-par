@@ -895,7 +895,16 @@ export default function PlanejamentoFinanceiro() {
                     <div style={{ ...INPUT, background: "#FFF7ED", color: "#C2410C", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 13 }}>{percImpacto !== "—" ? `${percImpacto}%` : "—"}</div>
                   </Field>
                   <Field label={i === 0 ? "% Custo/Ref." : ""}>
-                    <div style={{ ...INPUT, background: "#F0FDF4", color: "#15803D", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 13 }}>{percCustoSobreRef !== "—" ? `${percCustoSobreRef}%` : "—"}</div>
+                    {(() => {
+                      const val = percCustoSobreRef !== "—" ? parseFloat(percCustoSobreRef) : null
+                      const over = val !== null && val > 25
+                      return (
+                        <div title={over ? "Acima de 25% — não aceito pela metodologia PAR" : undefined}
+                          style={{ ...INPUT, background: over ? "#FEF2F2" : "#F0FDF4", color: over ? "#DC2626" : "#15803D", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, border: over ? "1.5px solid #FECACA" : undefined }}>
+                          {val !== null ? `${percCustoSobreRef}%${over ? " ⚠" : ""}` : "—"}
+                        </div>
+                      )
+                    })()}
                   </Field>
                   <button onClick={() => delRow("terceirizados", i)} style={{ padding: "9px 10px", borderRadius: 8, border: "1px solid #FECACA", background: "#FEF2F2", color: "#DC2626", cursor: "pointer", alignSelf: "end" }}><Trash2 size={14} /></button>
                 </div>
