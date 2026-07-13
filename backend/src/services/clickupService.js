@@ -594,6 +594,7 @@ async function _doSync() {
       'arquivado': 'Arquivado',
       'aguardando faturamento': 'Aguardando Faturamento',
       'pendencia': 'Pendência', 'pendência': 'Pendência',
+      'em andamento': 'Em Andamento', 'in progress': 'Em Andamento', 'planejado': 'Em Andamento',
     };
     const novoStatus = statusMap[listStatusRaw];
     // Só atualiza se o status mudou E o novo status é conhecido (não sobrescreve com undefined)

@@ -10,7 +10,12 @@ router.use(authMiddleware);
 router.get('/', async (req, res, next) => {
   try {
     const { status, setor, cliente, busca } = req.query;
-    let projects = (await db.readSheet('Projetos_Contratos')).filter((p) => /^(ARQ|INF|SAN)-/i.test(p.Nome || '') && p.Status !== 'Concluído' && p.Status !== 'Arquivado');
+    let projects = (await db.readSheet('Projetos_Contratos')).filter((p) => {
+      const nome = p.Nome || '';
+      const temPrefixo = /^(ARQ|INF|SAN)-/i.test(nome);
+      const excecao = /CENTRO ESPECIALIZADO DE REABILITA/i.test(nome);
+      return (temPrefixo || excecao) && p.Status !== 'Concluído' && p.Status !== 'Arquivado';
+    });
 
     if (status) {
       const statusArr = status.split(',');
