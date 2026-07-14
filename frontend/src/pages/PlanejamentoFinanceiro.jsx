@@ -195,7 +195,7 @@ export default function PlanejamentoFinanceiro() {
     setLoading(false)
   }, [projetos])
 
-  useEffect(() => { if (projetoId) carregar(projetoId) }, [projetoId]) // eslint-disable-line
+  useEffect(() => { if (projetoId && projetos.length > 0) carregar(projetoId) }, [projetoId, carregar]) // eslint-disable-line
 
   const carregarComparativo = useCallback(async (syncFirst = false) => {
     if (!projetoId) return
