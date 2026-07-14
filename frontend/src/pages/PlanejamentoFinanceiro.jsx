@@ -61,7 +61,7 @@ function calcPAR(form) {
   const lucro = receitaLiquida - totalCustos
   const lucroPerc = V > 0 ? (lucro / V) * 100 : 0
   const percTerceiros = V > 0 ? (totalTerceiros / V) * 100 : 0
-  const custoProducaoPerc = V > 0 ? ((totalEquipe + totalTerceiros) / V) * 100 : 0
+  const custoProducaoPerc = V > 0 ? ((totalEquipe + totalDespesasInternas + totalTerceiros) / V) * 100 : 0
   return { V, ip, ta, co, impostos, taxaAdm, comissao, receitaLiquida, totalTerceiros, totalEquipe, totalDespesasInternas, totalDespesas, totalCustos, lucro, lucroPerc, percTerceiros, custoProducaoPerc }
 }
 
