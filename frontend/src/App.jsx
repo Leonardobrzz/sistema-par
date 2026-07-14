@@ -16,6 +16,7 @@ import Aprovacao from './pages/Aprovacao'
 import Comercial from './pages/Comercial'
 import Acompanhamento from './pages/Acompanhamento'
 import RelatorioFinal from './pages/RelatorioFinal'
+import RelatoriosPlanejamentoPAR from './pages/RelatoriosPlanejamentoPAR'
 import ChecklistIntegridade from './pages/ChecklistIntegridade'
 import ExtratoProjeto from './pages/ExtratoProjeto'
 
@@ -56,6 +57,7 @@ export default function App() {
               <Route path="acompanhamento" element={<Acompanhamento />} />
               <Route path="relatorio-final" element={<RelatorioFinal />} />
               <Route path="relatorios" element={<Relatorios />} />
+              <Route path="relatorios-planejamento" element={<RelatoriosPlanejamentoPAR />} />
               <Route path="importacao-opp" element={<ImportacaoOPP />} />
               <Route path="configuracoes" element={<Configuracoes />} />
               <Route path="alertas" element={<Alertas />} />
