@@ -713,6 +713,26 @@ router.get('/:id/comparativo', async (req, res, next) => {
         });
       })(),
 
+      // Equipe interna — custo planejado vs rastreado
+      equipePlanejada: (() => {
+        const equipe = baseline?.horasPorColaborador || dados.equipe || [];
+        return equipe.map(e => {
+          const nome = e.colaborador || e.nome || e.membro || '';
+          const horasPlan = parseFloat(e.horasEstimadas || e.horas_estimadas || e.horas || 0);
+          const valorHora = parseFloat(e.mediaHora || e.valor_hora || CUSTO_HORA_INTERNA);
+          const custoPlan = horasPlan * valorHora;
+          const horasReal = parseFloat((horasReaisPorColab[nome] || 0).toFixed(2));
+          const custoReal = horasReal * valorHora;
+          return { nome, horasPlan, valorHora, custoPlan, horasReal, custoReal };
+        });
+      })(),
+
+      // Despesas internas planejadas
+      despesasPlanejadas: (baseline?.despesas || dados.despesas || []).map(d => ({
+        descricao: d.descricao || '',
+        valor: parseFloat(d.valor || 0),
+      })),
+
       // Info do baseline
       baseline: baseline ? {
         travadoEm: baseline.travadoEm,
