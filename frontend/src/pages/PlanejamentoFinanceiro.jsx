@@ -266,12 +266,18 @@ export default function PlanejamentoFinanceiro() {
   const SETORES_PAR = ['Arquitetura', 'Saneamento', 'Infraestrutura', 'Administrativo']
   const clientesUnicos = useMemo(() => [...new Set(projetos.map(p => p.Cliente).filter(Boolean))].sort(), [projetos])
   const statusUnicos = useMemo(() => [...new Set(projetos.map(p => p.Status).filter(Boolean))].sort(), [projetos])
+  const SETOR_ABREV = { 'arquitetura': 'arq', 'saneamento': 'san', 'infraestrutura': 'inf', 'administrativo': 'adm' }
   const projetosFiltrados = useMemo(() => {
     const seen = new Set()
     return projetos.filter(p => {
       if (seen.has(p.ID_Projeto)) return false
       seen.add(p.ID_Projeto)
-      if (filtroSetor && !(p.Setor || '').toLowerCase().includes(filtroSetor.toLowerCase())) return false
+      if (filtroSetor) {
+        const s = (p.Setor || '').toLowerCase().trim()
+        const f = filtroSetor.toLowerCase()
+        const abrev = SETOR_ABREV[f]
+        if (!s.includes(f) && !(abrev && s === abrev)) return false
+      }
       if (filtroCliente && p.Cliente !== filtroCliente) return false
       if (filtroStatus && p.Status !== filtroStatus) return false
       if (filtroBusca) {
