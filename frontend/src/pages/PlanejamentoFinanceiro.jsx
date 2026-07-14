@@ -56,12 +56,13 @@ function calcPAR(form) {
   const totalTerceiros = (form.terceirizados || []).reduce((s, t) => s + pBR(t.custo), 0)
   const totalEquipe = (form.equipe || []).reduce((s, e) => s + pBR(e.horas) * (pBR(e.mediaHora) || 36.4), 0)
   const totalDespesas = (form.despesas || []).reduce((s, d) => s + pBR(d.valor), 0)
-  const totalCustos = totalTerceiros + totalEquipe + totalDespesas
+  const totalDespesasInternas = (form.despesasInternas || []).reduce((s, d) => s + pBR(d.custo), 0)
+  const totalCustos = totalTerceiros + totalEquipe + totalDespesasInternas + totalDespesas
   const lucro = receitaLiquida - totalCustos
   const lucroPerc = V > 0 ? (lucro / V) * 100 : 0
   const percTerceiros = V > 0 ? (totalTerceiros / V) * 100 : 0
   const custoProducaoPerc = V > 0 ? ((totalEquipe + totalTerceiros) / V) * 100 : 0
-  return { V, ip, ta, co, impostos, taxaAdm, comissao, receitaLiquida, totalTerceiros, totalEquipe, totalDespesas, totalCustos, lucro, lucroPerc, percTerceiros, custoProducaoPerc }
+  return { V, ip, ta, co, impostos, taxaAdm, comissao, receitaLiquida, totalTerceiros, totalEquipe, totalDespesasInternas, totalDespesas, totalCustos, lucro, lucroPerc, percTerceiros, custoProducaoPerc }
 }
 
 const FORM0 = {
@@ -69,7 +70,7 @@ const FORM0 = {
   respPlanejamento: "", respAprovacao: "", linkClickUp: "", justificativa: "",
   valorContrato: "", impostosPerc: "20", taxaAdmPerc: "12",
   dataInicioOS: "", dataOsExterna: "", dataEntregaContrato: "", dataEntregaPlanejada: "",
-  medicoes: [], terceirizados: [], equipe: [], despesas: [],
+  medicoes: [], terceirizados: [], equipe: [], despesas: [], despesasInternas: [],
 }
 
 // ── Plan vs Real components ──────────────────────────────────────────────────
@@ -182,8 +183,9 @@ export default function PlanejamentoFinanceiro() {
         dataEntregaPlanejada: p.Data_Entrega_Planejada || d.dataEntregaPlanejada || "",
         medicoes:      Array.isArray(d.medicoes)      ? d.medicoes      : [],
         terceirizados: Array.isArray(d.terceirizados)  ? d.terceirizados : [],
-        equipe:        Array.isArray(d.equipe)         ? d.equipe        : [],
-        despesas:      Array.isArray(d.despesas)       ? d.despesas      : [],
+        equipe:           Array.isArray(d.equipe)           ? d.equipe           : [],
+        despesas:         Array.isArray(d.despesas)         ? d.despesas         : [],
+        despesasInternas: Array.isArray(d.despesasInternas) ? d.despesasInternas : [],
       })
     } catch {
       setPlanId(null); setPlanStatus(null); setBaseline(null); setHistoricoBaselines([])
@@ -792,6 +794,7 @@ export default function PlanejamentoFinanceiro() {
                     ["= Receita Líquida", fmt(par.receitaLiquida)],
                     ["(-) Terceirizados", fmt(par.totalTerceiros)],
                     ["(-) Equipe Interna", fmt(par.totalEquipe)],
+                    ["(-) Despesas Internas", fmt(par.totalDespesasInternas)],
                     ["(-) Despesas Gerais", fmt(par.totalDespesas)],
                     ["= Lucro Estimado", fmt(par.lucro)],
                   ].map(([l, v]) => (
@@ -945,6 +948,67 @@ export default function PlanejamentoFinanceiro() {
               <button onClick={() => addRow("equipe", { colaborador: "", horas: "", mediaHora: "" })} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1.5px dashed #BBF7D0", background: "#F0FDF4", color: "#15803D", fontWeight: 700, fontSize: 13, cursor: "pointer", marginTop: 4 }}>
                 <Plus size={14} /> Adicionar Membro
               </button>
+
+              {/* ── Despesas Internas ── */}
+              <div style={{ marginTop: 20, borderTop: "1.5px solid #F1F5F9", paddingTop: 16 }}>
+                <div style={{ fontWeight: 800, fontSize: 13, color: "#0F172A", marginBottom: 12 }}>
+                  Despesas Internas <span style={{ fontSize: 11, fontWeight: 600, color: "#94A3B8", marginLeft: 6 }}>{form.despesasInternas.length} · {fmt(par.totalDespesasInternas)}</span>
+                </div>
+                {(form.despesasInternas || []).map((t, i) => {
+                  const vc = parseBR(form.valorContrato)
+                  const vRef = parseBR(t.valorRef)
+                  const vCusto = parseBR(t.custo)
+                  const percRef = vc > 0 ? ((vRef / vc) * 100).toFixed(1) : "—"
+                  const percImpacto = vc > 0 ? ((vCusto / vc) * 100).toFixed(1) : "—"
+                  const percCustoSobreRef = vRef > 0 ? ((vCusto / vRef) * 100).toFixed(1) : "—"
+                  return (
+                    <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 0.7fr 0.7fr 0.7fr auto", gap: 8, marginBottom: 8, alignItems: "end" }}>
+                      <Field label={i === 0 ? "Serviço / Descrição" : ""}><input value={t.servico || ""} onChange={e => editRow("despesasInternas", i, "servico", e.target.value)} style={INPUT} placeholder="ex: Diária de campo" /></Field>
+                      <Field label={i === 0 ? "Vínculo (medição)" : ""}>
+                        <select value={t.vinculo || ""} onChange={e => editRow("despesasInternas", i, "vinculo", e.target.value)} style={INPUT}>
+                          <option value="">Selecione a medição...</option>
+                          {(form.medicoes || []).filter(m => m.etapa).map((m, mi) => (
+                            <option key={mi} value={m.etapa}>{m.etapa}{m.percentual ? ` (${m.percentual}%)` : ''}</option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label={i === 0 ? "Ref. Contrato (R$)" : ""}><input type="text" inputMode="decimal" value={t.valorRef || ""} onChange={e => editRow("despesasInternas", i, "valorRef", e.target.value)} onBlur={e => { const v = parseBR(e.target.value); if (v > 0) editRow("despesasInternas", i, "valorRef", v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')) }} style={INPUT} placeholder="ex: 1.000,00" /></Field>
+                      <Field label={i === 0 ? "Custo (R$)" : ""}><input type="text" inputMode="decimal" value={t.custo || ""} onChange={e => editRow("despesasInternas", i, "custo", e.target.value)} onBlur={e => { const v = parseBR(e.target.value); if (v > 0) editRow("despesasInternas", i, "custo", v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')) }} style={INPUT} placeholder="ex: 800,00" /></Field>
+                      <Field label={i === 0 ? "% Ref." : ""}>
+                        <div style={{ ...INPUT, background: "#F8FAFC", color: "#475569", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 13 }}>{percRef !== "—" ? `${percRef}%` : "—"}</div>
+                      </Field>
+                      <Field label={i === 0 ? "% Impacto" : ""}>
+                        <div style={{ ...INPUT, background: "#FFF7ED", color: "#C2410C", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 13 }}>{percImpacto !== "—" ? `${percImpacto}%` : "—"}</div>
+                      </Field>
+                      <Field label={i === 0 ? "% Custo/Ref." : ""}>
+                        {(() => {
+                          const val = percCustoSobreRef !== "—" ? parseFloat(percCustoSobreRef) : null
+                          const over = val !== null && val > 25
+                          return (
+                            <div title={over ? "Acima de 25% — não aceito pela metodologia PAR" : undefined}
+                              style={{ ...INPUT, background: over ? "#FEF2F2" : "#F0FDF4", color: over ? "#DC2626" : "#15803D", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, border: over ? "1.5px solid #FECACA" : undefined }}>
+                              {val !== null ? `${percCustoSobreRef}%${over ? " ⚠" : ""}` : "—"}
+                            </div>
+                          )
+                        })()}
+                      </Field>
+                      <button onClick={() => delRow("despesasInternas", i)} style={{ padding: "9px 10px", borderRadius: 8, border: "1px solid #FECACA", background: "#FEF2F2", color: "#DC2626", cursor: "pointer", alignSelf: "end" }}><Trash2 size={14} /></button>
+                    </div>
+                  )
+                })}
+                {form.despesasInternas.length > 0 && (() => {
+                  const totalRef = form.despesasInternas.reduce((s, t) => s + parseBR(t.valorRef), 0)
+                  return (
+                    <div style={{ display: "flex", gap: 24, padding: "8px 12px", background: "#F8FAFC", borderRadius: 8, border: "1px solid #E2E8F0", marginBottom: 8, fontSize: 12, fontWeight: 700, color: "#475569" }}>
+                      <span>Total Ref. Contrato: <span style={{ color: "#0F172A" }}>{fmt(totalRef)}</span></span>
+                      <span>Total Custo: <span style={{ color: "#0F172A" }}>{fmt(par.totalDespesasInternas)}</span></span>
+                    </div>
+                  )
+                })()}
+                <button onClick={() => addRow("despesasInternas", { servico: "", vinculo: "", valorRef: "", custo: "" })} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1.5px dashed #BFDBFE", background: "#EFF6FF", color: "#1D4ED8", fontWeight: 700, fontSize: 13, cursor: "pointer", marginTop: 4 }}>
+                  <Plus size={14} /> Adicionar Despesa Interna
+                </button>
+              </div>
             </div>
           </Section>
 
