@@ -661,6 +661,17 @@ async function _doSync() {
     console.error('[ClickUp] Erro ao sincronizar time entries:', err.message);
   }
 
+  // 6b. Fallback: sincroniza time_spent das tasks (captura horas manuais não retornadas pela API de entries)
+  try {
+    for (const projeto of projetos) {
+      if (!projeto.ID_ClickUp) continue;
+      const tasksDoProjeto = allTasks.filter(t => t._listId === projeto.ID_ClickUp || t._folderId === projeto.ID_ClickUp);
+      if (tasksDoProjeto.length > 0) await syncHorasDoTimespent(tasksDoProjeto, projeto);
+    }
+  } catch (err) {
+    console.error('[ClickUp] Erro no fallback time_spent:', err.message);
+  }
+
   broadcast('sync', { type: 'SYNC_CONCLUIDO', totalTarefas: allTasks.length });
   console.log(`[ClickUp] Sync concluído: ${allTasks.length} tarefas, ${allLists.length} listas.`);
   return allTasks;
