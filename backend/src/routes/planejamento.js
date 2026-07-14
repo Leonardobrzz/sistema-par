@@ -544,11 +544,46 @@ router.get('/:id/comparativo', async (req, res, next) => {
 
     const baseline = dados._baseline || null;
 
-    // Busca horas, medições e projeto em paralelo
-    const [logHoras, medicoesReais, projeto] = await Promise.all([
+    // Busca horas, medições, projeto e despesas OPP em paralelo
+    const centroCusto = plan.Nr_Contrato_OS || '';
+    const [logHoras, medicoesReais, projeto, lancamentosOPP] = await Promise.all([
       db.findRows('Log_Horas', (l) => l.ID_Projeto === plan.ID_Projeto),
       db.findRows('Medicoes', (m) => m.ID_Projeto === plan.ID_Projeto),
       db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === plan.ID_Projeto),
+      (async () => {
+        if (!centroCusto) return [];
+        try {
+          const { oppRequest } = require('../services/oppService');
+          const ccNorm = centroCusto.toLowerCase().trim();
+          const todosCC = await oppRequest('GET', '/centros-custo?limit=500');
+          const listaCC = Array.isArray(todosCC) ? todosCC : (todosCC?.data || []);
+          const cc = listaCC.find(c => {
+            const desc = (c.desc_centro_custos || '').toLowerCase().trim();
+            return desc === ccNorm || desc.includes(ccNorm) || ccNorm.includes(desc);
+          });
+          if (!cc) return [];
+          const ccId = String(cc.id_centro_custos);
+          let offset = 0, todos = [];
+          while (true) {
+            const r = await oppRequest('GET', `/contas-pagar?limit=250&offset=${offset}&lixeira=Nao`);
+            const lista = Array.isArray(r) ? r : (r?.data || []);
+            if (lista.length === 0) break;
+            todos.push(...lista);
+            if (lista.length < 250) break;
+            offset += 250;
+          }
+          return todos.filter(d => !d.lixeira?.includes('Sim') && !String(d.situacao || '').toLowerCase().includes('estornada') && String(d.id_centro_custos || '') === ccId)
+            .map(d => ({
+              descricao: d.nome_conta || '',
+              fornecedor: d.nome_fornecedor || '',
+              categoria: d.categoria || d.nome_categoria || d.categoria_pag || '',
+              valor: parseFloat(d.valor_pag || 0),
+              valorPago: parseFloat(d.valor_pago || 0),
+              liquidado: d.liquidado_pag === 'Sim',
+              data: d.vencimento_pag || d.data_emissao || '',
+            }));
+        } catch { return []; }
+      })(),
     ]);
 
     // Agrupa horas rastreadas por colaborador
@@ -683,6 +718,26 @@ router.get('/:id/comparativo', async (req, res, next) => {
         travadoEm: baseline.travadoEm,
         travadoPor: baseline.travadoPor,
       } : null,
+
+      // Despesas reais do OPP agrupadas por categoria
+      despesasOPP: (() => {
+        if (!lancamentosOPP.length) return { temDados: false, lancamentos: [], porCategoria: [], totalGasto: 0, totalPago: 0 };
+        const grupos = {};
+        for (const l of lancamentosOPP) {
+          const cat = l.categoria || 'Sem categoria';
+          if (!grupos[cat]) grupos[cat] = { categoria: cat, lancamentos: [], total: 0, totalPago: 0 };
+          grupos[cat].lancamentos.push(l);
+          grupos[cat].total += l.valor;
+          grupos[cat].totalPago += l.valorPago;
+        }
+        return {
+          temDados: true,
+          lancamentos: lancamentosOPP,
+          porCategoria: Object.values(grupos).sort((a, b) => a.categoria.localeCompare(b.categoria)),
+          totalGasto: lancamentosOPP.reduce((s, l) => s + l.valor, 0),
+          totalPago: lancamentosOPP.filter(l => l.liquidado).reduce((s, l) => s + l.valorPago, 0),
+        };
+      })(),
     };
 
     res.json(comparativo);
@@ -744,6 +799,7 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
         id: d.id_conta_pag,
         descricao: d.nome_conta || '',
         fornecedor: d.nome_fornecedor || '',
+        categoria: d.categoria || d.nome_categoria || d.categoria_pag || '',
         valor: parseFloat(d.valor_pag || 0),
         valorPago: parseFloat(d.valor_pago || 0),
         situacao: d.situacao || '',

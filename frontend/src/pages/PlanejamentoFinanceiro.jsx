@@ -1242,6 +1242,61 @@ export default function PlanejamentoFinanceiro() {
                 </div>
               )}
 
+              {/* ── Despesas Reais OPP ── */}
+              {comparativo.despesasOPP?.temDados && (
+                <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", padding: "20px 24px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: 14, color: "#0F172A" }}>Despesas Reais — OPP</div>
+                      <div style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>lançamentos reais do centro de custo, organizados por categoria</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Previsto</div>
+                        <div style={{ fontSize: 15, fontWeight: 800, color: "#0F172A" }}>{fmt(comparativo.despesasOPP.totalGasto)}</div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Pago</div>
+                        <div style={{ fontSize: 15, fontWeight: 800, color: "#15803D" }}>{fmt(comparativo.despesasOPP.totalPago)}</div>
+                      </div>
+                    </div>
+                  </div>
+                  {comparativo.despesasOPP.porCategoria.map((grupo, gi) => (
+                    <div key={gi} style={{ marginBottom: 16 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "#F8FAFC", borderRadius: 8, marginBottom: 6 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>{grupo.categoria || "Sem categoria"}</span>
+                        <div style={{ display: "flex", gap: 16 }}>
+                          <span style={{ fontSize: 12, color: "#64748B" }}>Previsto: <strong style={{ color: "#0F172A" }}>{fmt(grupo.total)}</strong></span>
+                          <span style={{ fontSize: 12, color: "#64748B" }}>Pago: <strong style={{ color: "#15803D" }}>{fmt(grupo.totalPago)}</strong></span>
+                        </div>
+                      </div>
+                      {grupo.lancamentos.map((l, li) => (
+                        <div key={li} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 12px 7px 20px", borderBottom: li < grupo.lancamentos.length - 1 ? "1px solid #F1F5F9" : "none" }}>
+                          <div>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: "#0F172A" }}>{l.descricao || l.fornecedor}</div>
+                            {l.fornecedor && l.fornecedor !== l.descricao && <div style={{ fontSize: 11, color: "#94A3B8" }}>{l.fornecedor}</div>}
+                          </div>
+                          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                            <span style={{ fontSize: 11, color: "#64748B" }}>{l.data ? new Date(l.data).toLocaleDateString("pt-BR") : "—"}</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>{fmt(l.valor)}</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 5,
+                              background: l.liquidado ? "#DCFCE7" : "#FEF9C3",
+                              color: l.liquidado ? "#15803D" : "#92400E" }}>
+                              {l.liquidado ? "Pago" : "Aberto"}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {!comparativo.despesasOPP?.temDados && (
+                <div style={{ background: "#F8FAFC", borderRadius: 14, border: "1.5px solid #E2E8F0", padding: "20px 24px", color: "#94A3B8", fontSize: 13, textAlign: "center" }}>
+                  Nenhum lançamento OPP encontrado para este projeto — verifique se o campo "Nome do Centro de Custo" está preenchido na aba Planejamento.
+                </div>
+              )}
+
             </>)}
           </div>
         )}
