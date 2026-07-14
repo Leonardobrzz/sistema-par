@@ -608,27 +608,22 @@ router.get('/debug-oc', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// GET /api/opp/centros-custo — lista centros de custo do OPP (v2 — tenta endpoint real)
+// GET /api/opp/centros-custo — lista centros de custo do OPP
 router.get('/centros-custo', async (req, res, next) => {
   try {
     const busca = (req.query.busca || '').toLowerCase().trim();
-    // Tenta diferentes endpoints que o OPP pode expor para centros de custo
-    let lista = [];
-    for (const endpoint of ['/centros-custo', '/centros_custos', '/centro-custo', '/centro_custos']) {
-      try {
-        const data = await opp.oppRequest('GET', `${endpoint}?limit=500`);
-        const arr = Array.isArray(data) ? data : (data?.data || data?.centros_custos || data?.centros || []);
-        if (arr.length > 0) { lista = arr; break; }
-      } catch {}
-    }
-    console.log(`[OPP CC] ${lista.length} centros de custo. Primeiro:`, lista[0]);
+    // Mesmo endpoint usado com sucesso no planejamento.js
+    const data = await opp.oppRequest('GET', '/centros-custo?limit=500');
+    let lista = Array.isArray(data) ? data : (data?.data || []);
+    console.log(`[OPP CC] ${lista.length} centros. Primeiro:`, JSON.stringify(lista[0]));
     lista = lista.map(c => ({
-      id: c.id_centro_custos || c.id_centro || c.id,
-      nome: c.desc_centro_custos || c.nome_centro || c.nome || c.descricao || c.name || '',
+      id: c.id_centro_custos || c.id,
+      nome: c.desc_centro_custos || c.nome || c.descricao || '',
     })).filter(c => c.nome);
     if (busca) lista = lista.filter(c => c.nome.toLowerCase().includes(busca));
     res.json(lista);
   } catch (err) {
+    console.error('[OPP CC] Erro:', err.message);
     next(err);
   }
 });
