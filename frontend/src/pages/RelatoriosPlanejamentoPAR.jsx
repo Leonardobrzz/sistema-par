@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { FileText, ChevronDown, ChevronRight, Printer, Search, X } from "lucide-react"
 import api from "../utils/api"
 
@@ -67,43 +67,170 @@ function DetalheRelatorio({ plano }) {
   const tercOk = par.percTerceiros <= 25
   const prodOk = par.custoProducaoPerc <= 30
   const despOk = par.percDespesasGerais <= 7.5
-  const printRef = useRef()
 
   function imprimir() {
-    const conteudo = printRef.current.innerHTML
+    const fD = (s) => {
+      if (!s) return "—"
+      const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/)
+      return m ? `${m[3]}/${m[2]}/${m[1]}` : s
+    }
+    const fV = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0)
+    const fN = (v, d = 1) => Number(v || 0).toFixed(d)
+
+    const medicoes = d.medicoes || []
+    const equipe = d.equipe || []
+    const despesasInternas = d.despesasInternas || []
+    const terceirizados = d.terceirizados || []
+    const despesas = d.despesas || []
+
+    const rowsHtml = (headers, rows) => {
+      if (!rows.length) return "<p style='color:#94A3B8;font-size:11px;padding:4px 0'>Nenhum item</p>"
+      return `<table>
+        <thead><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr></thead>
+        <tbody>${rows.map(row => `<tr>${row.map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}</tbody>
+      </table>`
+    }
+
+    const infoRows = [
+      ["Empresa", d.empresa || plano.Empresa || ""],
+      ["Tipologia", d.tipologia || ""],
+      ["Resp. Planejamento", d.respPlanejamento || plano.Resp_Planejamento || ""],
+      ["Resp. Aprovação", d.respAprovacao || plano.Resp_Aprovacao || ""],
+      ["Centro de Custo OPP", d.nrContratoOS || plano.Nr_Contrato_OS || ""],
+      ["N° O.S. OPP", d.nrOsOpp || plano.Nr_OS_OPP || ""],
+      ["N° O.S. Externa", d.dataInicioOS || ""],
+      ["Data O.S. Externa", fD(d.dataOsExterna)],
+      ["Data Entrega Contrato", fD(d.dataEntregaContrato || plano.Data_Entrega_Contrato)],
+      ["Data Entrega Planejada", fD(d.dataEntregaPlanejada)],
+    ].filter(([, v]) => v && v !== "—")
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Relatório PAR — ${plano.Nome_Projeto || ""}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 11px; color: #0F172A; padding: 28px; }
+    h1 { font-size: 17px; font-weight: 900; margin-bottom: 4px; }
+    .sub { font-size: 11px; color: #64748B; margin-bottom: 20px; }
+    h2 { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #475569; margin: 20px 0 8px; border-bottom: 1.5px solid #CBD5E1; padding-bottom: 4px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 11px; }
+    th { background: #F1F5F9; padding: 7px 10px; text-align: left; font-weight: 700; color: #475569; font-size: 10px; text-transform: uppercase; border: 1px solid #CBD5E1; }
+    td { padding: 7px 10px; border: 1px solid #E2E8F0; vertical-align: middle; }
+    tr:nth-child(even) td { background: #F8FAFC; }
+    .kpis { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .kpi { border: 1.5px solid #CBD5E1; border-radius: 6px; padding: 8px 12px; min-width: 120px; flex: 1; }
+    .kpi-label { font-size: 9px; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+    .kpi-val { font-size: 16px; font-weight: 900; }
+    .kpi-sub { font-size: 9px; font-weight: 600; margin-top: 2px; }
+    .ok { color: #15803D; } .nok { color: #DC2626; }
+    .fin { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px; }
+    .fin-row { display: flex; justify-content: space-between; padding: 5px 10px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 4px; font-size: 11px; }
+    .fin-row.destaque { background: #F0FDF4; font-weight: 700; }
+    .total-row { padding: 6px 12px; background: #DCFCE7; border-radius: 4px; font-size: 11px; font-weight: 700; color: #15803D; margin-top: 4px; }
+    .obs { padding: 10px 14px; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 6px; font-size: 11px; color: #92400E; line-height: 1.6; margin-top: 4px; }
+    .label { color: #64748B; }
+    @page { size: A4; margin: 12mm; }
+    @media print { body { padding: 0; } }
+  </style>
+</head>
+<body>
+  <div style="font-size:9px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Relatório PAR — Planejamento Aprovado</div>
+  <h1>${plano.Nome_Projeto || ""}</h1>
+  <div class="sub">
+    ${plano.Cliente ? `Cliente: <strong>${plano.Cliente}</strong> &nbsp;·&nbsp; ` : ""}
+    ${plano.Setor ? `Setor: <strong>${plano.Setor}</strong> &nbsp;·&nbsp; ` : ""}
+    Status: <strong style="color:#15803D">Aprovado</strong>
+  </div>
+
+  <h2>Indicadores PAR</h2>
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-label">Valor do Contrato</div><div class="kpi-val ok">${fV(par.V)}</div></div>
+    <div class="kpi"><div class="kpi-label">Receita Líquida</div><div class="kpi-val ok">${fV(par.receitaLiquida)}</div></div>
+    <div class="kpi"><div class="kpi-label">Custo Total</div><div class="kpi-val">${fV(par.totalCustos)}</div></div>
+    <div class="kpi"><div class="kpi-label">Lucro Estimado</div><div class="kpi-val ${margemOk ? "ok" : "nok"}">${fV(par.lucro)}</div><div class="kpi-sub ${margemOk ? "ok" : "nok"}">${fN(par.lucroPerc)}% (mín 23%)</div></div>
+    <div class="kpi"><div class="kpi-label">Terceirizados</div><div class="kpi-val ${tercOk ? "ok" : "nok"}">${fN(par.percTerceiros)}%</div><div class="kpi-sub ${tercOk ? "ok" : "nok"}">máx 25%</div></div>
+    <div class="kpi"><div class="kpi-label">Custo Produção</div><div class="kpi-val ${prodOk ? "ok" : "nok"}">${fN(par.custoProducaoPerc)}%</div><div class="kpi-sub ${prodOk ? "ok" : "nok"}">máx 30%</div></div>
+    <div class="kpi"><div class="kpi-label">Despesas Gerais</div><div class="kpi-val ${despOk ? "ok" : "nok"}">${fN(par.percDespesasGerais)}%</div><div class="kpi-sub ${despOk ? "ok" : "nok"}">máx 7,5%</div></div>
+  </div>
+
+  <h2>Resumo Financeiro</h2>
+  <div class="fin">
+    <div class="fin-row"><span class="label">Valor Bruto</span><strong>${fV(par.V)}</strong></div>
+    <div class="fin-row"><span class="label">Impostos (${fN(par.ip)}%)</span><strong>- ${fV(par.impostos)}</strong></div>
+    <div class="fin-row"><span class="label">Taxa Adm. (${fN(par.ta)}%)</span><strong>- ${fV(par.taxaAdm)}</strong></div>
+    <div class="fin-row"><span class="label">Comissão (7,5%)</span><strong>- ${fV(par.comissao)}</strong></div>
+    <div class="fin-row destaque"><span>Receita Líquida</span><strong>${fV(par.receitaLiquida)}</strong></div>
+    <div class="fin-row"><span class="label">Terceirizados</span><strong>- ${fV(par.totalTerceiros)}</strong></div>
+    <div class="fin-row"><span class="label">Equipe Interna</span><strong>- ${fV(par.totalEquipe)}</strong></div>
+    <div class="fin-row"><span class="label">Despesas Internas</span><strong>- ${fV(par.totalDespesasInternas)}</strong></div>
+    <div class="fin-row"><span class="label">Despesas Gerais</span><strong>- ${fV(par.totalDespesas)}</strong></div>
+    <div class="fin-row destaque"><span>Lucro Estimado</span><strong class="${margemOk ? "ok" : "nok"}">${fV(par.lucro)}</strong></div>
+  </div>
+
+  <h2>Informações Gerais</h2>
+  <table>
+    <tbody>
+      ${infoRows.map(([l, v]) => `<tr><td style="width:40%;color:#64748B">${l}</td><td><strong>${v}</strong></td></tr>`).join("")}
+    </tbody>
+  </table>
+
+  <h2>Cronograma de Medições (${medicoes.length} etapa${medicoes.length !== 1 ? "s" : ""})</h2>
+  ${rowsHtml(["Etapa / Descrição", "Valor (R$)", "%", "Data Prevista"],
+    medicoes.map(m => [
+      m.etapa || "—",
+      m.valor ? fV(pBR(m.valor)) : "—",
+      m.percentual ? `${m.percentual}%` : "—",
+      fD(m.dataPrevisao),
+    ])
+  )}
+  ${medicoes.length > 0 ? `<div class="total-row">Total: ${fV(medicoes.reduce((s, m) => s + pBR(m.valor), 0))} &nbsp;·&nbsp; Soma %: ${fN(medicoes.reduce((s, m) => s + pBR(m.percentual), 0), 2)}%</div>` : ""}
+
+  <h2>Equipe Interna (${equipe.length} membro${equipe.length !== 1 ? "s" : ""} · ${fV(par.totalEquipe)})</h2>
+  ${rowsHtml(["Colaborador", "Horas Est.", "R$/Hora", "Custo"],
+    equipe.map(e => [
+      e.colaborador || "—",
+      `${pBR(e.horas)}h`,
+      fV(pBR(e.mediaHora) || 36.4),
+      fV(pBR(e.horas) * (pBR(e.mediaHora) || 36.4)),
+    ])
+  )}
+
+  ${despesasInternas.length > 0 ? `
+  <h2>Despesas Internas (${despesasInternas.length} · ${fV(par.totalDespesasInternas)})</h2>
+  ${rowsHtml(["Serviço", "Vínculo (Medição)", "Ref. Contrato", "Custo", "% Custo/Ref."],
+    despesasInternas.map(t => {
+      const vRef = pBR(t.valorRef), vC = pBR(t.custo)
+      return [t.servico || "—", t.vinculo || "—", fV(vRef), fV(vC), vRef > 0 ? `${((vC/vRef)*100).toFixed(1)}%` : "—"]
+    })
+  )}` : ""}
+
+  <h2>Serviços Terceirizados (${terceirizados.length} · ${fV(par.totalTerceiros)})</h2>
+  ${rowsHtml(["Serviço", "Vínculo (Medição)", "Ref. Contrato", "Custo", "% Custo/Ref."],
+    terceirizados.map(t => {
+      const vRef = pBR(t.valorRef), vC = pBR(t.custo)
+      return [t.servico || "—", t.vinculo || "—", fV(vRef), fV(vC), vRef > 0 ? `${((vC/vRef)*100).toFixed(1)}%` : "—"]
+    })
+  )}
+
+  ${despesas.length > 0 ? `
+  <h2>Despesas Gerais (${despesas.length} · ${fV(par.totalDespesas)})</h2>
+  ${rowsHtml(["Descrição", "Valor"],
+    despesas.map(x => [x.descricao || "—", fV(pBR(x.valor))])
+  )}` : ""}
+
+  ${d.justificativa ? `
+  <h2>Justificativa / Observações</h2>
+  <div class="obs">${d.justificativa}</div>` : ""}
+</body>
+</html>`
+
     const janela = window.open("", "_blank")
-    janela.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Relatório PAR — ${plano.Nome_Projeto || ""}</title>
-        <style>
-          * { box-sizing: border-box; margin: 0; padding: 0; }
-          body { font-family: system-ui, sans-serif; font-size: 11px; color: #0F172A; padding: 24px; }
-          h1 { font-size: 16px; font-weight: 900; margin-bottom: 4px; }
-          h2 { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #475569; margin: 18px 0 8px; border-bottom: 1.5px solid #E2E8F0; padding-bottom: 4px; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
-          th { background: #F8FAFC; padding: 6px 10px; text-align: left; font-size: 10px; font-weight: 700; color: #64748B; text-transform: uppercase; border: 1px solid #E2E8F0; }
-          td { padding: 6px 10px; border: 1px solid #E2E8F0; }
-          .kpi-grid { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
-          .kpi { border: 1.5px solid #E2E8F0; border-radius: 8px; padding: 8px 12px; flex: 1; min-width: 110px; }
-          .kpi-label { font-size: 9px; font-weight: 700; color: #94A3B8; text-transform: uppercase; }
-          .kpi-val { font-size: 15px; font-weight: 900; }
-          .ok { color: #15803D; }
-          .nok { color: #DC2626; }
-          .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-          .info-block { border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px 12px; }
-          .info-line { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #F1F5F9; font-size: 11px; }
-          @media print { body { padding: 12px; } }
-        </style>
-      </head>
-      <body>${conteudo}</body>
-      </html>
-    `)
+    janela.document.write(html)
     janela.document.close()
     janela.focus()
-    setTimeout(() => { janela.print(); janela.close() }, 400)
+    setTimeout(() => janela.print(), 600)
   }
 
   const medicoes = d.medicoes || []
@@ -129,7 +256,7 @@ function DetalheRelatorio({ plano }) {
         </button>
       </div>
 
-      <div ref={printRef}>
+      <div>
         {/* Cabeçalho do relatório */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: "#7C3AED", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
