@@ -1142,6 +1142,7 @@ module.exports = {
   getLists,
   getTasks,
   getTimeEntries,
+  syncTimeEntries,
   registerWebhook,
   processWebhookEvent,
   getProjectProgressFromClickUp,
