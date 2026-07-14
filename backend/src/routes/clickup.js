@@ -96,7 +96,7 @@ router.post('/sync-terceirizados', async (req, res, next) => {
 // POST /api/clickup/sync-horas/:idProjeto — sync rápido só das time entries de um projeto
 router.post('/sync-horas/:idProjeto', async (req, res, next) => {
   try {
-    const { getTimeEntries, syncTimeEntries } = require('../services/clickupService');
+    const { getTimeEntries, syncTimeEntries, syncHorasDoTimespent, getTasks } = require('../services/clickupService');
     const projeto = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === req.params.idProjeto);
     if (!projeto) return res.status(404).json({ error: 'Projeto não encontrado' });
 
@@ -124,6 +124,14 @@ router.post('/sync-horas/:idProjeto', async (req, res, next) => {
     const teamId = process.env.CLICKUP_TEAM_ID;
     const timeEntries = await getTimeEntries(teamId);
     await syncTimeEntries(timeEntries, [projeto]);
+
+    // Fallback: busca time_spent direto das tasks da lista (horas manuais)
+    if (projeto.ID_ClickUp) {
+      const tasks = await getTasks(projeto.ID_ClickUp);
+      await syncHorasDoTimespent(tasks, projeto);
+      console.log(`[sync-horas] Fallback time_spent: ${tasks.length} tasks da lista ${projeto.ID_ClickUp}`);
+    }
+
     const logs = await db.findRows('Log_Horas', (l) => l.ID_Projeto === req.params.idProjeto);
     const total = logs.reduce((s, l) => s + parseFloat(l.Horas_Logadas || 0), 0);
     res.json({ ok: true, idClickUp: projeto.ID_ClickUp || null, totalEntries: logs.length, totalHoras: parseFloat(total.toFixed(2)) });
