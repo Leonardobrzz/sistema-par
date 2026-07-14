@@ -766,9 +766,51 @@ export default function PlanejamentoFinanceiro() {
                   {["Arquitetura","Engenharia","Saneamento","Infraestrutura","Contratos","Comercial"].map(s => <option key={s}>{s}</option>)}
                 </select>
               </Field>
-              <Field label="Tipologia"><input value={form.tipologia} onChange={e => f("tipologia", e.target.value)} style={INPUT} placeholder="ex: Residencial" /></Field>
-              <Field label="Resp. Planejamento"><input value={form.respPlanejamento} onChange={e => f("respPlanejamento", e.target.value)} style={INPUT} /></Field>
-              <Field label="Resp. Aprovação"><input value={form.respAprovacao} onChange={e => f("respAprovacao", e.target.value)} style={INPUT} /></Field>
+              <Field label="Tipologia">
+                <select value={form.tipologia} onChange={e => f("tipologia", e.target.value)} style={INPUT}>
+                  <option value="">Selecione...</option>
+                  {form.setor === "Arquitetura" || form.setor === "Engenharia" ? [
+                    "Projeto Arquitetônico de Edificação (Obra Nova)",
+                    "Projeto Arquitetônico de Edificação (Reforma)",
+                    "Projeto de Urbanização (Parques e Praças)",
+                    "Projetos Complementares de Engenharia",
+                    "Orçamento Completo (Consultoria)",
+                    "Levantamento Topográfico",
+                    "Estudo Geotécnico / Geologia",
+                    "Institucional/Esportivo",
+                  ].map(t => <option key={t}>{t}</option>)
+                  : form.setor === "Saneamento" ? [
+                    "SAS – Sistema de Abastecimento de Água",
+                    "SES – Sistema de Esgotamento Sanitário",
+                    "ETA – Estação de Tratamento de Água",
+                    "Adutora de Água Bruta",
+                    "Captação de Água Bruta",
+                    "Orçamento Completo",
+                  ].map(t => <option key={t}>{t}</option>)
+                  : form.setor === "Infraestrutura" ? [
+                    "Projeto de Pavimentação Viária (Asfalto/CBUQ/TSD)",
+                    "Projeto de Pavimentação Viária (Estrada Vicinal)",
+                    "Projeto de Drenagem Urbana",
+                    "Projeto de Vias Urbanas com Passeios",
+                    "Projeto de Vias Urbanas sem Passeios",
+                    "Orçamento Completo",
+                    "Topografia / Geologia",
+                  ].map(t => <option key={t}>{t}</option>)
+                  : form.tipologia ? <option value={form.tipologia}>{form.tipologia}</option> : null}
+                </select>
+              </Field>
+              <Field label="Resp. Planejamento">
+                <select value={form.respPlanejamento} onChange={e => f("respPlanejamento", e.target.value)} style={INPUT}>
+                  <option value="">Selecione...</option>
+                  {["Cássio Dutra","Arthur Othon","Eduardo Buzanelli"].map(n => <option key={n}>{n}</option>)}
+                </select>
+              </Field>
+              <Field label="Resp. Aprovação">
+                <select value={form.respAprovacao} onChange={e => f("respAprovacao", e.target.value)} style={INPUT}>
+                  <option value="">Selecione...</option>
+                  {["Roberto Brigido","Cláudio Barros","Paulo Barros"].map(n => <option key={n}>{n}</option>)}
+                </select>
+              </Field>
               <Field label="Link ClickUp">
                 <input value={form.linkClickUp} onChange={e => f("linkClickUp", e.target.value)} style={INPUT} placeholder="https://app.clickup.com/36936702/v/li/..." />
               </Field>
