@@ -140,7 +140,7 @@ export default function PlanejamentoFinanceiro() {
   const [filtroSetor, setFiltroSetor] = useState("")
   const [filtroCliente, setFiltroCliente] = useState("")
   const [filtroBusca, setFiltroBusca] = useState("")
-  const [filtroStatus, setFiltroStatus] = useState("")
+  const [filtroStatus, setFiltroStatus] = useState("Em Andamento")
 
   useEffect(() => {
     api.get("/projetos").then(r => setProjetos(r.data?.projetos || r.data || [])).catch(() => []).finally(() => setLoadingProjetos(false))
@@ -279,7 +279,12 @@ export default function PlanejamentoFinanceiro() {
         if (!s.includes(f) && !(abrev && s === abrev)) return false
       }
       if (filtroCliente && p.Cliente !== filtroCliente) return false
-      if (filtroStatus && p.Status !== filtroStatus) return false
+      if (filtroStatus) {
+        const st = p.Status || ''
+        // "Em Andamento" cobre também "Em Andamento (Atrasado)"
+        if (filtroStatus === 'Em Andamento') { if (!st.startsWith('Em Andamento')) return false }
+        else if (st !== filtroStatus) return false
+      }
       if (filtroBusca) {
         const b = filtroBusca.toLowerCase()
         if (!(p.Nome || '').toLowerCase().includes(b) && !(p.Cliente || '').toLowerCase().includes(b)) return false
@@ -581,8 +586,8 @@ export default function PlanejamentoFinanceiro() {
             </select>
             <input value={filtroBusca} onChange={e => setFiltroBusca(e.target.value)} placeholder="Buscar projeto..."
               style={{ padding: "5px 12px", borderRadius: 20, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#0F172A", fontSize: 12, fontFamily: "inherit", outline: "none", flex: 1, minWidth: 150 }} />
-            {(filtroSetor || filtroCliente || filtroStatus || filtroBusca) && (
-              <button onClick={() => { setFiltroSetor(""); setFiltroCliente(""); setFiltroStatus(""); setFiltroBusca("") }}
+            {(filtroSetor || filtroCliente || filtroStatus !== "Em Andamento" || filtroBusca) && (
+              <button onClick={() => { setFiltroSetor(""); setFiltroCliente(""); setFiltroStatus("Em Andamento"); setFiltroBusca("") }}
                 style={{ padding: "5px 12px", borderRadius: 20, border: "1.5px solid #FCA5A5", background: "#FEF2F2", color: "#DC2626", fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
                 Limpar
               </button>
