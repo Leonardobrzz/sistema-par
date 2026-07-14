@@ -331,21 +331,16 @@ export default function PlanejamentoFinanceiro() {
     try {
       const r = await api.get('/opp/centros-custo')
       const lista = Array.isArray(r.data) ? r.data : []
-      // Extrai o nome do centro de custo (campo pode ser nome, descricao, nome_centro, etc.)
-      const nomes = lista
-        .map(c => c.nome || c.descricao || c.nome_centro || c.name || '')
-        .filter(Boolean)
-        .map(n => n.toUpperCase())
-        .sort()
+      const nomes = lista.map(c => (c.nome || '').toUpperCase()).filter(Boolean).sort()
       setCentrosCusto(nomes)
-    } catch { /* silencioso — autocomplete é opcional */ }
+    } catch { /* silencioso */ }
   }
 
   function onCcChange(val) {
     f("nrContratoOS", val.toUpperCase())
     const q = val.toUpperCase().trim()
     if (q.length < 2) { setCcSugestoes([]); return }
-    const sugs = centrosCusto.filter(c => c.includes(q)).slice(0, 8)
+    const sugs = centrosCusto.filter(c => c.includes(q)).slice(0, 10)
     setCcSugestoes(sugs)
   }
 

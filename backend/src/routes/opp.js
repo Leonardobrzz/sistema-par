@@ -611,8 +611,15 @@ router.get('/debug-oc', async (req, res, next) => {
 // GET /api/opp/centros-custo — lista centros de custo do OPP
 router.get('/centros-custo', async (req, res, next) => {
   try {
+    const busca = (req.query.busca || '').toLowerCase().trim();
     const data = await opp.oppRequest('GET', '/centros_custos');
-    const lista = Array.isArray(data) ? data : (data?.data || data?.centros_custos || []);
+    let lista = Array.isArray(data) ? data : (data?.data || data?.centros_custos || []);
+    // Normaliza para retornar sempre { id, nome }
+    lista = lista.map(c => ({
+      id: c.id_centro_custos || c.id,
+      nome: c.desc_centro_custos || c.nome || c.descricao || c.name || '',
+    })).filter(c => c.nome);
+    if (busca) lista = lista.filter(c => c.nome.toLowerCase().includes(busca));
     res.json(lista);
   } catch (err) {
     next(err);
