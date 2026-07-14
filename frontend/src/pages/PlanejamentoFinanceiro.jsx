@@ -705,11 +705,11 @@ export default function PlanejamentoFinanceiro() {
                       )}
                       {/* Dropdown autocomplete */}
                       {ccFocado && ccSugestoes.length > 0 && (
-                        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: "#fff", border: "1.5px solid #BAE6FD", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", marginTop: 2, maxHeight: 220, overflowY: "auto" }}>
+                        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, minWidth: 320, zIndex: 9999, background: "#fff", border: "2px solid #38BDF8", borderRadius: 10, boxShadow: "0 12px 32px rgba(0,0,0,0.18)", marginTop: 4, maxHeight: 280, overflowY: "auto" }}>
                           {ccSugestoes.map((s, i) => (
                             <div key={i} onMouseDown={() => selecionarCc(s)}
-                              style={{ padding: "9px 14px", fontSize: 12, fontWeight: 600, color: "#0F172A", cursor: "pointer", borderBottom: i < ccSugestoes.length - 1 ? "1px solid #F1F5F9" : "none" }}
-                              onMouseEnter={e => e.currentTarget.style.background = "#F0F9FF"}
+                              style={{ padding: "11px 16px", fontSize: 14, fontWeight: 500, color: "#0F172A", cursor: "pointer", borderBottom: i < ccSugestoes.length - 1 ? "1px solid #F1F5F9" : "none", lineHeight: 1.4 }}
+                              onMouseEnter={e => e.currentTarget.style.background = "#E0F2FE"}
                               onMouseLeave={e => e.currentTarget.style.background = ""}>
                               {s}
                             </div>
