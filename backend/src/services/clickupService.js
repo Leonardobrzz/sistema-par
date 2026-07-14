@@ -924,13 +924,18 @@ async function syncTimeEntries(timeEntries, projetos) {
   let novos = 0;
   let atualizados = 0;
 
+  // Log diagnóstico: mostra os list_ids únicos das entries vs os IDs mapeados
+  const uniqueListIds = [...new Set(timeEntries.map(e => e.task_location?.list_id || e.task?.list?.id).filter(Boolean))];
+  console.log(`[ClickUp] list_ids nas entries: ${uniqueListIds.slice(0,10).join(', ')}`);
+  console.log(`[ClickUp] projectMapList keys: ${Object.keys(projectMapList).join(', ')}`);
+
   for (const entry of timeEntries) {
     const listId    = entry.task_location?.list_id  || entry.task?.list?.id;
     const folderId  = entry.task_location?.folder_id || entry.task?.folder?.id;
 
     // Tenta achar o projeto: primeiro pela lista, depois pela pasta
     const idProjeto = projectMapList[listId] || projectMapFolder[folderId] || '';
-    
+
     if (!idProjeto) continue;
 
     const horasLogadas = entry.duration ? (parseFloat(entry.duration) / 3600000).toFixed(2) : '0';

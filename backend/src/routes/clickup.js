@@ -100,14 +100,24 @@ router.post('/sync-horas/:idProjeto', async (req, res, next) => {
     const projeto = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === req.params.idProjeto);
     if (!projeto) return res.status(404).json({ error: 'Projeto não encontrado' });
 
-    // Se não tem ID_ClickUp mas tem Link_ClickUp, extrai o list ID do link
-    if (!projeto.ID_ClickUp && projeto.Link_ClickUp) {
-      const match = String(projeto.Link_ClickUp).match(/\/li\/(\d+)/) ||
-                    String(projeto.Link_ClickUp).match(/\/v\/li\/(\d+)/) ||
-                    String(projeto.Link_ClickUp).match(/^(\d+)$/);
-      if (match) {
-        projeto.ID_ClickUp = match[1];
-        console.log(`[sync-horas] ID_ClickUp extraído do link para ${projeto.Nome}: ${projeto.ID_ClickUp}`);
+    // Se não tem ID_ClickUp, tenta extrair de Link_ClickUp (projeto ou planejamento)
+    if (!projeto.ID_ClickUp) {
+      let link = projeto.Link_ClickUp || '';
+      // Fallback: busca no Dados_JSON do planejamento
+      if (!link) {
+        const plan = await db.findOne('Planejamentos', (p) => p.ID_Projeto === req.params.idProjeto);
+        if (plan?.Dados_JSON) {
+          try { link = JSON.parse(plan.Dados_JSON).linkClickUp || ''; } catch {}
+        }
+      }
+      if (link) {
+        const match = String(link).match(/\/li\/(\d+)/) ||
+                      String(link).match(/\/v\/li\/(\d+)/) ||
+                      String(link).match(/^(\d+)$/);
+        if (match) {
+          projeto.ID_ClickUp = match[1];
+          console.log(`[sync-horas] ID_ClickUp extraído do link para ${projeto.Nome}: ${projeto.ID_ClickUp}`);
+        }
       }
     }
 
