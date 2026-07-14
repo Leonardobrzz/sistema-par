@@ -1129,7 +1129,7 @@ export default function PlanejamentoFinanceiro() {
             )}
 
             {!loadingComp && comparativo && (
-              <div style={{ maxWidth: 960, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
               {/* Baseline status */}
               {comparativo.baseline ? (
