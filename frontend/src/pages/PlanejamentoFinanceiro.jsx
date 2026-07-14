@@ -925,16 +925,9 @@ export default function PlanejamentoFinanceiro() {
                   </div>
                 )
               })()}
-              <div style={{ display: "flex", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
-                <button onClick={() => addRow("terceirizados", { servico: "", vinculo: "", valorRef: "", custo: "" })} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1.5px dashed #FDE68A", background: "#FFFBEB", color: "#B45309", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                  <Plus size={14} /> Adicionar Terceirizado
-                </button>
-                {form.nrContratoOS && (
-                  <button onClick={importarDespesasOPP} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1.5px solid #6366F1", background: "#EEF2FF", color: "#4338CA", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                    ⬇ Importar do OPP ({form.nrContratoOS.slice(0, 20)}{form.nrContratoOS.length > 20 ? "…" : ""})
-                  </button>
-                )}
-              </div>
+              <button onClick={() => addRow("terceirizados", { servico: "", vinculo: "", valorRef: "", custo: "" })} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1.5px dashed #FDE68A", background: "#FFFBEB", color: "#B45309", fontWeight: 700, fontSize: 13, cursor: "pointer", marginTop: 4 }}>
+                <Plus size={14} /> Adicionar Terceirizado
+              </button>
             </div>
           </Section>
 
