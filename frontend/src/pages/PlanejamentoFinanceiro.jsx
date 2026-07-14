@@ -585,26 +585,6 @@ export default function PlanejamentoFinanceiro() {
               <option value="">— {projetosFiltrados.length} projeto(s) disponível(is) —</option>
               {projetosFiltrados.map(p => <option key={p.ID_Projeto} value={p.ID_Projeto}>{p.Nome}{p.Cliente ? ` · ${p.Cliente}` : ""} [{p.Status}]</option>)}
             </select>
-            {projetoId && (
-              <button
-                title="Excluir este projeto do PAR"
-                onClick={async () => {
-                  const proj = projetosFiltrados.find(p => p.ID_Projeto === projetoId)
-                  if (!window.confirm(`Excluir o projeto "${proj?.Nome}"?\n\nEsta ação remove o projeto e todos os seus dados do PAR. Não afeta o ClickUp.`)) return
-                  try {
-                    await api.delete(`/projetos/${projetoId}`)
-                    toast.success("Projeto excluído com sucesso.")
-                    setProjetoId("")
-                    api.get("/projetos").then(r => setProjetos(r.data?.projetos || r.data || []))
-                  } catch (err) {
-                    toast.error(err.response?.data?.error || "Erro ao excluir projeto")
-                  }
-                }}
-                style={{ padding: "10px 14px", borderRadius: 10, border: "1.5px solid #FCA5A5", background: "#FEF2F2", color: "#DC2626", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
-              >
-                Excluir projeto
-              </button>
-            )}
           </div>
         </div>
       )}
