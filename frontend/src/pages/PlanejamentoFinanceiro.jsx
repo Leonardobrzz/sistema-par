@@ -1128,213 +1128,223 @@ export default function PlanejamentoFinanceiro() {
               </div>
             )}
 
-            {!loadingComp && comparativo && (<>
+            {!loadingComp && comparativo && (
+              <div style={{ maxWidth: 960, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
 
               {/* Baseline status */}
               {comparativo.baseline ? (
-                <div style={{ background: "#F0FDF4", border: "1.5px solid #86EFAC", borderRadius: 12, padding: "14px 20px", display: "flex", alignItems: "center", gap: 10 }}>
-                  <Lock size={16} color="#15803D" />
-                  <div>
-                    <span style={{ fontWeight: 800, fontSize: 13, color: "#15803D" }}>BASELINE PAR TRAVADO</span>
-                    <span style={{ fontSize: 12, color: "#16A34A", marginLeft: 10 }}>
-                      Por <strong>{comparativo.baseline.travadoPor}</strong> em {new Date(comparativo.baseline.travadoEm).toLocaleDateString("pt-BR")}
-                    </span>
-                  </div>
+                <div style={{ background: "#F0FDF4", border: "1.5px solid #86EFAC", borderRadius: 10, padding: "11px 18px", display: "flex", alignItems: "center", gap: 10 }}>
+                  <Lock size={14} color="#15803D" />
+                  <span style={{ fontWeight: 700, fontSize: 13, color: "#15803D" }}>Baseline travado</span>
+                  <span style={{ fontSize: 12, color: "#16A34A" }}>por <strong>{comparativo.baseline.travadoPor}</strong> em {new Date(comparativo.baseline.travadoEm).toLocaleDateString("pt-BR")}</span>
                 </div>
               ) : (
-                <div style={{ background: "#FFFBEB", border: "1.5px solid #FCD34D", borderRadius: 12, padding: "14px 20px", display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between" }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#92400E" }}>
-                    Nenhum baseline travado — o comparativo não tem referência congelada.
-                  </div>
+                <div style={{ background: "#FFFBEB", border: "1.5px solid #FCD34D", borderRadius: 10, padding: "11px 18px", display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#92400E" }}>Nenhum baseline travado — o comparativo não tem referência congelada.</div>
                   {planId && (
                     <button onClick={travarBaseline} disabled={lockingBaseline}
-                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "none", background: "#D97706", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 8, border: "none", background: "#D97706", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>
                       <Lock size={12} /> {lockingBaseline ? "Travando..." : "Travar Baseline"}
                     </button>
                   )}
                 </div>
               )}
 
-              {/* KPI cards: horas */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-                {[
-                  { label: "Horas Estimadas", val: fmtH(comparativo.horas?.totalPlanejado), sub: "planejado no baseline", color: "#7C3AED" },
-                  { label: "Horas Rastreadas", val: fmtH(comparativo.horas?.totalRastreado), sub: "tempo logado no ClickUp", color: Math.abs(comparativo.horas?.desvioPerc || 0) < 15 ? "#15803D" : "#DC2626" },
-                  {
-                    label: "Desvio Total",
-                    val: (() => { const d = comparativo.horas?.desvioAbsoluto || 0; return (d >= 0 ? "+" : "") + fmtH(Math.abs(d)) })(),
-                    sub: `${comparativo.horas?.desvioPerc != null ? (comparativo.horas.desvioPerc >= 0 ? "+" : "") + fmtN(comparativo.horas.desvioPerc) + "%" : "—"} ${comparativo.horas?.desvioAbsoluto < 0 ? "ABAIXO DO ESTIMADO" : "ACIMA DO ESTIMADO"}`,
-                    color: (comparativo.horas?.desvioPerc || 0) > 15 ? "#DC2626" : "#15803D",
-                  },
-                ].map(k => (
-                  <div key={k.label} style={{ background: "#fff", borderRadius: 14, padding: "18px 20px", border: "1.5px solid #E2E8F0" }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>{k.label}</div>
-                    <div style={{ fontSize: 28, fontWeight: 900, color: k.color }}>{k.val}</div>
-                    {k.sub && <div style={{ fontSize: 11, color: "#64748B", marginTop: 4, fontWeight: 600 }}>{k.sub}</div>}
-                  </div>
-                ))}
-              </div>
-
-              {/* Progresso de horas (barra geral) */}
-              <div style={{ background: "#fff", borderRadius: 14, padding: "20px 24px", border: "1.5px solid #E2E8F0" }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 16, display: "flex", justifyContent: "space-between" }}>
-                  <span>Progresso de Horas</span>
-                  <span><span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: "#C4B5FD", marginRight: 4 }} />Estimado&nbsp;&nbsp;<span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: "#6366F1", marginRight: 4 }} />Rastreado</span>
+              {/* ── HORAS ── */}
+              <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
+                <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>⏱ Horas — Planejado vs Rastreado</span>
                 </div>
-                <BurnBar label="Total do Projeto" planejado={comparativo.horas?.totalPlanejado || 0} real={comparativo.horas?.totalRastreado || 0} />
-              </div>
-
-              {/* Horas por colaborador */}
-              {comparativo.horas?.porColaborador?.length > 0 && (
-                <div style={{ background: "#fff", borderRadius: 14, padding: "20px 24px", border: "1.5px solid #E2E8F0" }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 16 }}>
-                    Horas por Colaborador — Planejado vs Rastreado
-                  </div>
-                  {comparativo.horas.porColaborador.map((c, i) => (
-                    <div key={i} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: i < comparativo.horas.porColaborador.length - 1 ? "1px solid #F1F5F9" : "none" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#EDE9FE", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 13, color: "#7C3AED", flexShrink: 0 }}>
-                          {(c.colaborador || "?")[0].toUpperCase()}
-                        </div>
-                        <span style={{ fontWeight: 700, fontSize: 14, color: "#0F172A", flex: 1 }}>{c.colaborador || "Não identificado"}</span>
-                        <span style={{ fontSize: 12, color: "#64748B" }}>EST. <strong>{fmtH(c.horasPlanejadas)}</strong></span>
-                        <span style={{ fontSize: 12, color: "#0F172A", fontWeight: 700 }}>REAL <strong>{fmtH(c.horasRastreadas)}</strong></span>
-                        {c.desvioPerc !== null && (
-                          <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 6,
-                            background: Math.abs(c.desvioPerc) < 10 ? "#F1F5F9" : c.desvioPerc > 0 ? "#FEE2E2" : "#DCFCE7",
-                            color: Math.abs(c.desvioPerc) < 10 ? "#64748B" : c.desvioPerc > 0 ? "#DC2626" : "#15803D",
-                          }}>
-                            {c.desvioPerc >= 0 ? "↑" : "↓"} {Math.abs(fmtN(c.desvioPerc))}%
-                          </span>
-                        )}
-                      </div>
-                      <BurnBar label="" planejado={c.horasPlanejadas} real={c.horasRastreadas} />
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Datas */}
-              {comparativo.datas && (
-                <div style={{ background: "#fff", borderRadius: 14, padding: "20px 24px", border: "1.5px solid #E2E8F0" }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 14 }}>Datas — Planejado vs Atual</div>
+                <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
+                  {/* KPI row */}
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
                     {[
-                      { label: "Início O.S.", plan: comparativo.datas.planejado?.dataInicioOS, atual: comparativo.datas.atual?.dataInicioOS },
-                      { label: "Entrega Contrato", plan: comparativo.datas.planejado?.dataEntregaContrato, atual: comparativo.datas.atual?.dataEntregaContrato },
-                      { label: "Entrega Planejada", plan: comparativo.datas.planejado?.dataEntregaPlanejada, atual: comparativo.datas.atual?.dataEntregaPlanejada },
-                    ].map(d => {
-                      const pDate = d.plan ? new Date(d.plan) : null
-                      const aDate = d.atual ? new Date(d.atual) : null
-                      const diff = pDate && aDate ? Math.round((aDate - pDate) / 86400000) : null
-                      return (
-                        <div key={d.label} style={{ background: "#F8FAFC", borderRadius: 10, padding: "14px 16px" }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em" }}>{d.label}</div>
-                          <div style={{ fontSize: 12, color: "#64748B" }}>Plan: <strong style={{ color: "#475569" }}>{pDate ? pDate.toLocaleDateString("pt-BR") : "—"}</strong></div>
-                          <div style={{ fontSize: 12, color: "#64748B", marginTop: 4 }}>Atual: <strong style={{ color: "#0F172A" }}>{aDate ? aDate.toLocaleDateString("pt-BR") : "—"}</strong></div>
-                          {diff !== null && <div style={{ fontSize: 11, marginTop: 6, fontWeight: 700, color: diff > 0 ? "#DC2626" : diff < 0 ? "#15803D" : "#64748B" }}>{diff > 0 ? `+${diff}d atraso` : diff < 0 ? `${Math.abs(diff)}d adiantado` : "No prazo"}</div>}
-                        </div>
-                      )
-                    })}
+                      { label: "Estimadas", val: fmtH(comparativo.horas?.totalPlanejado), sub: "no baseline", color: "#7C3AED", bg: "#F5F3FF" },
+                      { label: "Rastreadas", val: fmtH(comparativo.horas?.totalRastreado), sub: "logado no ClickUp", color: Math.abs(comparativo.horas?.desvioPerc || 0) < 15 ? "#15803D" : "#DC2626", bg: Math.abs(comparativo.horas?.desvioPerc || 0) < 15 ? "#F0FDF4" : "#FEF2F2" },
+                      {
+                        label: "Desvio",
+                        val: (() => { const d = comparativo.horas?.desvioAbsoluto || 0; return (d >= 0 ? "+" : "") + fmtH(Math.abs(d)) })(),
+                        sub: comparativo.horas?.desvioAbsoluto < 0 ? "abaixo do estimado" : "acima do estimado",
+                        color: (comparativo.horas?.desvioPerc || 0) > 15 ? "#DC2626" : "#15803D",
+                        bg: (comparativo.horas?.desvioPerc || 0) > 15 ? "#FEF2F2" : "#F0FDF4",
+                      },
+                    ].map(k => (
+                      <div key={k.label} style={{ background: k.bg, borderRadius: 10, padding: "14px 16px" }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>{k.label}</div>
+                        <div style={{ fontSize: 24, fontWeight: 900, color: k.color, lineHeight: 1.1 }}>{k.val}</div>
+                        <div style={{ fontSize: 11, color: "#64748B", marginTop: 3 }}>{k.sub}</div>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              )}
-
-              {/* Cronograma de medições */}
-              {comparativo.medicoes?.length > 0 && (
-                <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
-                  <div style={{ padding: "16px 24px", borderBottom: "1px solid #F1F5F9", fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>
-                    Cronograma de Medições — Plan vs Realizado
-                  </div>
-                  <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                      <thead>
-                        <tr style={{ background: "#F8FAFC" }}>
-                          {["Etapa", "%", "Data Prev. (Plan.)", "Data Realização", "Atraso", "Status"].map(h => (
-                            <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {comparativo.medicoes.map((m, i) => (
-                          <tr key={i} style={{ borderTop: "1px solid #F1F5F9", background: m.atrasoDias > 0 ? "rgba(239,68,68,0.02)" : "#fff" }}>
-                            <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 700, color: "#0F172A" }}>{m.etapa || "—"}</td>
-                            <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 800, color: "#7C3AED" }}>{m.percentual ? `${m.percentual}%` : "—"}</td>
-                            <td style={{ padding: "12px 16px", fontSize: 12, color: "#64748B" }}>{m.dataPrevisaoPlanejada ? new Date(m.dataPrevisaoPlanejada).toLocaleDateString("pt-BR") : "—"}</td>
-                            <td style={{ padding: "12px 16px", fontSize: 12, color: "#0F172A" }}>{m.dataRealizacao ? new Date(m.dataRealizacao).toLocaleDateString("pt-BR") : "—"}</td>
-                            <td style={{ padding: "12px 16px", fontSize: 12, fontWeight: 700, color: m.atrasoDias > 0 ? "#DC2626" : m.atrasoDias < 0 ? "#15803D" : "#94A3B8" }}>
-                              {m.atrasoDias != null ? (m.atrasoDias > 0 ? `+${m.atrasoDias}d` : m.atrasoDias < 0 ? `${m.atrasoDias}d` : "—") : "—"}
-                            </td>
-                            <td style={{ padding: "12px 16px" }}>
-                              <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 6,
-                                background: m.statusFisico === "Concluída" || m.statusFisico === "Concluido" ? "#DCFCE7" : "#F1F5F9",
-                                color: m.statusFisico === "Concluída" || m.statusFisico === "Concluido" ? "#15803D" : "#64748B",
-                              }}>{m.statusFisico || "Pendente"}</span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* ── Despesas Reais OPP ── */}
-              {comparativo.despesasOPP?.temDados && (
-                <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", padding: "20px 24px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                    <div>
-                      <div style={{ fontWeight: 800, fontSize: 14, color: "#0F172A" }}>Despesas Reais — OPP</div>
-                      <div style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>lançamentos reais do centro de custo, organizados por categoria</div>
+                  {/* Barra geral */}
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
+                      <span>Total do Projeto</span>
+                      <span><span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: "#C4B5FD", marginRight: 4 }} />Estimado&nbsp;&nbsp;<span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: "#6366F1", marginRight: 4 }} />Rastreado</span>
                     </div>
-                    <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Previsto</div>
-                        <div style={{ fontSize: 15, fontWeight: 800, color: "#0F172A" }}>{fmt(comparativo.despesasOPP.totalGasto)}</div>
-                      </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: 11, color: "#64748B", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Pago</div>
-                        <div style={{ fontSize: 15, fontWeight: 800, color: "#15803D" }}>{fmt(comparativo.despesasOPP.totalPago)}</div>
-                      </div>
-                    </div>
+                    <BurnBar label="" planejado={comparativo.horas?.totalPlanejado || 0} real={comparativo.horas?.totalRastreado || 0} />
                   </div>
-                  {comparativo.despesasOPP.porCategoria.map((grupo, gi) => (
-                    <div key={gi} style={{ marginBottom: 16 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "#F8FAFC", borderRadius: 8, marginBottom: 6 }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>{grupo.categoria || "Sem categoria"}</span>
-                        <div style={{ display: "flex", gap: 16 }}>
-                          <span style={{ fontSize: 12, color: "#64748B" }}>Previsto: <strong style={{ color: "#0F172A" }}>{fmt(grupo.total)}</strong></span>
-                          <span style={{ fontSize: 12, color: "#64748B" }}>Pago: <strong style={{ color: "#15803D" }}>{fmt(grupo.totalPago)}</strong></span>
-                        </div>
-                      </div>
-                      {grupo.lancamentos.map((l, li) => (
-                        <div key={li} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 12px 7px 20px", borderBottom: li < grupo.lancamentos.length - 1 ? "1px solid #F1F5F9" : "none" }}>
-                          <div>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: "#0F172A" }}>{l.descricao || l.fornecedor}</div>
-                            {l.fornecedor && l.fornecedor !== l.descricao && <div style={{ fontSize: 11, color: "#94A3B8" }}>{l.fornecedor}</div>}
+                  {/* Por colaborador */}
+                  {comparativo.horas?.porColaborador?.length > 0 && (
+                    <div style={{ borderTop: "1px solid #F1F5F9", paddingTop: 14 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>Por colaborador</div>
+                      {comparativo.horas.porColaborador.map((c, i) => (
+                        <div key={i} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: i < comparativo.horas.porColaborador.length - 1 ? "1px solid #F8FAFC" : "none" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#EDE9FE", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 12, color: "#7C3AED", flexShrink: 0 }}>
+                              {(c.colaborador || "?")[0].toUpperCase()}
+                            </div>
+                            <span style={{ fontWeight: 600, fontSize: 13, color: "#0F172A", flex: 1 }}>{c.colaborador || "Não identificado"}</span>
+                            <span style={{ fontSize: 11, color: "#64748B" }}>Est. <strong>{fmtH(c.horasPlanejadas)}</strong></span>
+                            <span style={{ fontSize: 11, color: "#0F172A", fontWeight: 700 }}>Real <strong>{fmtH(c.horasRastreadas)}</strong></span>
+                            {c.desvioPerc !== null && (
+                              <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 5,
+                                background: Math.abs(c.desvioPerc) < 10 ? "#F1F5F9" : c.desvioPerc > 0 ? "#FEE2E2" : "#DCFCE7",
+                                color: Math.abs(c.desvioPerc) < 10 ? "#64748B" : c.desvioPerc > 0 ? "#DC2626" : "#15803D",
+                              }}>{c.desvioPerc >= 0 ? "↑" : "↓"}{Math.abs(fmtN(c.desvioPerc))}%</span>
+                            )}
                           </div>
-                          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                            <span style={{ fontSize: 11, color: "#64748B" }}>{l.data ? new Date(l.data).toLocaleDateString("pt-BR") : "—"}</span>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>{fmt(l.valor)}</span>
-                            <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 5,
-                              background: l.liquidado ? "#DCFCE7" : "#FEF9C3",
-                              color: l.liquidado ? "#15803D" : "#92400E" }}>
-                              {l.liquidado ? "Pago" : "Aberto"}
-                            </span>
-                          </div>
+                          <BurnBar label="" planejado={c.horasPlanejadas} real={c.horasRastreadas} />
                         </div>
                       ))}
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
-              {!comparativo.despesasOPP?.temDados && (
-                <div style={{ background: "#F8FAFC", borderRadius: 14, border: "1.5px solid #E2E8F0", padding: "20px 24px", color: "#94A3B8", fontSize: 13, textAlign: "center" }}>
-                  Nenhum lançamento OPP encontrado para este projeto — verifique se o campo "Nome do Centro de Custo" está preenchido na aba Planejamento.
+              </div>
+
+              {/* ── DATAS + MEDIÇÕES lado a lado ── */}
+              <div style={{ display: "grid", gridTemplateColumns: comparativo.medicoes?.length > 0 ? "1fr 1fr" : "1fr", gap: 16 }}>
+                {/* Datas */}
+                {comparativo.datas && (
+                  <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
+                    <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9" }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>📅 Datas — Planejado vs Atual</span>
+                    </div>
+                    <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+                      {[
+                        { label: "Início O.S.", plan: comparativo.datas.planejado?.dataInicioOS, atual: comparativo.datas.atual?.dataInicioOS },
+                        { label: "Entrega Contrato", plan: comparativo.datas.planejado?.dataEntregaContrato, atual: comparativo.datas.atual?.dataEntregaContrato },
+                        { label: "Entrega Planejada", plan: comparativo.datas.planejado?.dataEntregaPlanejada, atual: comparativo.datas.atual?.dataEntregaPlanejada },
+                      ].map(d => {
+                        const pDate = d.plan ? new Date(d.plan) : null
+                        const aDate = d.atual ? new Date(d.atual) : null
+                        const diff = pDate && aDate ? Math.round((aDate - pDate) / 86400000) : null
+                        return (
+                          <div key={d.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "#F8FAFC", borderRadius: 8 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#475569", minWidth: 130 }}>{d.label}</span>
+                            <div style={{ textAlign: "center", flex: 1 }}>
+                              <div style={{ fontSize: 11, color: "#94A3B8" }}>Plan</div>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>{pDate ? pDate.toLocaleDateString("pt-BR") : "—"}</div>
+                            </div>
+                            <div style={{ textAlign: "center", flex: 1 }}>
+                              <div style={{ fontSize: 11, color: "#94A3B8" }}>Atual</div>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>{aDate ? aDate.toLocaleDateString("pt-BR") : "—"}</div>
+                            </div>
+                            <div style={{ minWidth: 90, textAlign: "right" }}>
+                              {diff !== null && <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: diff > 0 ? "#FEE2E2" : diff < 0 ? "#DCFCE7" : "#F1F5F9", color: diff > 0 ? "#DC2626" : diff < 0 ? "#15803D" : "#64748B" }}>{diff > 0 ? `+${diff}d atraso` : diff < 0 ? `${Math.abs(diff)}d adiant.` : "No prazo"}</span>}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Medições */}
+                {comparativo.medicoes?.length > 0 && (
+                  <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
+                    <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9" }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>📋 Medições — Plan vs Realizado</span>
+                    </div>
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                        <thead>
+                          <tr style={{ background: "#F8FAFC" }}>
+                            {["Etapa", "%", "Prev.", "Realiz.", "Desvio", "Status"].map(h => (
+                              <th key={h} style={{ padding: "9px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {comparativo.medicoes.map((m, i) => (
+                            <tr key={i} style={{ borderTop: "1px solid #F1F5F9", background: m.atrasoDias > 0 ? "rgba(239,68,68,0.03)" : "#fff" }}>
+                              <td style={{ padding: "10px 12px", fontSize: 12, fontWeight: 700, color: "#0F172A" }}>{m.etapa || "—"}</td>
+                              <td style={{ padding: "10px 12px", fontSize: 12, fontWeight: 800, color: "#7C3AED" }}>{m.percentual ? `${m.percentual}%` : "—"}</td>
+                              <td style={{ padding: "10px 12px", fontSize: 11, color: "#64748B", whiteSpace: "nowrap" }}>{m.dataPrevisaoPlanejada ? new Date(m.dataPrevisaoPlanejada).toLocaleDateString("pt-BR") : "—"}</td>
+                              <td style={{ padding: "10px 12px", fontSize: 11, color: "#0F172A", whiteSpace: "nowrap" }}>{m.dataRealizacao ? new Date(m.dataRealizacao).toLocaleDateString("pt-BR") : "—"}</td>
+                              <td style={{ padding: "10px 12px", fontSize: 11, fontWeight: 700, color: m.atrasoDias > 0 ? "#DC2626" : m.atrasoDias < 0 ? "#15803D" : "#94A3B8" }}>
+                                {m.atrasoDias != null ? (m.atrasoDias > 0 ? `+${m.atrasoDias}d` : m.atrasoDias < 0 ? `${m.atrasoDias}d` : "—") : "—"}
+                              </td>
+                              <td style={{ padding: "10px 12px" }}>
+                                <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 5,
+                                  background: m.statusFisico === "Concluída" || m.statusFisico === "Concluido" ? "#DCFCE7" : "#F1F5F9",
+                                  color: m.statusFisico === "Concluída" || m.statusFisico === "Concluido" ? "#15803D" : "#64748B",
+                                }}>{m.statusFisico || "Pendente"}</span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── DESPESAS OPP ── */}
+              {comparativo.despesasOPP?.temDados ? (
+                <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
+                  <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>💰 Despesas Reais — OPP</span>
+                    <div style={{ display: "flex", gap: 20 }}>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Total Previsto</div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A" }}>{fmt(comparativo.despesasOPP.totalGasto)}</div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Total Pago</div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: "#15803D" }}>{fmt(comparativo.despesasOPP.totalPago)}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+                    {comparativo.despesasOPP.porCategoria.map((grupo, gi) => (
+                      <div key={gi}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 12px", background: "#F8FAFC", borderRadius: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>{grupo.categoria || "Sem categoria"}</span>
+                          <div style={{ display: "flex", gap: 16 }}>
+                            <span style={{ fontSize: 11, color: "#64748B" }}>Previsto: <strong style={{ color: "#0F172A" }}>{fmt(grupo.total)}</strong></span>
+                            <span style={{ fontSize: 11, color: "#64748B" }}>Pago: <strong style={{ color: "#15803D" }}>{fmt(grupo.totalPago)}</strong></span>
+                          </div>
+                        </div>
+                        {grupo.lancamentos.map((l, li) => (
+                          <div key={li} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 12px 7px 24px", borderBottom: li < grupo.lancamentos.length - 1 ? "1px solid #F8FAFC" : "none" }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: "#0F172A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.descricao || l.fornecedor}</div>
+                              {l.fornecedor && l.fornecedor !== l.descricao && <div style={{ fontSize: 11, color: "#94A3B8" }}>{l.fornecedor}</div>}
+                            </div>
+                            <div style={{ display: "flex", gap: 12, alignItems: "center", flexShrink: 0, marginLeft: 12 }}>
+                              <span style={{ fontSize: 11, color: "#94A3B8", whiteSpace: "nowrap" }}>{l.data ? new Date(l.data).toLocaleDateString("pt-BR") : "—"}</span>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: "#0F172A", whiteSpace: "nowrap" }}>{fmt(l.valor)}</span>
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, whiteSpace: "nowrap",
+                                background: l.liquidado ? "#DCFCE7" : "#FEF9C3",
+                                color: l.liquidado ? "#15803D" : "#92400E" }}>
+                                {l.liquidado ? "Pago" : "Aberto"}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ background: "#F8FAFC", borderRadius: 14, border: "1.5px solid #E2E8F0", padding: "24px", color: "#94A3B8", fontSize: 13, textAlign: "center" }}>
+                  Nenhum lançamento OPP encontrado — preencha o campo "Nome do Centro de Custo" na aba Planejamento.
                 </div>
               )}
 
-            </>)}
+              </div>
+            )}
           </div>
         )}
 
