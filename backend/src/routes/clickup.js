@@ -99,12 +99,24 @@ router.post('/sync-horas/:idProjeto', async (req, res, next) => {
     const { getTimeEntries, syncTimeEntries } = require('../services/clickupService');
     const projeto = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === req.params.idProjeto);
     if (!projeto) return res.status(404).json({ error: 'Projeto não encontrado' });
+
+    // Se não tem ID_ClickUp mas tem Link_ClickUp, extrai o list ID do link
+    if (!projeto.ID_ClickUp && projeto.Link_ClickUp) {
+      const match = String(projeto.Link_ClickUp).match(/\/li\/(\d+)/) ||
+                    String(projeto.Link_ClickUp).match(/\/v\/li\/(\d+)/) ||
+                    String(projeto.Link_ClickUp).match(/^(\d+)$/);
+      if (match) {
+        projeto.ID_ClickUp = match[1];
+        console.log(`[sync-horas] ID_ClickUp extraído do link para ${projeto.Nome}: ${projeto.ID_ClickUp}`);
+      }
+    }
+
     const teamId = process.env.CLICKUP_TEAM_ID;
     const timeEntries = await getTimeEntries(teamId);
     await syncTimeEntries(timeEntries, [projeto]);
     const logs = await db.findRows('Log_Horas', (l) => l.ID_Projeto === req.params.idProjeto);
     const total = logs.reduce((s, l) => s + parseFloat(l.Horas_Logadas || 0), 0);
-    res.json({ ok: true, totalEntries: logs.length, totalHoras: parseFloat(total.toFixed(2)) });
+    res.json({ ok: true, idClickUp: projeto.ID_ClickUp || null, totalEntries: logs.length, totalHoras: parseFloat(total.toFixed(2)) });
   } catch (err) {
     next(err);
   }

@@ -202,7 +202,11 @@ export default function PlanejamentoFinanceiro() {
     setLoadingComp(true)
     try {
       if (syncFirst) {
-        try { await api.post(`/clickup/sync-horas/${projetoId}`) } catch {}
+        try {
+          const sr = await api.post(`/clickup/sync-horas/${projetoId}`)
+          console.log('[sync-horas]', sr.data)
+          if (!sr.data.idClickUp) toast.error("Projeto sem ID ClickUp — abra o planejamento e preencha o campo Link ClickUp para vincular.")
+        } catch {}
       }
       const r = await api.get(`/planejamento/${projetoId}/comparativo`)
       setComparativo(r.data)
