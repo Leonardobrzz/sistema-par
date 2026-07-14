@@ -320,7 +320,7 @@ export default function RelatoriosPlanejamentoPAR() {
       setLoading(true)
       try {
         const r = await api.get("/planejamento")
-        const aprovados = (Array.isArray(r.data) ? r.data : []).filter(p => p.Status === "Aprovado")
+        const aprovados = (Array.isArray(r.data) ? r.data : []).filter(p => (p.Status || "").toLowerCase() === "aprovado")
         setPlanejamentos(aprovados)
         // Já carrega todos os detalhes em paralelo
         const ids = aprovados.map(p => p.ID_Projeto).filter(Boolean)
