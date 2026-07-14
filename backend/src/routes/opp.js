@@ -238,23 +238,7 @@ router.get('/extrato/:idProjeto', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// GET /api/opp/centros-custo — lista OSs únicas da API do OPP para dropdown do planejamento
-router.get('/centros-custo', async (req, res, next) => {
-  try {
-    const receitas = await opp.listarReceitas({ limit: 500 });
-    const lista = Array.isArray(receitas) ? receitas : (receitas.data || []);
-    // Mapa: nr_os -> { nr, cliente }
-    const ossMap = new Map();
-    for (const r of lista) {
-      const m = (r.observacoes_rec || '').match(/ordem de servi[çc]o\s+n[º°]?\s*(\d+)/i);
-      if (m && !ossMap.has(m[1])) {
-        ossMap.set(m[1], { nr: m[1], cliente: r.nome_cliente || '' });
-      }
-    }
-    const centros = [...ossMap.values()].sort((a, b) => Number(a.nr) - Number(b.nr));
-    res.json({ centros });
-  } catch (err) { next(err); }
-});
+// (removido — substituído pelo endpoint de centros de custo reais no final do arquivo)
 
 // GET /api/opp/campos-disponiveis — retorna amostra dos campos reais que a API do OPP retorna
 // Usado para debugar qual campo contém o Centro de Custo (Profissional)
