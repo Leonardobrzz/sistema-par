@@ -93,6 +93,23 @@ router.post('/sync-terceirizados', async (req, res, next) => {
   }
 });
 
+// POST /api/clickup/sync-horas/:idProjeto — sync rápido só das time entries de um projeto
+router.post('/sync-horas/:idProjeto', async (req, res, next) => {
+  try {
+    const { getTimeEntries, syncTimeEntries } = require('../services/clickupService');
+    const projeto = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === req.params.idProjeto);
+    if (!projeto) return res.status(404).json({ error: 'Projeto não encontrado' });
+    const teamId = process.env.CLICKUP_TEAM_ID;
+    const timeEntries = await getTimeEntries(teamId);
+    await syncTimeEntries(timeEntries, [projeto]);
+    const logs = await db.findRows('Log_Horas', (l) => l.ID_Projeto === req.params.idProjeto);
+    const total = logs.reduce((s, l) => s + parseFloat(l.Horas_Logadas || 0), 0);
+    res.json({ ok: true, totalEntries: logs.length, totalHoras: parseFloat(total.toFixed(2)) });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/clickup/horas/:idProjeto — horas estimadas vs logadas por projeto
 router.get('/horas/:idProjeto', async (req, res, next) => {
   try {

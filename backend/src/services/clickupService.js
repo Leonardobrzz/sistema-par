@@ -68,7 +68,7 @@ async function getTimeEntries(teamId, startDate, endDate) {
   const res = await axios.get(`${BASE_URL}/team/${teamId}/time_entries`, {
     headers: getHeaders(),
     params: {
-      start_date: startDate || Date.now() - 30 * 24 * 60 * 60 * 1000,
+      start_date: startDate || Date.now() - 180 * 24 * 60 * 60 * 1000,
       end_date: endDate || Date.now(),
     },
   });

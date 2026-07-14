@@ -197,10 +197,13 @@ export default function PlanejamentoFinanceiro() {
 
   useEffect(() => { if (projetoId) carregar(projetoId) }, [projetoId]) // eslint-disable-line
 
-  const carregarComparativo = useCallback(async () => {
+  const carregarComparativo = useCallback(async (syncFirst = false) => {
     if (!projetoId) return
     setLoadingComp(true)
     try {
+      if (syncFirst) {
+        try { await api.post(`/clickup/sync-horas/${projetoId}`) } catch {}
+      }
       const r = await api.get(`/planejamento/${projetoId}/comparativo`)
       setComparativo(r.data)
     } catch {
@@ -1067,7 +1070,7 @@ export default function PlanejamentoFinanceiro() {
               <div style={{ fontSize: 13, color: "#64748B" }}>
                 Dados de horas sincronizados automaticamente a cada 15 min via ClickUp.
               </div>
-              <button onClick={carregarComparativo} disabled={loadingComp}
+              <button onClick={() => carregarComparativo(true)} disabled={loadingComp}
                 style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 9, border: "1.5px solid #E2E8F0", background: "#fff", color: "#475569", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                 <RefreshCw size={14} className={loadingComp ? "animate-spin" : ""} />
                 {loadingComp ? "Atualizando..." : "Atualizar Dados"}
