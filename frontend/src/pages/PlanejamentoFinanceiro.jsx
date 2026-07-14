@@ -61,8 +61,9 @@ function calcPAR(form) {
   const lucro = receitaLiquida - totalCustos
   const lucroPerc = V > 0 ? (lucro / V) * 100 : 0
   const percTerceiros = V > 0 ? (totalTerceiros / V) * 100 : 0
+  const percDespesasGerais = V > 0 ? (totalDespesas / V) * 100 : 0
   const custoProducaoPerc = V > 0 ? ((totalEquipe + totalDespesasInternas + totalTerceiros) / V) * 100 : 0
-  return { V, ip, ta, co, impostos, taxaAdm, comissao, receitaLiquida, totalTerceiros, totalEquipe, totalDespesasInternas, totalDespesas, totalCustos, lucro, lucroPerc, percTerceiros, custoProducaoPerc }
+  return { V, ip, ta, co, impostos, taxaAdm, comissao, receitaLiquida, totalTerceiros, totalEquipe, totalDespesasInternas, totalDespesas, totalCustos, lucro, lucroPerc, percTerceiros, percDespesasGerais, custoProducaoPerc }
 }
 
 const FORM0 = {
@@ -257,6 +258,7 @@ export default function PlanejamentoFinanceiro() {
   const margemOk = par.lucroPerc >= 23
   const tercOk = par.percTerceiros <= 25
   const prodOk = par.custoProducaoPerc <= 30
+  const despGeraisOk = par.percDespesasGerais <= 7.5
   const somaMedicoes = (form.medicoes || []).reduce((s, m) => s + parseBR(m.percentual), 0)
 
   const projetoSelecionado = projetos.find(p => p.ID_Projeto === projetoId)
@@ -650,6 +652,7 @@ export default function PlanejamentoFinanceiro() {
               { label: "Lucro Estimado",  val: fmt(par.lucro),          ok: margemOk, sub: `${fmtN(par.lucroPerc)}% (mín 23%)` },
               { label: "Terceirizados",   val: `${fmtN(par.percTerceiros)}%`, ok: tercOk, sub: "máx 25%" },
               { label: "Custo Produção",  val: `${fmtN(par.custoProducaoPerc)}%`, ok: prodOk, sub: "máx 30%" },
+              { label: "Despesas Gerais", val: `${fmtN(par.percDespesasGerais)}%`, ok: despGeraisOk, sub: "máx 7,5%" },
             ].map(k => (
               <div key={k.label} style={{ background: "#fff", borderRadius: 12, padding: "14px 16px", border: `1.5px solid ${k.ok ? "#E2E8F0" : "#FECACA"}` }}>
                 <div style={{ fontSize: 10, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{k.label}</div>
@@ -659,7 +662,7 @@ export default function PlanejamentoFinanceiro() {
             ))}
           </div>
 
-          {(!margemOk || !tercOk || !prodOk) && (
+          {(!margemOk || !tercOk || !prodOk || !despGeraisOk) && (
             <div style={{ background: "#FEF2F2", border: "1.5px solid #FECACA", borderRadius: 12, padding: "14px 18px", display: "flex", gap: 10 }}>
               <AlertTriangle size={18} color="#DC2626" style={{ marginTop: 1, flexShrink: 0 }} />
               <div>
@@ -668,6 +671,7 @@ export default function PlanejamentoFinanceiro() {
                   {!margemOk && <div>• Margem ({fmtN(par.lucroPerc)}%) abaixo de 23%.</div>}
                   {!tercOk && <div>• Terceirizados ({fmtN(par.percTerceiros)}%) acima de 25%.</div>}
                   {!prodOk && <div>• Custo de produção ({fmtN(par.custoProducaoPerc)}%) acima de 30%.</div>}
+                  {!despGeraisOk && <div>• Despesas Gerais ({fmtN(par.percDespesasGerais)}%) acima de 7,5%.</div>}
                 </div>
               </div>
             </div>
@@ -1040,9 +1044,20 @@ export default function PlanejamentoFinanceiro() {
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 20px", borderRadius: 10, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#475569", fontWeight: 700, fontSize: 13, cursor: saving ? "not-allowed" : "pointer" }}>
               <Save size={16} /> {saving ? "Salvando..." : "Salvar Rascunho"}
             </button>
-            <button onClick={() => salvar("Pendente Aprovação")} disabled={saving || !margemOk}
-              title={!margemOk ? "Margem abaixo de 23% — ajuste os custos antes de encaminhar" : "Encaminhar para aprovação do coordenador"}
-              className="btn-primary" style={{ display: "flex", alignItems: "center", gap: 6, opacity: !margemOk ? 0.5 : 1 }}>
+            <button onClick={() => {
+              const ressalvas = [
+                !margemOk && `• Margem (${fmtN(par.lucroPerc)}%) abaixo de 23%`,
+                !tercOk && `• Terceirizados (${fmtN(par.percTerceiros)}%) acima de 25%`,
+                !prodOk && `• Custo de produção (${fmtN(par.custoProducaoPerc)}%) acima de 30%`,
+                !despGeraisOk && `• Despesas Gerais (${fmtN(par.percDespesasGerais)}%) acima de 7,5%`,
+              ].filter(Boolean)
+              if (ressalvas.length > 0) {
+                const msg = `Este planejamento possui pendências fora da Metodologia PAR:\n\n${ressalvas.join('\n')}\n\nDeseja encaminhar para aprovação mesmo assim?`
+                if (!window.confirm(msg)) return
+              }
+              salvar("Pendente Aprovação")
+            }} disabled={saving}
+              className="btn-primary" style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <CheckCircle size={16} /> Encaminhar para Aprovação
             </button>
           </div>
