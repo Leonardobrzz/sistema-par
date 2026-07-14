@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
-import { FileText, ChevronDown, ChevronRight, Printer, Search, X } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { FileText, ChevronDown, ChevronRight, Printer, Search, X, ArrowLeft } from "lucide-react"
 import api from "../utils/api"
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0)
@@ -434,6 +435,7 @@ function DetalheRelatorio({ plano }) {
 }
 
 export default function RelatoriosPlanejamentoPAR() {
+  const navigate = useNavigate()
   const [planejamentos, setPlanejamentos] = useState([])
   const [loading, setLoading] = useState(true)
   const [busca, setBusca] = useState("")
@@ -481,6 +483,10 @@ export default function RelatoriosPlanejamentoPAR() {
     <div style={{ paddingBottom: 60 }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
+        <button onClick={() => navigate("/planejamento")}
+          style={{ display: "flex", alignItems: "center", gap: 4, padding: "7px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#fff", color: "#475569", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+          <ArrowLeft size={15} /> Planejamento
+        </button>
         <FileText size={22} color="#7C3AED" />
         <span style={{ fontWeight: 900, fontSize: 18, color: "#0F172A", textTransform: "uppercase", letterSpacing: "0.06em", flex: 1 }}>
           Relatórios — Planejamentos Aprovados

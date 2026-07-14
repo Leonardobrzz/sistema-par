@@ -481,10 +481,6 @@ export default function PlanejamentoFinanceiro() {
           style={{ display: "flex", alignItems: "center", gap: 4, padding: "7px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#fff", color: "#475569", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
           <ArrowLeft size={15} /> Projetos
         </button>
-        <button onClick={() => navigate("/relatorios-planejamento")}
-          style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1.5px solid #7C3AED", background: "#EDE9FE", color: "#7C3AED", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-          <FileSpreadsheet size={15} /> Relatórios
-        </button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <BadgeDollarSign size={20} color="#7C3AED" />
@@ -506,6 +502,10 @@ export default function PlanejamentoFinanceiro() {
 
         {/* Action buttons */}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button onClick={() => navigate("/relatorios-planejamento")}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#475569", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+            <FileSpreadsheet size={15} /> Relatórios
+          </button>
           {planStatus && (
             <span style={{ fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 8, border: `1.5px solid ${sc.border}`, background: sc.bg, color: sc.color }}>
               {planStatus}
