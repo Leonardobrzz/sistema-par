@@ -675,7 +675,7 @@ export default function PlanejamentoFinanceiro() {
               { label: "Custo Total",       val: fmt(par.totalCustos),                                     ok: true },
               { label: "Lucro Estimado",    val: fmt(par.lucro),          ok: margemOk, sub: `${fmtN(par.lucroPerc)}% (mín 23%)` },
               { label: "Custo de Produção", val: fmt(par.totalEquipe + par.totalDespesasInternas + par.totalTerceiros), ok: prodOk, sub: `${fmtN(par.custoProducaoPerc)}% (máx 30%)` },
-              { label: "Total Terceirizados", val: fmt(par.totalTerceiros), ok: tercOk, sub: `${fmtN(par.percTerceiros)}% (máx 25%)` },
+              { label: "Total Terceirizados", val: fmt(par.totalTerceiros), ok: tercOk },
             ].map(k => (
               <div key={k.label} style={{ background: "#fff", borderRadius: 12, padding: "14px 16px", border: `1.5px solid ${k.ok ? "#E2E8F0" : "#FECACA"}` }}>
                 <div style={{ fontSize: 10, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{k.label}</div>
