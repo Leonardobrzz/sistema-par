@@ -481,8 +481,8 @@ router.post('/:id/baseline', async (req, res, next) => {
 
       // Terceirizados planejados
       terceirizados: (dados.terceirizados || []).map((t) => ({
-        descricao: t.descricao || t.nome || '',
-        custo: parseFloat(t.custo || 0),
+        descricao: t.descricao || t.servico || t.nome || '',
+        custo: parseBR(t.custo),
         fornecedor: t.fornecedor || '',
       })),
 
@@ -711,6 +711,15 @@ router.get('/:id/comparativo', async (req, res, next) => {
             valorRealizado: parseFloat(realizada?.Valor_Medicao || realizada?.valorRealizado || 0),
           };
         });
+      })(),
+
+      // Terceirizados planejados
+      terceirizadosPlanejados: (() => {
+        const lista = baseline?.terceirizados || dados.terceirizados || [];
+        return {
+          total: lista.reduce((s, t) => s + parseBR(t.custo), 0),
+          itens: lista.map(t => ({ descricao: t.descricao || t.servico || '', custo: parseBR(t.custo) })),
+        };
       })(),
 
       // Equipe interna — custo planejado vs rastreado
