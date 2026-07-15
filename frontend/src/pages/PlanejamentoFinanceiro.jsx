@@ -289,7 +289,7 @@ export default function PlanejamentoFinanceiro() {
           if (!(p.Setor || '').toLowerCase().includes(filtroSetor.toLowerCase())) return false
         }
       }
-      if (filtroCliente && p.Cliente !== filtroCliente) return false
+      if (filtroCliente && !(p.Cliente || '').toLowerCase().includes(filtroCliente.toLowerCase())) return false
       if (filtroStatus) {
         const st = p.Status || ''
         // "Em Andamento" cobre também "Em Andamento (Atrasado)"
