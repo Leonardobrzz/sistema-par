@@ -4,7 +4,7 @@ import { toast } from "react-hot-toast"
 import {
   BadgeDollarSign, Save, Calculator, AlertTriangle, Plus, Trash2,
   CheckCircle, ChevronDown, ChevronRight, ArrowLeft, Lock, RefreshCw,
-  FileSpreadsheet, ThumbsUp, TrendingUp,
+  FileSpreadsheet, ThumbsUp, TrendingUp, Search,
 } from "lucide-react"
 import api from "../utils/api"
 
@@ -570,43 +570,70 @@ export default function PlanejamentoFinanceiro() {
 
       {/* ── Project selector com filtros ── */}
       {!paramId && (
-        <div style={{ background: "#fff", borderRadius: 14, padding: "18px 22px", border: "1.5px solid #E2E8F0", marginBottom: 20 }}>
-          <div style={{ fontWeight: 700, fontSize: 13, color: "#0F172A", marginBottom: 12 }}>Selecionar Projeto</div>
-          {/* Filtros */}
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-            {SETORES_PAR.map(s => (
-              <button key={s} onClick={() => setFiltroSetor(filtroSetor === s ? "" : s)}
-                style={{ padding: "5px 12px", borderRadius: 20, border: `1.5px solid ${filtroSetor === s ? "#7C3AED" : "#E2E8F0"}`, background: filtroSetor === s ? "#EDE9FE" : "#F8FAFC", color: filtroSetor === s ? "#7C3AED" : "#64748B", fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
-                {s}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+          {/* Linha 1: busca + cliente */}
+          <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ position: "relative", flex: 1 }}>
+              <Search size={16} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94A3B8", pointerEvents: "none" }} />
+              <input value={filtroBusca} onChange={e => setFiltroBusca(e.target.value)} placeholder="Buscar por projeto, cliente ou número..."
+                style={{ width: "100%", padding: "9px 12px 9px 40px", borderRadius: 8, border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#0F172A", fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+            </div>
+            <input value={filtroCliente} onChange={e => setFiltroCliente(e.target.value)} placeholder="Nome do cliente"
+              style={{ width: 200, padding: "9px 12px", borderRadius: 8, border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#0F172A", fontSize: 13, fontFamily: "inherit", outline: "none" }} />
+          </div>
+
+          {/* Linha 2: chips setor + status + contador */}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 2 }}>Setor:</span>
+            {[{ label: "Todos", val: "" }, { label: "ARQ", val: "Arquitetura" }, { label: "INF", val: "Infraestrutura" }, { label: "SAN", val: "Saneamento" }].map(({ label, val }) => (
+              <button key={label} onClick={() => setFiltroSetor(val)}
+                style={{ padding: "4px 12px", borderRadius: 8, border: "1.5px solid", fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
+                  borderColor: filtroSetor === val ? "#7C3AED" : "#E2E8F0",
+                  background: filtroSetor === val ? "#EDE9FE" : "#fff",
+                  color: filtroSetor === val ? "#7C3AED" : "#64748B",
+                }}>
+                {label}
               </button>
             ))}
-            <select value={filtroCliente} onChange={e => setFiltroCliente(e.target.value)}
-              style={{ padding: "5px 12px", borderRadius: 20, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#64748B", fontSize: 12, fontFamily: "inherit", outline: "none", cursor: "pointer" }}>
-              <option value="">Todos os clientes</option>
-              {clientesUnicos.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}
-              style={{ padding: "5px 12px", borderRadius: 20, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#64748B", fontSize: 12, fontFamily: "inherit", outline: "none", cursor: "pointer" }}>
-              <option value="">Todos os status</option>
-              {statusUnicos.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <input value={filtroBusca} onChange={e => setFiltroBusca(e.target.value)} placeholder="Buscar projeto..."
-              style={{ padding: "5px 12px", borderRadius: 20, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#0F172A", fontSize: 12, fontFamily: "inherit", outline: "none", flex: 1, minWidth: 150 }} />
-            {(filtroSetor || filtroCliente || filtroStatus !== "Em Andamento" || filtroBusca) && (
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginLeft: 8, marginRight: 2 }}>Status:</span>
+            {[
+              { label: "Backlog",                color: "#7C3AED", bg: "#EDE9FE" },
+              { label: "Em Andamento",           color: "#D97706", bg: "#FEF3C7" },
+              { label: "Em Análise",             color: "#0891B2", bg: "#CFFAFE" },
+              { label: "Paralisado",             color: "#DC2626", bg: "#FEE2E2" },
+              { label: "Concluído",              color: "#16A34A", bg: "#DCFCE7" },
+              { label: "Arquivado",              color: "#475569", bg: "#E2E8F0" },
+              { label: "Aguardando Faturamento", color: "#1D4ED8", bg: "#DBEAFE" },
+              { label: "Pendência",              color: "#BE185D", bg: "#FCE7F3" },
+            ].map(({ label, color, bg }) => {
+              const active = filtroStatus === label || (label === "Em Andamento" && filtroStatus === "Em Andamento")
+              return (
+                <button key={label} onClick={() => setFiltroStatus(active ? "" : label)}
+                  style={{ padding: "4px 12px", borderRadius: 8, border: "2px solid", fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
+                    borderColor: color, background: active ? bg : `${bg}55`, color: color,
+                    opacity: active ? 1 : 0.75, boxShadow: active ? `0 0 0 2px ${color}33` : "none",
+                  }}>
+                  {label}
+                </button>
+              )
+            })}
+            {(filtroSetor || filtroStatus !== "Em Andamento" || filtroBusca || filtroCliente) && (
               <button onClick={() => { setFiltroSetor(""); setFiltroCliente(""); setFiltroStatus("Em Andamento"); setFiltroBusca("") }}
-                style={{ padding: "5px 12px", borderRadius: 20, border: "1.5px solid #FCA5A5", background: "#FEF2F2", color: "#DC2626", fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
+                style={{ padding: "4px 12px", borderRadius: 8, border: "1.5px solid #FECACA", background: "#FEF2F2", color: "#DC2626", fontSize: 12, fontWeight: 700, cursor: "pointer", marginLeft: 4 }}>
                 Limpar
               </button>
             )}
+            <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 600, color: "#94A3B8" }}>
+              {loadingProjetos ? "..." : `${projetosFiltrados.length} de ${projetos.length} projeto${projetos.length !== 1 ? "s" : ""}`}
+            </span>
           </div>
-          {/* Select filtrado */}
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <select value={projetoId} onChange={e => { setProjetoId(e.target.value); setTab("planejamento") }} disabled={loadingProjetos}
-              style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#0F172A", fontSize: 14, fontFamily: "inherit", outline: "none" }}>
-              <option value="">— {projetosFiltrados.length} projeto(s) disponível(is) —</option>
-              {projetosFiltrados.map(p => <option key={p.ID_Projeto} value={p.ID_Projeto}>{p.Nome}{p.Cliente ? ` · ${p.Cliente}` : ""} [{p.Status}]</option>)}
-            </select>
-          </div>
+
+          {/* Select de projeto */}
+          <select value={projetoId} onChange={e => { setProjetoId(e.target.value); setTab("planejamento") }} disabled={loadingProjetos}
+            style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#0F172A", fontSize: 14, fontFamily: "inherit", outline: "none" }}>
+            <option value="">— {projetosFiltrados.length} projeto(s) disponível(is) —</option>
+            {projetosFiltrados.map(p => <option key={p.ID_Projeto} value={p.ID_Projeto}>{p.Nome}{p.Cliente ? ` · ${p.Cliente}` : ""} [{p.Status}]</option>)}
+          </select>
         </div>
       )}
 
