@@ -571,15 +571,11 @@ export default function PlanejamentoFinanceiro() {
       {/* ── Project selector com filtros ── */}
       {!paramId && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
-          {/* Linha 1: busca + cliente */}
-          <div style={{ display: "flex", gap: 8 }}>
-            <div style={{ position: "relative", flex: 1 }}>
-              <Search size={16} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94A3B8", pointerEvents: "none" }} />
-              <input value={filtroBusca} onChange={e => setFiltroBusca(e.target.value)} placeholder="Buscar por projeto, cliente ou número..."
-                style={{ width: "100%", padding: "9px 12px 9px 40px", borderRadius: 8, border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#0F172A", fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
-            </div>
-            <input value={filtroCliente} onChange={e => setFiltroCliente(e.target.value)} placeholder="Nome do cliente"
-              style={{ width: 200, padding: "9px 12px", borderRadius: 8, border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#0F172A", fontSize: 13, fontFamily: "inherit", outline: "none" }} />
+          {/* Linha 1: busca única */}
+          <div style={{ position: "relative" }}>
+            <Search size={16} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94A3B8", pointerEvents: "none" }} />
+            <input value={filtroBusca} onChange={e => { setFiltroBusca(e.target.value); setFiltroCliente("") }} placeholder="Buscar por projeto, cliente ou número..."
+              style={{ width: "100%", padding: "9px 12px 9px 40px", borderRadius: 8, border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#0F172A", fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
           </div>
 
           {/* Linha 2: chips setor + status + contador */}
@@ -617,7 +613,7 @@ export default function PlanejamentoFinanceiro() {
                 </button>
               )
             })}
-            {(filtroSetor || filtroStatus !== "Em Andamento" || filtroBusca || filtroCliente) && (
+            {(filtroSetor || filtroStatus !== "Em Andamento" || filtroBusca) && (
               <button onClick={() => { setFiltroSetor(""); setFiltroCliente(""); setFiltroStatus("Em Andamento"); setFiltroBusca("") }}
                 style={{ padding: "4px 12px", borderRadius: 8, border: "1.5px solid #FECACA", background: "#FEF2F2", color: "#DC2626", fontSize: 12, fontWeight: 700, cursor: "pointer", marginLeft: 4 }}>
                 Limpar
