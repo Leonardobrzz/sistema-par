@@ -57,7 +57,7 @@ function calcPAR(form) {
   const totalEquipe = (form.equipe || []).reduce((s, e) => s + pBR(e.horas) * (pBR(e.mediaHora) || 36.4), 0)
   const totalDespesas = (form.despesas || []).reduce((s, d) => s + pBR(d.valor), 0)
   const totalDespesasInternas = (form.despesasInternas || []).reduce((s, d) => s + pBR(d.custo), 0)
-  const totalCustos = totalTerceiros + totalEquipe + totalDespesasInternas + totalDespesas
+  const totalCustos = impostos + taxaAdm + comissao + totalTerceiros + totalEquipe + totalDespesasInternas + totalDespesas
   const lucro = receitaLiquida - totalCustos
   const lucroPerc = V > 0 ? (lucro / V) * 100 : 0
   const percTerceiros = V > 0 ? (totalTerceiros / V) * 100 : 0
