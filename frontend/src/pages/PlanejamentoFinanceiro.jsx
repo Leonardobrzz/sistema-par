@@ -1258,80 +1258,113 @@ export default function PlanejamentoFinanceiro() {
                 </div>
               </div>
 
-              {/* ── EQUIPE INTERNA + DESPESAS INTERNAS lado a lado ── */}
-              {((comparativo.equipePlanejada?.length > 0) || (comparativo.despesasPlanejadas?.length > 0)) && (
-                <div style={{ display: "grid", gridTemplateColumns: comparativo.equipePlanejada?.length > 0 && comparativo.despesasPlanejadas?.length > 0 ? "1fr 1fr" : "1fr", gap: 16 }}>
-
-                  {/* Equipe Interna */}
-                  {comparativo.equipePlanejada?.length > 0 && (() => {
-                    const totalPlan = comparativo.equipePlanejada.reduce((s, e) => s + e.custoPlan, 0)
-                    const totalReal = comparativo.equipePlanejada.reduce((s, e) => s + e.custoReal, 0)
-                    const desvio = totalReal - totalPlan
-                    return (
-                      <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
-                        <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>👥 Equipe Interna</span>
-                          <div style={{ display: "flex", gap: 16 }}>
-                            <div style={{ textAlign: "right" }}>
-                              <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Planejado</div>
-                              <div style={{ fontSize: 13, fontWeight: 800, color: "#7C3AED" }}>{fmt(totalPlan)}</div>
-                            </div>
-                            <div style={{ textAlign: "right" }}>
-                              <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Real</div>
-                              <div style={{ fontSize: 13, fontWeight: 800, color: desvio > 0 ? "#DC2626" : "#15803D" }}>{fmt(totalReal)}</div>
-                            </div>
-                            <div style={{ textAlign: "right" }}>
-                              <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Desvio</div>
-                              <div style={{ fontSize: 13, fontWeight: 800, color: desvio > 0 ? "#DC2626" : desvio < 0 ? "#15803D" : "#64748B" }}>{desvio >= 0 ? "+" : ""}{fmt(desvio)}</div>
-                            </div>
-                          </div>
+              {/* ── TERCEIRIZADOS — Previsto vs Gasto ── */}
+              {(() => {
+                const previsto = comparativo.terceirizadosPlanejados?.total || 0
+                const gasto = comparativo.despesasOPP?.totalGasto || 0
+                const saldo = previsto - gasto
+                const itens = comparativo.terceirizadosPlanejados?.itens || []
+                return (previsto > 0 || gasto > 0) ? (
+                  <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
+                    <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>🏗 Terceirizados</span>
+                      <div style={{ display: "flex", gap: 20 }}>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Total Previsto</div>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: "#7C3AED" }}>{fmt(previsto)}</div>
                         </div>
-                        <div style={{ padding: "12px 20px", display: "flex", flexDirection: "column", gap: 6 }}>
-                          {comparativo.equipePlanejada.map((e, i) => (
-                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "#F8FAFC", borderRadius: 8 }}>
-                              <div style={{ width: 26, height: 26, borderRadius: "50%", background: "#EDE9FE", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 11, color: "#7C3AED", flexShrink: 0 }}>
-                                {(e.nome || "?")[0].toUpperCase()}
-                              </div>
-                              <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: "#0F172A" }}>{e.nome || "—"}</span>
-                              <span style={{ fontSize: 11, color: "#64748B" }}>{e.horasPlan}h plan.</span>
-                              <span style={{ fontSize: 11, color: "#0F172A", fontWeight: 700 }}>{e.horasReal}h real</span>
-                              <span style={{ fontSize: 11, color: "#94A3B8" }}>@ {fmt(e.valorHora)}/h</span>
-                              <div style={{ textAlign: "right", minWidth: 80 }}>
-                                <div style={{ fontSize: 11, color: "#64748B" }}>{fmt(e.custoPlan)}</div>
-                                <div style={{ fontSize: 12, fontWeight: 700, color: e.custoReal > e.custoPlan ? "#DC2626" : "#15803D" }}>{fmt(e.custoReal)}</div>
-                              </div>
-                            </div>
-                          ))}
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Gasto (OPP)</div>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: gasto > previsto ? "#DC2626" : "#0F172A" }}>{fmt(gasto)}</div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Saldo Atual</div>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: saldo < 0 ? "#DC2626" : "#15803D" }}>{fmt(saldo)}</div>
                         </div>
                       </div>
-                    )
-                  })()}
-
-                  {/* Despesas Internas */}
-                  {comparativo.despesasPlanejadas?.length > 0 && (() => {
-                    const total = comparativo.despesasPlanejadas.reduce((s, d) => s + d.valor, 0)
-                    return (
-                      <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
-                        <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>📎 Despesas Internas</span>
-                          <div style={{ textAlign: "right" }}>
-                            <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Total Planejado</div>
-                            <div style={{ fontSize: 13, fontWeight: 800, color: "#0F172A" }}>{fmt(total)}</div>
+                    </div>
+                    {itens.length > 0 && (
+                      <div style={{ padding: "12px 20px", display: "flex", flexDirection: "column", gap: 6 }}>
+                        {itens.map((t, i) => (
+                          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", background: "#F8FAFC", borderRadius: 8 }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: "#0F172A" }}>{t.descricao || "—"}</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>{fmt(t.custo)}</span>
                           </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : null
+              })()}
+
+              {/* ── DESPESAS INTERNAS ── */}
+              {comparativo.despesasPlanejadas?.length > 0 && (() => {
+                const total = comparativo.despesasPlanejadas.reduce((s, d) => s + d.valor, 0)
+                return (
+                  <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
+                    <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>📎 Despesas Internas</span>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Total Planejado</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: "#0F172A" }}>{fmt(total)}</div>
+                      </div>
+                    </div>
+                    <div style={{ padding: "12px 20px", display: "flex", flexDirection: "column", gap: 6 }}>
+                      {comparativo.despesasPlanejadas.map((d, i) => (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", background: "#F8FAFC", borderRadius: 8 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "#0F172A" }}>{d.descricao || "—"}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>{fmt(d.valor)}</span>
                         </div>
-                        <div style={{ padding: "12px 20px", display: "flex", flexDirection: "column", gap: 6 }}>
-                          {comparativo.despesasPlanejadas.map((d, i) => (
-                            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", background: "#F8FAFC", borderRadius: 8 }}>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: "#0F172A" }}>{d.descricao || "—"}</span>
-                              <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>{fmt(d.valor)}</span>
-                            </div>
-                          ))}
+                      ))}
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* ── EQUIPE INTERNA ── */}
+              {comparativo.equipePlanejada?.length > 0 && (() => {
+                const totalPlan = comparativo.equipePlanejada.reduce((s, e) => s + e.custoPlan, 0)
+                const totalReal = comparativo.equipePlanejada.reduce((s, e) => s + e.custoReal, 0)
+                const desvio = totalReal - totalPlan
+                return (
+                  <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
+                    <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>👥 Equipe Interna</span>
+                      <div style={{ display: "flex", gap: 20 }}>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Planejado</div>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: "#7C3AED" }}>{fmt(totalPlan)}</div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Real</div>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: desvio > 0 ? "#DC2626" : "#15803D" }}>{fmt(totalReal)}</div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Desvio</div>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: desvio > 0 ? "#DC2626" : desvio < 0 ? "#15803D" : "#64748B" }}>{desvio >= 0 ? "+" : ""}{fmt(desvio)}</div>
                         </div>
                       </div>
-                    )
-                  })()}
-                </div>
-              )}
+                    </div>
+                    <div style={{ padding: "12px 20px", display: "flex", flexDirection: "column", gap: 6 }}>
+                      {comparativo.equipePlanejada.map((e, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "#F8FAFC", borderRadius: 8 }}>
+                          <div style={{ width: 26, height: 26, borderRadius: "50%", background: "#EDE9FE", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 11, color: "#7C3AED", flexShrink: 0 }}>
+                            {(e.nome || "?")[0].toUpperCase()}
+                          </div>
+                          <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: "#0F172A" }}>{e.nome || "—"}</span>
+                          <span style={{ fontSize: 11, color: "#64748B" }}>{e.horasPlan}h plan.</span>
+                          <span style={{ fontSize: 11, color: "#0F172A", fontWeight: 700 }}>{e.horasReal}h real</span>
+                          <span style={{ fontSize: 11, color: "#94A3B8" }}>@ {fmt(e.valorHora)}/h</span>
+                          <div style={{ textAlign: "right", minWidth: 80 }}>
+                            <div style={{ fontSize: 11, color: "#64748B" }}>{fmt(e.custoPlan)}</div>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: e.custoReal > e.custoPlan ? "#DC2626" : "#15803D" }}>{fmt(e.custoReal)}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })()}
 
               {/* ── DATAS + MEDIÇÕES lado a lado ── */}
               <div style={{ display: "grid", gridTemplateColumns: comparativo.medicoes?.length > 0 ? "1fr 1fr" : "1fr", gap: 16 }}>
