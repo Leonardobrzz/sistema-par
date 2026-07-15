@@ -434,6 +434,84 @@ function DetalheRelatorio({ plano }) {
   )
 }
 
+function imprimirConsolidado(lista, detalhes) {
+  const fD = (s) => {
+    if (!s) return "—"
+    const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/)
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : s
+  }
+  const fV = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0)
+
+  const blocos = lista.map(p => {
+    const d = detalhes[p.ID_Projeto]?.dadosCompletos || detalhes[p.ID_Projeto] || {}
+    const medicoes = d.medicoes || d._baseline?.medicoes || []
+    const valorContrato = pBR(d.valorContrato || p.Valor_Contrato)
+
+    const linhasMedicoes = medicoes.length > 0
+      ? `<table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:12px">
+          <thead>
+            <tr style="background:#F1F5F9">
+              <th style="padding:6px 10px;text-align:left;font-weight:700;color:#475569;border:1px solid #E2E8F0">Etapa</th>
+              <th style="padding:6px 10px;text-align:center;font-weight:700;color:#475569;border:1px solid #E2E8F0">%</th>
+              <th style="padding:6px 10px;text-align:right;font-weight:700;color:#475569;border:1px solid #E2E8F0">Valor</th>
+              <th style="padding:6px 10px;text-align:center;font-weight:700;color:#475569;border:1px solid #E2E8F0">Data Prevista</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${medicoes.map((m, i) => `
+              <tr style="background:${i % 2 === 0 ? '#fff' : '#F8FAFC'}">
+                <td style="padding:6px 10px;border:1px solid #E2E8F0;color:#0F172A;font-weight:600">${m.etapa || "—"}</td>
+                <td style="padding:6px 10px;border:1px solid #E2E8F0;text-align:center;color:#7C3AED;font-weight:700">${m.percentual ? m.percentual + "%" : "—"}</td>
+                <td style="padding:6px 10px;border:1px solid #E2E8F0;text-align:right;color:#0F172A;font-weight:700">${m.valor ? fV(pBR(m.valor)) : "—"}</td>
+                <td style="padding:6px 10px;border:1px solid #E2E8F0;text-align:center;color:#475569">${fD(m.dataPrevisao || m.data_previsao)}</td>
+              </tr>`).join("")}
+          </tbody>
+        </table>`
+      : `<p style="font-size:12px;color:#94A3B8;margin:6px 0">Nenhuma medição cadastrada.</p>`
+
+    return `
+      <div style="break-inside:avoid;margin-bottom:28px;border:1.5px solid #E2E8F0;border-radius:10px;overflow:hidden">
+        <div style="background:#F8FAFC;padding:14px 18px;border-bottom:1px solid #E2E8F0">
+          <div style="font-size:15px;font-weight:800;color:#0F172A">${p.Nome_Projeto || "—"}</div>
+          <div style="font-size:12px;color:#64748B;margin-top:3px">${p.Cliente || "—"}</div>
+        </div>
+        <div style="padding:12px 18px">
+          <div style="display:inline-block;background:#EDE9FE;color:#7C3AED;font-weight:700;font-size:12px;padding:4px 12px;border-radius:6px;margin-bottom:10px">
+            Valor do Contrato: ${fV(valorContrato)}
+          </div>
+          <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Cronograma de Medições</div>
+          ${linhasMedicoes}
+        </div>
+      </div>`
+  }).join("")
+
+  const html = `<!DOCTYPE html>
+  <html><head>
+    <meta charset="utf-8"/>
+    <title>Relatório Consolidado — Planejamentos Aprovados</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: Arial, sans-serif; color: #0F172A; background: #fff; padding: 32px; }
+      @media print { body { padding: 16px; } }
+    </style>
+  </head><body>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px;border-bottom:2.5px solid #7C3AED;padding-bottom:16px">
+      <div>
+        <div style="font-size:20px;font-weight:900;color:#0F172A;text-transform:uppercase;letter-spacing:0.04em">Relatório Consolidado</div>
+        <div style="font-size:13px;color:#64748B;margin-top:4px">Planejamentos Aprovados — ${new Date().toLocaleDateString("pt-BR")}</div>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:#7C3AED;background:#EDE9FE;padding:6px 14px;border-radius:8px">${lista.length} projeto(s)</div>
+    </div>
+    ${blocos}
+  </body></html>`
+
+  const w = window.open("", "_blank")
+  w.document.write(html)
+  w.document.close()
+  w.focus()
+  setTimeout(() => w.print(), 400)
+}
+
 export default function RelatoriosPlanejamentoPAR() {
   const navigate = useNavigate()
   const [planejamentos, setPlanejamentos] = useState([])
@@ -494,6 +572,10 @@ export default function RelatoriosPlanejamentoPAR() {
         <span style={{ fontSize: 12, fontWeight: 700, color: "#15803D", background: "#DCFCE7", padding: "4px 12px", borderRadius: 20 }}>
           {filtrados.length} projeto(s) aprovado(s)
         </span>
+        <button onClick={() => imprimirConsolidado(filtrados, detalhes)}
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "none", background: "#7C3AED", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+          <Printer size={15} /> PDF Consolidado
+        </button>
       </div>
 
       {/* Filtros */}
