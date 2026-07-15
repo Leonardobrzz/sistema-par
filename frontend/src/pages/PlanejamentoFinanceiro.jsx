@@ -57,13 +57,14 @@ function calcPAR(form) {
   const totalEquipe = (form.equipe || []).reduce((s, e) => s + pBR(e.horas) * (pBR(e.mediaHora) || 36.4), 0)
   const totalDespesas = (form.despesas || []).reduce((s, d) => s + pBR(d.valor), 0)
   const totalDespesasInternas = (form.despesasInternas || []).reduce((s, d) => s + pBR(d.custo), 0)
-  const totalCustos = impostos + taxaAdm + comissao + totalTerceiros + totalEquipe + totalDespesasInternas + totalDespesas
+  const totalCustos = totalTerceiros + totalEquipe + totalDespesasInternas + totalDespesas
+  const custoTotalDisplay = impostos + taxaAdm + comissao + totalTerceiros + totalEquipe + totalDespesasInternas + totalDespesas
   const lucro = receitaLiquida - totalCustos
   const lucroPerc = V > 0 ? (lucro / V) * 100 : 0
   const percTerceiros = V > 0 ? (totalTerceiros / V) * 100 : 0
   const percDespesasGerais = V > 0 ? (totalDespesas / V) * 100 : 0
   const custoProducaoPerc = V > 0 ? ((totalEquipe + totalDespesasInternas + totalTerceiros) / V) * 100 : 0
-  return { V, ip, ta, co, impostos, taxaAdm, comissao, receitaLiquida, totalTerceiros, totalEquipe, totalDespesasInternas, totalDespesas, totalCustos, lucro, lucroPerc, percTerceiros, percDespesasGerais, custoProducaoPerc }
+  return { V, ip, ta, co, impostos, taxaAdm, comissao, receitaLiquida, totalTerceiros, totalEquipe, totalDespesasInternas, totalDespesas, totalCustos, custoTotalDisplay, lucro, lucroPerc, percTerceiros, percDespesasGerais, custoProducaoPerc }
 }
 
 const FORM0 = {
@@ -672,7 +673,7 @@ export default function PlanejamentoFinanceiro() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 10 }}>
             {[
               { label: "Valor do Contrato", val: fmt(par.V),                                                ok: true },
-              { label: "Custo Total",       val: fmt(par.totalCustos),                                     ok: true },
+              { label: "Custo Total",       val: fmt(par.custoTotalDisplay),                               ok: true },
               { label: "Lucro Estimado",    val: fmt(par.lucro),          ok: margemOk, sub: `${fmtN(par.lucroPerc)}% (mín 23%)` },
               { label: "Custo de Produção", val: fmt(par.totalEquipe + par.totalDespesasInternas + par.totalTerceiros), ok: prodOk, sub: `${fmtN(par.custoProducaoPerc)}% (máx 30%)` },
               { label: "Total Terceirizados", val: fmt(par.totalTerceiros), ok: tercOk },
