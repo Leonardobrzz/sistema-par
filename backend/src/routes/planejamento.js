@@ -716,13 +716,26 @@ router.get('/:id/comparativo', async (req, res, next) => {
       // Equipe interna — custo planejado vs rastreado
       equipePlanejada: (() => {
         const equipe = baseline?.horasPorColaborador || dados.equipe || [];
+        const totalHorasRastreadasProj = parseFloat(totalHorasRastreadas.toFixed(2));
+        const totalHorasPlan = equipe.reduce((s, e) => s + parseFloat(e.horasEstimadas || e.horas_estimadas || e.horas || 0), 0);
+
+        // Tenta casar pelo nome; se não achar, distribui proporcionalmente pelas horas rastreadas totais
+        const horasMatchadas = equipe.reduce((s, e) => {
+          const nome = e.colaborador || e.nome || e.membro || '';
+          return s + (horasReaisPorColab[nome] || 0);
+        }, 0);
+        const horasNaoMatchadas = Math.max(0, totalHorasRastreadasProj - horasMatchadas);
+
         return equipe.map(e => {
           const nome = e.colaborador || e.nome || e.membro || '';
           const horasPlan = parseFloat(e.horasEstimadas || e.horas_estimadas || e.horas || 0);
           const valorHora = parseFloat(e.mediaHora || e.valor_hora || CUSTO_HORA_INTERNA);
           const custoPlan = horasPlan * valorHora;
-          const horasReal = parseFloat((horasReaisPorColab[nome] || 0).toFixed(2));
-          const custoReal = horasReal * valorHora;
+          // Horas reais = match direto + proporção das não-matchadas
+          const horasMatch = horasReaisPorColab[nome] || 0;
+          const proporcao = totalHorasPlan > 0 ? horasPlan / totalHorasPlan : 0;
+          const horasReal = parseFloat((horasMatch + horasNaoMatchadas * proporcao).toFixed(2));
+          const custoReal = parseFloat((horasReal * valorHora).toFixed(2));
           return { nome, horasPlan, valorHora, custoPlan, horasReal, custoReal };
         });
       })(),
