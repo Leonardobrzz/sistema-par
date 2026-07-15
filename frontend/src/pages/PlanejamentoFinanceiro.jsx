@@ -103,7 +103,7 @@ function BurnBar({ label, planejado, real }) {
 
 // ── Main component ───────────────────────────────────────────────────────────
 function DespesasOPPCard({ despesasOPP, fmt }) {
-  const [abertos, setAbertos] = React.useState({})
+  const [abertos, setAbertos] = useState({})
   const toggle = (gi) => setAbertos(prev => ({ ...prev, [gi]: !prev[gi] }))
   return (
     <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
