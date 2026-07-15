@@ -102,6 +102,69 @@ function BurnBar({ label, planejado, real }) {
 }
 
 // ── Main component ───────────────────────────────────────────────────────────
+function DespesasOPPCard({ despesasOPP, fmt }) {
+  const [abertos, setAbertos] = React.useState({})
+  const toggle = (gi) => setAbertos(prev => ({ ...prev, [gi]: !prev[gi] }))
+  return (
+    <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
+      <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>💰 Despesas Reais — OPP</span>
+        <div style={{ display: "flex", gap: 20 }}>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Total Previsto</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A" }}>{fmt(despesasOPP.totalGasto)}</div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Total Pago</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#15803D" }}>{fmt(despesasOPP.totalPago)}</div>
+          </div>
+        </div>
+      </div>
+      <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
+        {despesasOPP.porCategoria.map((grupo, gi) => {
+          const aberto = !!abertos[gi]
+          return (
+            <div key={gi} style={{ border: "1px solid #F1F5F9", borderRadius: 10, overflow: "hidden" }}>
+              <button onClick={() => toggle(gi)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "#F8FAFC", border: "none", cursor: "pointer", textAlign: "left" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 11, color: "#64748B", display: "inline-block", transform: aberto ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>▶</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>{grupo.categoria || "Sem categoria"}</span>
+                  <span style={{ fontSize: 11, color: "#94A3B8" }}>({grupo.lancamentos.length})</span>
+                </div>
+                <div style={{ display: "flex", gap: 16 }}>
+                  <span style={{ fontSize: 11, color: "#64748B" }}>Previsto: <strong style={{ color: "#0F172A" }}>{fmt(grupo.total)}</strong></span>
+                  <span style={{ fontSize: 11, color: "#64748B" }}>Pago: <strong style={{ color: "#15803D" }}>{fmt(grupo.totalPago)}</strong></span>
+                </div>
+              </button>
+              {aberto && (
+                <div>
+                  {grupo.lancamentos.map((l, li) => (
+                    <div key={li} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 14px 8px 36px", borderTop: "1px solid #F8FAFC", background: "#fff" }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "#0F172A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.descricao || l.fornecedor}</div>
+                        {l.fornecedor && l.fornecedor !== l.descricao && <div style={{ fontSize: 11, color: "#94A3B8" }}>{l.fornecedor}</div>}
+                      </div>
+                      <div style={{ display: "flex", gap: 12, alignItems: "center", flexShrink: 0, marginLeft: 12 }}>
+                        <span style={{ fontSize: 11, color: "#94A3B8", whiteSpace: "nowrap" }}>{l.data ? new Date(l.data).toLocaleDateString("pt-BR") : "—"}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#0F172A", whiteSpace: "nowrap" }}>{fmt(l.valor)}</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, whiteSpace: "nowrap",
+                          background: l.liquidado ? "#DCFCE7" : "#FEF9C3",
+                          color: l.liquidado ? "#15803D" : "#92400E" }}>
+                          {l.liquidado ? "Pago" : "Aberto"}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function PlanejamentoFinanceiro() {
   const { id: paramId } = useParams()
   const navigate = useNavigate()
@@ -1446,51 +1509,7 @@ export default function PlanejamentoFinanceiro() {
 
               {/* ── DESPESAS OPP ── */}
               {comparativo.despesasOPP?.temDados ? (
-                <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
-                  <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>💰 Despesas Reais — OPP</span>
-                    <div style={{ display: "flex", gap: 20 }}>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Total Previsto</div>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A" }}>{fmt(comparativo.despesasOPP.totalGasto)}</div>
-                      </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Total Pago</div>
-                        <div style={{ fontSize: 14, fontWeight: 800, color: "#15803D" }}>{fmt(comparativo.despesasOPP.totalPago)}</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
-                    {comparativo.despesasOPP.porCategoria.map((grupo, gi) => (
-                      <div key={gi}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 12px", background: "#F8FAFC", borderRadius: 8, marginBottom: 4 }}>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>{grupo.categoria || "Sem categoria"}</span>
-                          <div style={{ display: "flex", gap: 16 }}>
-                            <span style={{ fontSize: 11, color: "#64748B" }}>Previsto: <strong style={{ color: "#0F172A" }}>{fmt(grupo.total)}</strong></span>
-                            <span style={{ fontSize: 11, color: "#64748B" }}>Pago: <strong style={{ color: "#15803D" }}>{fmt(grupo.totalPago)}</strong></span>
-                          </div>
-                        </div>
-                        {grupo.lancamentos.map((l, li) => (
-                          <div key={li} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 12px 7px 24px", borderBottom: li < grupo.lancamentos.length - 1 ? "1px solid #F8FAFC" : "none" }}>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 12, fontWeight: 600, color: "#0F172A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.descricao || l.fornecedor}</div>
-                              {l.fornecedor && l.fornecedor !== l.descricao && <div style={{ fontSize: 11, color: "#94A3B8" }}>{l.fornecedor}</div>}
-                            </div>
-                            <div style={{ display: "flex", gap: 12, alignItems: "center", flexShrink: 0, marginLeft: 12 }}>
-                              <span style={{ fontSize: 11, color: "#94A3B8", whiteSpace: "nowrap" }}>{l.data ? new Date(l.data).toLocaleDateString("pt-BR") : "—"}</span>
-                              <span style={{ fontSize: 12, fontWeight: 700, color: "#0F172A", whiteSpace: "nowrap" }}>{fmt(l.valor)}</span>
-                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, whiteSpace: "nowrap",
-                                background: l.liquidado ? "#DCFCE7" : "#FEF9C3",
-                                color: l.liquidado ? "#15803D" : "#92400E" }}>
-                                {l.liquidado ? "Pago" : "Aberto"}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <DespesasOPPCard despesasOPP={comparativo.despesasOPP} fmt={fmt} />
               ) : (
                 <div style={{ background: "#F8FAFC", borderRadius: 14, border: "1.5px solid #E2E8F0", padding: "24px", color: "#94A3B8", fontSize: 13, textAlign: "center" }}>
                   Nenhum lançamento OPP encontrado — preencha o campo "Nome do Centro de Custo" na aba Planejamento.
