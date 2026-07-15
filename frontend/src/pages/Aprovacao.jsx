@@ -199,7 +199,7 @@ export default function Aprovacao() {
           </button>
         ))}
         <input value={filtroBusca} onChange={e => setFiltroBusca(e.target.value)} placeholder="Buscar projeto..."
-          style={{ padding: "6px 14px", borderRadius: 20, border: "1.5px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#e2e8f0", fontSize: 12, fontFamily: "inherit", outline: "none", width: 180 }} />
+          style={{ padding: "6px 14px", borderRadius: 20, border: "1.5px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#0F172A", fontSize: 12, fontFamily: "inherit", outline: "none", width: 180 }} />
         {(filtroSetor || filtroBusca) && (
           <button onClick={() => { setFiltroSetor(""); setFiltroBusca("") }}
             style={{ padding: "5px 14px", borderRadius: 20, border: "1.5px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.08)", color: "#f87171", fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
@@ -244,7 +244,7 @@ export default function Aprovacao() {
             ) : (
               <>
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: "#e2e8f0", marginBottom: 4 }}>{selected.Nome_Projeto || selected.ID_Projeto}</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#0F172A", marginBottom: 4 }}>{selected.Nome_Projeto || selected.ID_Projeto}</div>
                   <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#64748B", flexWrap: "wrap" }}>
                     <span>Valor: <strong style={{ color: "#a78bfa" }}>{fmt(selected.Valor_Contrato)}</strong></span>
                     <span>OS: <strong>{selected.Nr_Contrato_OS || "—"}</strong></span>
@@ -269,7 +269,7 @@ export default function Aprovacao() {
                 <div style={{ marginBottom: 16 }}>
                   <label style={{ fontWeight: 600, fontSize: 13, color: "#94a3b8", display: "block", marginBottom: 6 }}>Justificativa (opcional)</label>
                   <textarea value={justificativa} onChange={e => setJustificativa(e.target.value)} rows={3}
-                    style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#e2e8f0", fontSize: 13, fontFamily: "inherit", resize: "none", outline: "none" }} />
+                    style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#0F172A", fontSize: 13, fontFamily: "inherit", resize: "none", outline: "none" }} />
                 </div>
 
                 <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
@@ -323,7 +323,7 @@ export default function Aprovacao() {
               <div style={{ padding: 32, textAlign: "center", color: "#64748B" }}>Carregando baselines...</div>
             ) : (
               <>
-                <div style={{ fontSize: 15, fontWeight: 800, color: "#e2e8f0", marginBottom: 16 }}>{selected.Nome_Projeto}</div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: "#0F172A", marginBottom: 16 }}>{selected.Nome_Projeto}</div>
 
                 {/* Timeline de versões */}
                 {(historicoBaselines.length > 0 || baselineInfo) ? (
@@ -365,7 +365,7 @@ export default function Aprovacao() {
 
                 {/* Detalhe da versão selecionada */}
                 {versaoViewing && (
-                  <div style={{ marginBottom: 20, padding: "16px 18px", borderRadius: 12, background: "rgba(15,23,42,0.5)", border: "1px solid rgba(99,102,241,0.3)" }}>
+                  <div style={{ marginBottom: 20, padding: "16px 18px", borderRadius: 12, background: "#fff", border: "1.5px solid #E2E8F0", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                       <div style={{ fontWeight: 800, fontSize: 14, color: "#a78bfa" }}>
                         🔒 {versaoViewing.versaoLabel || `Versão ${versaoViewing.versao}`}
@@ -389,9 +389,9 @@ export default function Aprovacao() {
                         ["Comissão", `${versaoViewing.comissaoPerc || 7.5}%`],
                         ["Receita Líquida", fmtCur((versaoViewing.valorContrato || 0) * (1 - (versaoViewing.impostosPerc || 0) / 100 - (versaoViewing.taxaAdmPerc || 0) / 100 - (versaoViewing.comissaoPerc || 7.5) / 100))],
                       ].map(([label, val]) => (
-                        <div key={label} style={{ padding: "8px 10px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                        <div key={label} style={{ padding: "8px 10px", borderRadius: 8, background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
                           <div style={{ fontSize: 10, color: "#64748B", fontWeight: 600 }}>{label}</div>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: "#e2e8f0", marginTop: 2 }}>{val}</div>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: "#0F172A", marginTop: 2 }}>{val}</div>
                         </div>
                       ))}
                     </div>
@@ -404,9 +404,9 @@ export default function Aprovacao() {
                         ["Entrega Contrato", versaoViewing.dataEntregaContrato],
                         ["Entrega Planejada", versaoViewing.dataEntregaPlanejada],
                       ].map(([l, d]) => (
-                        <div key={l} style={{ padding: "8px 10px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                        <div key={l} style={{ padding: "8px 10px", borderRadius: 8, background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
                           <div style={{ fontSize: 10, color: "#64748B", fontWeight: 600 }}>{l}</div>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: "#e2e8f0", marginTop: 2 }}>{d ? new Date(d).toLocaleDateString("pt-BR") : "—"}</div>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: "#0F172A", marginTop: 2 }}>{d ? new Date(d).toLocaleDateString("pt-BR") : "—"}</div>
                         </div>
                       ))}
                     </div>
@@ -419,8 +419,8 @@ export default function Aprovacao() {
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 14 }}>
                           {versaoViewing.horasPorColaborador.map((m, i) => (
-                            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", fontSize: 12 }}>
-                              <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{m.colaborador}</span>
+                            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", borderRadius: 8, background: "#F8FAFC", border: "1px solid #E2E8F0", fontSize: 12 }}>
+                              <span style={{ color: "#0F172A", fontWeight: 600 }}>{m.colaborador}</span>
                               <span style={{ color: "#64748B" }}>{m.horasEstimadas}h &nbsp;·&nbsp; {fmtCur(m.custoEstimado)}</span>
                             </div>
                           ))}
@@ -434,8 +434,8 @@ export default function Aprovacao() {
                         <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>Terceirizados</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 14 }}>
                           {versaoViewing.terceirizados.map((t, i) => (
-                            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", fontSize: 12 }}>
-                              <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{t.descricao}</span>
+                            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", borderRadius: 8, background: "#F8FAFC", border: "1px solid #E2E8F0", fontSize: 12 }}>
+                              <span style={{ color: "#0F172A", fontWeight: 600 }}>{t.descricao}</span>
                               <span style={{ color: "#a78bfa", fontWeight: 700 }}>{fmtCur(t.custo)}</span>
                             </div>
                           ))}
@@ -449,8 +449,8 @@ export default function Aprovacao() {
                         <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>Despesas Gerais</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 14 }}>
                           {versaoViewing.despesas.map((d, i) => (
-                            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", fontSize: 12 }}>
-                              <span style={{ color: "#e2e8f0" }}>{d.descricao}</span>
+                            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", borderRadius: 8, background: "#F8FAFC", border: "1px solid #E2E8F0", fontSize: 12 }}>
+                              <span style={{ color: "#0F172A" }}>{d.descricao}</span>
                               <span style={{ color: "#64748B", fontWeight: 700 }}>{fmtCur(d.valor)}</span>
                             </div>
                           ))}
@@ -464,9 +464,9 @@ export default function Aprovacao() {
                         <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 }}>Medições Planejadas</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                           {versaoViewing.medicoes.map((m, i) => (
-                            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", fontSize: 12 }}>
+                            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", borderRadius: 8, background: "#F8FAFC", border: "1px solid #E2E8F0", fontSize: 12 }}>
                               <span style={{ color: "#94a3b8" }}>{m.etapa || m.descricao || `Medição ${i + 1}`}</span>
-                              <span style={{ color: "#e2e8f0", fontWeight: 700 }}>{m.percentual}% · {fmtCur(m.valor)}</span>
+                              <span style={{ color: "#0F172A", fontWeight: 700 }}>{m.percentual}% · {fmtCur(m.valor)}</span>
                             </div>
                           ))}
                         </div>
