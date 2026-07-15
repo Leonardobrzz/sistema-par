@@ -178,7 +178,7 @@ export default function Aprovacao() {
       {/* Abas */}
       <div style={{ display: "flex", gap: 4, background: "#F1F5F9", borderRadius: 10, padding: 4, width: "fit-content" }}>
         {[{ key: "aprovacao", label: "Aprovacao", icon: ShieldCheckIcon }, { key: "baseline", label: "Baseline PAR", icon: LockClosedIcon }].map(tab => (
-          <button key={tab.key} onClick={() => setAba(tab.key)} style={{
+          <button key={tab.key} onClick={() => { setAba(tab.key); setSelected(null) }} style={{
             padding: "8px 20px", borderRadius: 8, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13,
             background: aba === tab.key ? "#fff" : "transparent",
             color: aba === tab.key ? "#0F172A" : "#64748B",
