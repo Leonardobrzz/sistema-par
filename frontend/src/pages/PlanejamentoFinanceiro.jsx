@@ -1321,6 +1321,93 @@ export default function PlanejamentoFinanceiro() {
                 </div>
               </div>
 
+              {/* ── DATAS + MEDIÇÕES lado a lado ── */}
+              <div style={{ display: "grid", gridTemplateColumns: comparativo.medicoes?.length > 0 ? "1fr 1fr" : "1fr", gap: 16 }}>
+                {/* Datas */}
+                {comparativo.datas && (
+                  <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
+                    <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9" }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>📅 Datas — Planejado vs Atual</span>
+                    </div>
+                    <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+                      {[
+                        { label: "Início O.S.", plan: comparativo.datas.planejado?.dataInicioOS, atual: comparativo.datas.atual?.dataInicioOS },
+                        { label: "Entrega Contrato", plan: comparativo.datas.planejado?.dataEntregaContrato, atual: comparativo.datas.atual?.dataEntregaContrato },
+                        { label: "Entrega Planejada", plan: comparativo.datas.planejado?.dataEntregaPlanejada, atual: comparativo.datas.atual?.dataEntregaPlanejada },
+                      ].map(d => {
+                        const pDate = d.plan ? new Date(d.plan) : null
+                        const aDate = d.atual ? new Date(d.atual) : null
+                        const diff = pDate && aDate ? Math.round((aDate - pDate) / 86400000) : null
+                        return (
+                          <div key={d.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "#F8FAFC", borderRadius: 8 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#475569", minWidth: 130 }}>{d.label}</span>
+                            <div style={{ textAlign: "center", flex: 1 }}>
+                              <div style={{ fontSize: 11, color: "#94A3B8" }}>Plan</div>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>{pDate ? pDate.toLocaleDateString("pt-BR") : "—"}</div>
+                            </div>
+                            <div style={{ textAlign: "center", flex: 1 }}>
+                              <div style={{ fontSize: 11, color: "#94A3B8" }}>Atual</div>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>{aDate ? aDate.toLocaleDateString("pt-BR") : "—"}</div>
+                            </div>
+                            <div style={{ minWidth: 90, textAlign: "right" }}>
+                              {diff !== null && <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: diff > 0 ? "#FEE2E2" : diff < 0 ? "#DCFCE7" : "#F1F5F9", color: diff > 0 ? "#DC2626" : diff < 0 ? "#15803D" : "#64748B" }}>{diff > 0 ? `+${diff}d atraso` : diff < 0 ? `${Math.abs(diff)}d adiant.` : "No prazo"}</span>}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Medições */}
+                {comparativo.medicoes?.length > 0 && (
+                  <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
+                    <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9" }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>📋 Medições — Plan vs Realizado</span>
+                    </div>
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                        <thead>
+                          <tr style={{ background: "#F8FAFC" }}>
+                            {["Etapa", "%", "Prev.", "Realiz.", "Desvio", "Status"].map(h => (
+                              <th key={h} style={{ padding: "9px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {comparativo.medicoes.map((m, i) => (
+                            <tr key={i} style={{ borderTop: "1px solid #F1F5F9", background: m.atrasoDias > 0 ? "rgba(239,68,68,0.03)" : "#fff" }}>
+                              <td style={{ padding: "10px 12px", fontSize: 12, fontWeight: 700, color: "#0F172A" }}>{m.etapa || "—"}</td>
+                              <td style={{ padding: "10px 12px", fontSize: 12, fontWeight: 800, color: "#7C3AED" }}>{m.percentual ? `${m.percentual}%` : "—"}</td>
+                              <td style={{ padding: "10px 12px", fontSize: 11, color: "#64748B", whiteSpace: "nowrap" }}>{m.dataPrevisaoPlanejada ? new Date(m.dataPrevisaoPlanejada).toLocaleDateString("pt-BR") : "—"}</td>
+                              <td style={{ padding: "10px 12px", fontSize: 11, color: "#0F172A", whiteSpace: "nowrap" }}>{m.dataRealizacao ? new Date(m.dataRealizacao).toLocaleDateString("pt-BR") : "—"}</td>
+                              <td style={{ padding: "10px 12px", fontSize: 11, fontWeight: 700, color: m.atrasoDias > 0 ? "#DC2626" : m.atrasoDias < 0 ? "#15803D" : "#94A3B8" }}>
+                                {m.atrasoDias != null ? (m.atrasoDias > 0 ? `+${m.atrasoDias}d` : m.atrasoDias < 0 ? `${m.atrasoDias}d` : "—") : "—"}
+                              </td>
+                              <td style={{ padding: "10px 12px" }}>
+                                <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 5,
+                                  background: m.statusFisico === "Concluída" || m.statusFisico === "Concluido" ? "#DCFCE7" : "#F1F5F9",
+                                  color: m.statusFisico === "Concluída" || m.statusFisico === "Concluido" ? "#15803D" : "#64748B",
+                                }}>{m.statusFisico || "Pendente"}</span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── DESPESAS OPP ── */}
+              {comparativo.despesasOPP?.temDados ? (
+                <DespesasOPPCard despesasOPP={comparativo.despesasOPP} fmt={fmt} />
+              ) : (
+                <div style={{ background: "#F8FAFC", borderRadius: 14, border: "1.5px solid #E2E8F0", padding: "24px", color: "#94A3B8", fontSize: 13, textAlign: "center" }}>
+                  Nenhum lançamento OPP encontrado — preencha o campo "Nome do Centro de Custo" na aba Planejamento.
+                </div>
+              )}
+
               {/* ── TERCEIRIZADOS — Previsto vs Gasto ── */}
               {(() => {
                 const previsto = comparativo.terceirizadosPlanejados?.total || 0
@@ -1428,93 +1515,6 @@ export default function PlanejamentoFinanceiro() {
                   </div>
                 )
               })()}
-
-              {/* ── DATAS + MEDIÇÕES lado a lado ── */}
-              <div style={{ display: "grid", gridTemplateColumns: comparativo.medicoes?.length > 0 ? "1fr 1fr" : "1fr", gap: 16 }}>
-                {/* Datas */}
-                {comparativo.datas && (
-                  <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
-                    <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>📅 Datas — Planejado vs Atual</span>
-                    </div>
-                    <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
-                      {[
-                        { label: "Início O.S.", plan: comparativo.datas.planejado?.dataInicioOS, atual: comparativo.datas.atual?.dataInicioOS },
-                        { label: "Entrega Contrato", plan: comparativo.datas.planejado?.dataEntregaContrato, atual: comparativo.datas.atual?.dataEntregaContrato },
-                        { label: "Entrega Planejada", plan: comparativo.datas.planejado?.dataEntregaPlanejada, atual: comparativo.datas.atual?.dataEntregaPlanejada },
-                      ].map(d => {
-                        const pDate = d.plan ? new Date(d.plan) : null
-                        const aDate = d.atual ? new Date(d.atual) : null
-                        const diff = pDate && aDate ? Math.round((aDate - pDate) / 86400000) : null
-                        return (
-                          <div key={d.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "#F8FAFC", borderRadius: 8 }}>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#475569", minWidth: 130 }}>{d.label}</span>
-                            <div style={{ textAlign: "center", flex: 1 }}>
-                              <div style={{ fontSize: 11, color: "#94A3B8" }}>Plan</div>
-                              <div style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>{pDate ? pDate.toLocaleDateString("pt-BR") : "—"}</div>
-                            </div>
-                            <div style={{ textAlign: "center", flex: 1 }}>
-                              <div style={{ fontSize: 11, color: "#94A3B8" }}>Atual</div>
-                              <div style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>{aDate ? aDate.toLocaleDateString("pt-BR") : "—"}</div>
-                            </div>
-                            <div style={{ minWidth: 90, textAlign: "right" }}>
-                              {diff !== null && <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: diff > 0 ? "#FEE2E2" : diff < 0 ? "#DCFCE7" : "#F1F5F9", color: diff > 0 ? "#DC2626" : diff < 0 ? "#15803D" : "#64748B" }}>{diff > 0 ? `+${diff}d atraso` : diff < 0 ? `${Math.abs(diff)}d adiant.` : "No prazo"}</span>}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Medições */}
-                {comparativo.medicoes?.length > 0 && (
-                  <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
-                    <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>📋 Medições — Plan vs Realizado</span>
-                    </div>
-                    <div style={{ overflowX: "auto" }}>
-                      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                        <thead>
-                          <tr style={{ background: "#F8FAFC" }}>
-                            {["Etapa", "%", "Prev.", "Realiz.", "Desvio", "Status"].map(h => (
-                              <th key={h} style={{ padding: "9px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {comparativo.medicoes.map((m, i) => (
-                            <tr key={i} style={{ borderTop: "1px solid #F1F5F9", background: m.atrasoDias > 0 ? "rgba(239,68,68,0.03)" : "#fff" }}>
-                              <td style={{ padding: "10px 12px", fontSize: 12, fontWeight: 700, color: "#0F172A" }}>{m.etapa || "—"}</td>
-                              <td style={{ padding: "10px 12px", fontSize: 12, fontWeight: 800, color: "#7C3AED" }}>{m.percentual ? `${m.percentual}%` : "—"}</td>
-                              <td style={{ padding: "10px 12px", fontSize: 11, color: "#64748B", whiteSpace: "nowrap" }}>{m.dataPrevisaoPlanejada ? new Date(m.dataPrevisaoPlanejada).toLocaleDateString("pt-BR") : "—"}</td>
-                              <td style={{ padding: "10px 12px", fontSize: 11, color: "#0F172A", whiteSpace: "nowrap" }}>{m.dataRealizacao ? new Date(m.dataRealizacao).toLocaleDateString("pt-BR") : "—"}</td>
-                              <td style={{ padding: "10px 12px", fontSize: 11, fontWeight: 700, color: m.atrasoDias > 0 ? "#DC2626" : m.atrasoDias < 0 ? "#15803D" : "#94A3B8" }}>
-                                {m.atrasoDias != null ? (m.atrasoDias > 0 ? `+${m.atrasoDias}d` : m.atrasoDias < 0 ? `${m.atrasoDias}d` : "—") : "—"}
-                              </td>
-                              <td style={{ padding: "10px 12px" }}>
-                                <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 5,
-                                  background: m.statusFisico === "Concluída" || m.statusFisico === "Concluido" ? "#DCFCE7" : "#F1F5F9",
-                                  color: m.statusFisico === "Concluída" || m.statusFisico === "Concluido" ? "#15803D" : "#64748B",
-                                }}>{m.statusFisico || "Pendente"}</span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* ── DESPESAS OPP ── */}
-              {comparativo.despesasOPP?.temDados ? (
-                <DespesasOPPCard despesasOPP={comparativo.despesasOPP} fmt={fmt} />
-              ) : (
-                <div style={{ background: "#F8FAFC", borderRadius: 14, border: "1.5px solid #E2E8F0", padding: "24px", color: "#94A3B8", fontSize: 13, textAlign: "center" }}>
-                  Nenhum lançamento OPP encontrado — preencha o campo "Nome do Centro de Custo" na aba Planejamento.
-                </div>
-              )}
 
               </div>
             )}
