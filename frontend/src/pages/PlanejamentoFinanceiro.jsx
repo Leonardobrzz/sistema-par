@@ -751,9 +751,32 @@ export default function PlanejamentoFinanceiro() {
                       </button>
                     ) : null}
                   </div>
-                  {!planTravado && (
+                  {!planTravado && form.nrContratoOS && (() => {
+                    const nomeUpper = (form.nrContratoOS || '').toUpperCase().trim()
+                    const existeNoOPP = centrosCusto.some(c => c.toUpperCase() === nomeUpper)
+                    return (
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", borderRadius: 8, background: existeNoOPP ? "#F0FDF4" : "#FFFBEB", border: `1px solid ${existeNoOPP ? "#86EFAC" : "#FDE68A"}` }}>
+                        <span style={{ fontSize: 14, lineHeight: 1 }}>{existeNoOPP ? "✅" : "⏳"}</span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: existeNoOPP ? "#15803D" : "#B45309" }}>
+                            {existeNoOPP ? "Centro de custo encontrado no OPP" : "Pendente — informe à Roberta para criar no OPP"}
+                          </div>
+                          {!existeNoOPP && (
+                            <div style={{ fontSize: 11, color: "#92400E", marginTop: 2 }}>
+                              O nome <strong>"{form.nrContratoOS}"</strong> ainda não existe no OPP. A Roberta deve criar um centro de custo com exatamente este nome.
+                            </div>
+                          )}
+                        </div>
+                        <button onClick={() => { navigator.clipboard.writeText(form.nrContratoOS); toast.success("Nome copiado!") }}
+                          style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #E2E8F0", background: "#fff", fontSize: 11, fontWeight: 700, color: "#475569", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+                          📋 Copiar
+                        </button>
+                      </div>
+                    )
+                  })()}
+                  {!planTravado && !form.nrContratoOS && (
                     <p style={{ margin: 0, fontSize: 11, color: "#94A3B8", lineHeight: 1.4 }}>
-                      ⚠️ Use <strong>exatamente</strong> o mesmo nome do Centro de Custo no Opportune (Financeiro › Parâmetros › Centros de Custos). Padrão: <em>SIGLA CLIENTE DESCRIÇÃO</em> — ex: <em>ARQ CROATÁ HOSPITAL MUNICIPAL</em>. Limite: 45 caracteres.
+                      Digite um nome para o centro de custo deste projeto. Padrão: <em>SIGLA CLIENTE DESCRIÇÃO</em> — ex: <em>ARQ CROATÁ HOSPITAL MUNICIPAL</em>. Limite: 45 caracteres.
                     </p>
                   )}
                 </div>
