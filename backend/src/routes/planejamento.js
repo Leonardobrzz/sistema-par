@@ -170,7 +170,7 @@ router.post('/', async (req, res, next) => {
 
     // Valida se medições somam 100%
     const medicoes = dados.medicoes || [];
-    const somaMedicoes = medicoes.reduce((s, m) => s + parseFloat(m.percentual || 0), 0);
+    const somaMedicoes = medicoes.reduce((s, m) => s + parseBR(m.percentual), 0);
     const status = dados.status || 'Rascunho';
 
     // ── Validações que só bloqueiam ao submeter para aprovação ───────────────
@@ -395,7 +395,7 @@ router.get('/:id/checar-integridade', async (req, res, next) => {
     const equipe = dados.equipe || [];
     const terceirizados = dados.terceirizados || [];
 
-    const somaMedicoes = medicoes.reduce((s, m) => s + parseFloat(m.percentual || 0), 0);
+    const somaMedicoes = medicoes.reduce((s, m) => s + parseBR(m.percentual), 0);
     const temDataInicio = !!(dados.dataInicioOS || plan.Data_Inicio_OS);
     const temDataEntrega = !!(dados.dataEntregaContrato || plan.Data_Entrega_Contrato);
     const tarefasGrandes = equipe.filter(e => parseFloat(e.horas || 0) > MAX_HORAS_TAREFA);
