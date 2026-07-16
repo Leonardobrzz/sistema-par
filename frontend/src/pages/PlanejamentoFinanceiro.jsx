@@ -107,7 +107,7 @@ function BurnBar({ label, planejado, real }) {
 }
 
 // ── Main component ───────────────────────────────────────────────────────────
-function DespesasOPPCard({ despesasOPP, fmt }) {
+function DespesasOPPCard({ despesasOPP, previsto, fmt }) {
   const [abertos, setAbertos] = useState({})
   const toggle = (gi) => setAbertos(prev => ({ ...prev, [gi]: !prev[gi] }))
   return (
@@ -117,7 +117,7 @@ function DespesasOPPCard({ despesasOPP, fmt }) {
         <div style={{ display: "flex", gap: 20 }}>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Total Previsto</div>
-            <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A" }}>{fmt(despesasOPP.totalGasto)}</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#7C3AED" }}>{fmt(previsto || despesasOPP.totalGasto)}</div>
           </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Total Pago</div>
@@ -1406,7 +1406,7 @@ export default function PlanejamentoFinanceiro() {
 
               {/* ── DESPESAS OPP ── */}
               {comparativo.despesasOPP?.temDados ? (
-                <DespesasOPPCard despesasOPP={comparativo.despesasOPP} fmt={fmt} />
+                <DespesasOPPCard despesasOPP={comparativo.despesasOPP} previsto={comparativo.terceirizadosPlanejados?.total || 0} fmt={fmt} />
               ) : (
                 <div style={{ background: "#F8FAFC", borderRadius: 14, border: "1.5px solid #E2E8F0", padding: "24px", color: "#94A3B8", fontSize: 13, textAlign: "center" }}>
                   Nenhum lançamento OPP encontrado — preencha o campo "Nome do Centro de Custo" na aba Planejamento.
