@@ -96,7 +96,7 @@ router.post('/sync-terceirizados', async (req, res, next) => {
 // POST /api/clickup/sync-horas/:idProjeto — sync rápido só das time entries de um projeto
 router.post('/sync-horas/:idProjeto', async (req, res, next) => {
   try {
-    const { getTimeEntries, syncTimeEntries, syncHorasDoTimespent, getTasks } = require('../services/clickupService');
+    const { getTimeEntries, getTimeEntriesByList, syncTimeEntries, syncHorasDoTimespent, getTasks } = require('../services/clickupService');
     const projeto = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === req.params.idProjeto);
     if (!projeto) return res.status(404).json({ error: 'Projeto não encontrado' });
 
@@ -122,7 +122,16 @@ router.post('/sync-horas/:idProjeto', async (req, res, next) => {
     }
 
     const teamId = process.env.CLICKUP_TEAM_ID;
-    const timeEntries = await getTimeEntries(teamId);
+    // Tenta buscar entries direto da lista (mais confiável); fallback por equipe
+    let timeEntries = [];
+    if (projeto.ID_ClickUp) {
+      timeEntries = await getTimeEntriesByList(projeto.ID_ClickUp);
+      console.log(`[sync-horas] entries da lista ${projeto.ID_ClickUp}: ${timeEntries.length}`);
+    }
+    if (timeEntries.length === 0) {
+      timeEntries = await getTimeEntries(teamId);
+      console.log(`[sync-horas] fallback equipe: ${timeEntries.length} entries`);
+    }
     await syncTimeEntries(timeEntries, [projeto]);
 
     // Fallback: busca time_spent direto das tasks da lista (horas manuais)

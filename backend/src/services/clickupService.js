@@ -75,6 +75,23 @@ async function getTimeEntries(teamId, startDate, endDate) {
   return res.data.data || [];
 }
 
+// Busca time entries diretamente de uma lista específica (mais confiável que filtrar por team)
+async function getTimeEntriesByList(listId, startDate, endDate) {
+  try {
+    const res = await axios.get(`${BASE_URL}/list/${listId}/time_entries`, {
+      headers: getHeaders(),
+      params: {
+        start_date: startDate || Date.now() - 365 * 24 * 60 * 60 * 1000,
+        end_date: endDate || Date.now(),
+      },
+    });
+    return res.data.data || [];
+  } catch (err) {
+    console.warn(`[ClickUp] Não foi possível buscar time entries da lista ${listId}:`, err.message);
+    return [];
+  }
+}
+
 async function getTaskById(taskId) {
   const res = await axios.get(`${BASE_URL}/task/${taskId}`, {
     headers: getHeaders(),
@@ -514,8 +531,18 @@ async function syncSingleProject(idProjeto) {
     // 1. Sincroniza Status e Progresso
     await syncProjectStatuses(allTasks, [projeto], allLists);
 
-    // 2. Sincroniza Horas Logadas — tenta time_entries, fallback em time_spent das tasks
-    const timeEntries = await getTimeEntries(teamId);
+    // 2. Sincroniza Horas Logadas — busca entries direto da lista (mais confiável), fallback em team entries
+    const listId = projeto.ID_ClickUp;
+    let timeEntries = [];
+    if (listId) {
+      timeEntries = await getTimeEntriesByList(listId);
+      console.log(`[ClickUp] Time entries da lista ${listId}: ${timeEntries.length} entradas`);
+    }
+    if (timeEntries.length === 0) {
+      // Fallback: busca por equipe e filtra
+      timeEntries = await getTimeEntries(teamId);
+      console.log(`[ClickUp] Fallback: ${timeEntries.length} entries da equipe`);
+    }
     await syncTimeEntries(timeEntries, [projeto]);
     await syncHorasDoTimespent(allTasks, projeto);
 
@@ -1153,6 +1180,7 @@ module.exports = {
   getLists,
   getTasks,
   getTimeEntries,
+  getTimeEntriesByList,
   syncTimeEntries,
   syncHorasDoTimespent,
   registerWebhook,
