@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { AlertProvider } from './contexts/AlertContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import MainLayout from './components/Layout/MainLayout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -36,6 +37,7 @@ function PrivateRoute({ children }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <ThemeProvider>
       <AuthProvider>
         <AlertProvider>
           <Routes>
@@ -67,6 +69,7 @@ export default function App() {
           </Routes>
         </AlertProvider>
       </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   )
 }
