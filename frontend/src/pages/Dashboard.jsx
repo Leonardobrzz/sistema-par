@@ -392,8 +392,8 @@ export default function Dashboard() {
     if (periodoRecebido.fim && d > periodoRecebido.fim) return false
     return true
   })
-  const totalRecebido = medicoesPeriodo.reduce((s, m) => s + parseFloat(m.Valor_Medicao || 0), 0)
-  const totalAReceber = medicoesFiltradas.filter(m => m.Status_Financeiro !== 'Recebido' && m.Status !== 'Cancelada').reduce((s, m) => s + parseFloat(m.Valor_Medicao || 0), 0)
+  const totalRecebido = medicoesPeriodo.reduce((s, m) => s + parseFloat(m.Valor_Medicao || m.Valor || 0), 0)
+  const totalAReceber = medicoesFiltradas.filter(m => m.Status_Financeiro !== 'Recebido' && m.Status !== 'Cancelada').reduce((s, m) => s + parseFloat(m.Valor_Medicao || m.Valor || 0), 0)
   const alertasCriticos = alertas.filter(a => a.Nivel === 'error')
 
   const STATUS_VISIVEIS_GRAFICO = ['Backlog', 'A Planejar', 'Em Andamento', 'Em Andamento (Atrasado)', 'Paralisado', 'Pausado']
@@ -414,8 +414,8 @@ export default function Dashboard() {
       if (!d) return
       const key = d.slice(0, 7)
       if (!meses[key]) meses[key] = { mes: key, previsto: 0, recebido: 0 }
-      meses[key].previsto += parseFloat(m.Valor_Medicao || 0)
-      if (m.Status_Financeiro === 'Recebido') meses[key].recebido += parseFloat(m.Valor_Medicao || 0)
+      meses[key].previsto += parseFloat(m.Valor_Medicao || m.Valor || 0)
+      if (m.Status_Financeiro === 'Recebido') meses[key].recebido += parseFloat(m.Valor_Medicao || m.Valor || 0)
     })
     return Object.values(meses).sort((a, b) => a.mes.localeCompare(b.mes)).slice(-6).map(m => ({
       ...m,
@@ -456,7 +456,7 @@ export default function Dashboard() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em' }}>
-            Bom dia, <span style={{ color: '#0284C7' }}>{(user?.nome || '').split(' ')[0]}</span> 👋
+            {(() => { const h = new Date().getHours(); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite' })()}, <span style={{ color: '#0284C7' }}>{(user?.nome || '').split(' ')[0]}</span> 👋
           </h1>
           <p style={{ margin: '3px 0 0', fontSize: 12, color: '#94A3B8', textTransform: 'capitalize' }}>
             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
@@ -755,7 +755,7 @@ export default function Dashboard() {
                         </div>
                         <div style={{ textAlign: 'right', flexShrink: 0 }}>
                           <div style={{ fontSize: 13, fontWeight: 800, color: '#7C3AED' }}>
-                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(m.Valor_Medicao || 0)}
+                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(m.Valor_Medicao || m.Valor || 0)}
                           </div>
                           <div style={{ fontSize: 10, color: '#94A3B8' }}>
                             {new Date(m.Data_Previsao || m.Data_Prevista).toLocaleDateString('pt-BR')}
