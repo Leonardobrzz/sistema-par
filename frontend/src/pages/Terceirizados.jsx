@@ -4,6 +4,7 @@ import { PlusIcon, TrashIcon, ArrowPathIcon, UsersIcon, DocumentIcon, LinkIcon, 
 import api from '../utils/api'
 import { formatDate, formatBRL } from '../utils/formatters'
 import LoadingSpinner from '../components/common/LoadingSpinner'
+import { useTheme } from '../contexts/ThemeContext'
 
 const WORKFLOW_STEPS = [
   'Backlog', 'Autorizado', 'Em Negociação', 'Ordem de Compra',
@@ -53,12 +54,21 @@ function getEtapaKey(etapa) {
   return null
 }
 
-const inp = { padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#0F172A", fontSize: 13, fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box" }
-const lbl = { fontSize: 12, fontWeight: 700, color: "#475569", display: "block", marginBottom: 5 }
-
 const SETORES_PAR = ['Arquitetura', 'Saneamento', 'Infraestrutura', 'Administrativo']
 
 export default function Terceirizados() {
+  const { isDark } = useTheme()
+  const T = {
+    card:    isDark ? '#1E293B' : '#ffffff',
+    cardAlt: isDark ? '#0F172A' : '#F8FAFC',
+    border:  isDark ? '#334155' : '#E2E8F0',
+    text1:   isDark ? '#F1F5F9' : '#0F172A',
+    text2:   isDark ? '#94A3B8' : '#64748B',
+    text3:   isDark ? '#64748B' : '#CBD5E1',
+    inputBg: isDark ? '#0F172A' : '#F8FAFC',
+  }
+  const inp = { padding: "9px 12px", borderRadius: 8, border: `1.5px solid ${T.border}`, background: T.inputBg, color: T.text1, fontSize: 13, fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box" }
+  const lbl = { fontSize: 12, fontWeight: 700, color: T.text2, display: "block", marginBottom: 5 }
   const [terceirizados, setTerceirizados] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -176,12 +186,12 @@ export default function Terceirizados() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <UsersIcon style={{ width: 22, height: 22, color: "#00B5CC" }} />
-            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#0F172A" }}>Serviços Terceirizados</h1>
+            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: T.text1 }}>Serviços Terceirizados</h1>
           </div>
-          <p style={{ margin: 0, fontSize: 13, color: "#64748B" }}>{tercFiltrados.length} registros</p>
+          <p style={{ margin: 0, fontSize: 13, color: T.text2 }}>{tercFiltrados.length} registros</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={load} style={{ padding: "9px 16px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#fff", color: "#475569", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+          <button onClick={load} style={{ padding: "9px 16px", borderRadius: 8, border: `1.5px solid ${T.border}`, background: T.card, color: T.text2, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
             <ArrowPathIcon style={{ width: 15, height: 15 }} /> Atualizar
           </button>
         </div>
@@ -197,8 +207,8 @@ export default function Terceirizados() {
             return (
               <div key={etapa.key}
                 style={{
-                  background: isActive ? etapa.bg : '#fff',
-                  border: `1.5px solid ${isActive ? etapa.color : '#E2E8F0'}`,
+                  background: isActive ? etapa.bg : T.card,
+                  border: `1.5px solid ${isActive ? etapa.color : T.border}`,
                   borderRadius: 12,
                   padding: "14px 16px",
                   cursor: 'pointer',
@@ -321,15 +331,15 @@ export default function Terceirizados() {
 
       {/* Tabela */}
       {loading ? (
-        <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #E2E8F0", padding: 60, textAlign: "center" }}>
+        <div style={{ background: T.card, borderRadius: 12, border: `1px solid ${T.border}`, padding: 60, textAlign: "center" }}>
           <LoadingSpinner text="Buscando terceirizados..." />
         </div>
       ) : (
-        <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #E2E8F0", overflow: "hidden" }}>
+        <div style={{ background: T.card, borderRadius: 12, border: `1px solid ${T.border}`, overflow: "hidden" }}>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", whiteSpace: "nowrap" }}>
               <thead>
-                <tr style={{ background: "#F8FAFC" }}>
+                <tr style={{ background: T.cardAlt }}>
                   {[
                     { h: "Projeto",         align: "left"   },
                     { h: "Cliente",         align: "left"   },
@@ -344,14 +354,14 @@ export default function Terceirizados() {
                     { h: "Doc.",            align: "center" },
                     { h: "Ações",           align: "right"  },
                   ].map(({ h, align }) => (
-                    <th key={h} style={{ padding: "12px 14px", fontSize: 11, fontWeight: 700, color: "#64748B", textAlign: align, letterSpacing: 0.5, textTransform: "uppercase", borderBottom: "1px solid #E2E8F0" }}>{h}</th>
+                    <th key={h} style={{ padding: "12px 14px", fontSize: 11, fontWeight: 700, color: T.text2, textAlign: align, letterSpacing: 0.5, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {tercFiltrados.length === 0 ? (
                   <tr>
-                    <td colSpan={12} style={{ textAlign: "center", padding: 48, color: "#64748B", fontSize: 13 }}>
+                    <td colSpan={12} style={{ textAlign: "center", padding: 48, color: T.text2, fontSize: 13 }}>
                       <UsersIcon style={{ width: 36, height: 36, margin: "0 auto 10px", opacity: 0.3 }} />
                       <div>Nenhum registro encontrado</div>
                     </td>
@@ -368,13 +378,13 @@ export default function Terceirizados() {
                   const setorMap = { arq: '#3B82F6', san: '#10B981', inf: '#F59E0B', adm: '#8B5CF6' }
                   const setorColor = setorMap[Object.keys(setorMap).find(k => (t.Setor || '').toLowerCase().includes(k)) || ''] || '#94A3B8'
                   return (
-                    <tr key={t.ID_Terceirizado || t.ID} style={{ borderBottom: "1px solid #F1F5F9", transition: "background 0.12s" }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#F8FAFC"}
+                    <tr key={t.ID_Terceirizado || t.ID} style={{ borderBottom: `1px solid ${T.border}`, transition: "background 0.12s" }}
+                      onMouseEnter={e => e.currentTarget.style.background = isDark ? "#243048" : "#F8FAFC"}
                       onMouseLeave={e => e.currentTarget.style.background = ""}>
 
                       {/* Projeto */}
                       <td style={{ padding: "11px 14px" }}>
-                        <div style={{ fontWeight: 700, fontSize: 13, color: "#0F172A", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis" }} title={t.nomeProjeto}>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: T.text1, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis" }} title={t.nomeProjeto}>
                           {t.nomeProjeto || <span style={{ color: "#CBD5E1" }}>—</span>}
                         </div>
                         {etapaCfg && (
@@ -385,7 +395,7 @@ export default function Terceirizados() {
                       </td>
 
                       {/* Cliente */}
-                      <td style={{ padding: "11px 14px", fontSize: 12, color: "#334155", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis" }} title={t.Cliente}>
+                      <td style={{ padding: "11px 14px", fontSize: 12, color: T.text1, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis" }} title={t.Cliente}>
                         {t.Cliente || <span style={{ color: "#CBD5E1" }}>—</span>}
                       </td>
 
@@ -399,19 +409,19 @@ export default function Terceirizados() {
 
                       {/* Serviço */}
                       <td style={{ padding: "11px 14px", maxWidth: 220 }}>
-                        <div style={{ fontSize: 12, color: "#0F172A", overflow: "hidden", textOverflow: "ellipsis" }} title={t.Descricao_Servico}>
+                        <div style={{ fontSize: 12, color: T.text1, overflow: "hidden", textOverflow: "ellipsis" }} title={t.Descricao_Servico}>
                           {t.Descricao_Servico || t.Servico || <span style={{ color: "#CBD5E1" }}>—</span>}
                         </div>
                         {t.Nr_Contrato && <div style={{ fontSize: 11, color: "#7C3AED", fontWeight: 600, marginTop: 2 }}>Nº {t.Nr_Contrato}</div>}
                       </td>
 
                       {/* Vencimento */}
-                      <td style={{ padding: "11px 14px", textAlign: "center", fontSize: 12, color: "#64748B" }}>
+                      <td style={{ padding: "11px 14px", textAlign: "center", fontSize: 12, color: T.text2 }}>
                         {formatDate(t.Data_Vencimento) || "—"}
                       </td>
 
                       {/* Valor Contratado */}
-                      <td style={{ padding: "11px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: valorC > 0 ? "#0F172A" : "#CBD5E1" }}>
+                      <td style={{ padding: "11px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: valorC > 0 ? T.text1 : T.text3 }}>
                         {valorC > 0 ? formatBRL(valorC) : "—"}
                       </td>
 
@@ -423,7 +433,7 @@ export default function Terceirizados() {
                       {/* Saldo */}
                       <td style={{ padding: "11px 14px", textAlign: "right" }}>
                         {valorC > 0 ? (
-                          <span style={{ fontSize: 13, fontWeight: 800, color: saldoNeg ? "#DC2626" : "#475569" }}>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: saldoNeg ? "#DC2626" : T.text2 }}>
                             {formatBRL(saldo)}
                           </span>
                         ) : <span style={{ color: "#CBD5E1" }}>—</span>}
@@ -481,6 +491,17 @@ export default function Terceirizados() {
 }
 
 function TerceirizadoModal({ item, projetos, onClose, onSaved }) {
+  const { isDark } = useTheme()
+  const Tm = {
+    card:    isDark ? '#1E293B' : '#ffffff',
+    cardAlt: isDark ? '#0F172A' : '#F8FAFC',
+    border:  isDark ? '#334155' : '#E2E8F0',
+    text1:   isDark ? '#F1F5F9' : '#0F172A',
+    text2:   isDark ? '#94A3B8' : '#475569',
+    inputBg: isDark ? '#0F172A' : '#F8FAFC',
+  }
+  const inp = { padding: "9px 12px", borderRadius: 8, border: `1.5px solid ${Tm.border}`, background: Tm.inputBg, color: Tm.text1, fontSize: 13, fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box" }
+  const lbl = { fontSize: 12, fontWeight: 700, color: Tm.text2, display: "block", marginBottom: 5 }
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     ID_Projeto: item?.ID_Projeto || '',
@@ -535,9 +556,9 @@ function TerceirizadoModal({ item, projetos, onClose, onSaved }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 680, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
-        <div style={{ padding: "20px 24px", borderBottom: "1px solid #E2E8F0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontWeight: 800, fontSize: 16, color: "#0F172A" }}>{item ? "Editar Terceirizado" : "Novo Serviço Terceirizado"}</div>
+      <div style={{ background: Tm.card, borderRadius: 16, width: "100%", maxWidth: 680, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+        <div style={{ padding: "20px 24px", borderBottom: `1px solid ${Tm.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontWeight: 800, fontSize: 16, color: Tm.text1 }}>{item ? "Editar Terceirizado" : "Novo Serviço Terceirizado"}</div>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8" }}><XMarkIcon style={{ width: 20, height: 20 }} /></button>
         </div>
 
@@ -634,8 +655,8 @@ function TerceirizadoModal({ item, projetos, onClose, onSaved }) {
             </div>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20, paddingTop: 16, borderTop: "1px solid #E2E8F0" }}>
-            <button type="button" onClick={onClose} style={{ padding: "10px 20px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#fff", color: "#475569", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Cancelar</button>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20, paddingTop: 16, borderTop: `1px solid ${Tm.border}` }}>
+            <button type="button" onClick={onClose} style={{ padding: "10px 20px", borderRadius: 8, border: `1.5px solid ${Tm.border}`, background: Tm.cardAlt, color: Tm.text2, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Cancelar</button>
             <button type="submit" disabled={loading} style={{ padding: "10px 24px", borderRadius: 8, border: "none", background: "#00B5CC", color: "#fff", fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
               {loading ? "Salvando..." : (item ? "Salvar Alterações" : "Criar Registro")}
             </button>

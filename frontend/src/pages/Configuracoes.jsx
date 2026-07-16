@@ -2,15 +2,21 @@ import { useState, useEffect } from "react"
 import { toast } from "react-hot-toast"
 import { Settings, RefreshCw, Database, Bell, Link, CheckCircle, AlertTriangle, Users, Trash2 } from "lucide-react"
 import api from "../utils/api"
+import { useTheme } from "../contexts/ThemeContext"
 
 const PERFIS = ['Admin', 'PO', 'Coordenador', 'Comercial', 'Financeiro', 'Diretoria', 'Visualizador']
 
 function Section({ title, icon: Icon, children }) {
+  const { isDark } = useTheme()
+  const card = isDark ? '#1E293B' : '#ffffff'
+  const cardAlt = isDark ? '#0F172A' : '#F8FAFC'
+  const border = isDark ? '#334155' : '#E2E8F0'
+  const text1 = isDark ? '#F1F5F9' : '#0F172A'
   return (
-    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #E2E8F0", overflow: "hidden", marginBottom: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
-      <div style={{ padding: "16px 24px", borderBottom: "1px solid #F1F5F9", display: "flex", alignItems: "center", gap: 10, background: "#F8FAFC" }}>
+    <div style={{ background: card, borderRadius: 14, border: `1px solid ${border}`, overflow: "hidden", marginBottom: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+      <div style={{ padding: "16px 24px", borderBottom: `1px solid ${border}`, display: "flex", alignItems: "center", gap: 10, background: cardAlt }}>
         <Icon size={18} color="#7C3AED" />
-        <span style={{ fontWeight: 800, fontSize: 15, color: "#0F172A" }}>{title}</span>
+        <span style={{ fontWeight: 800, fontSize: 15, color: text1 }}>{title}</span>
       </div>
       <div style={{ padding: "20px 24px" }}>{children}</div>
     </div>
@@ -18,13 +24,17 @@ function Section({ title, icon: Icon, children }) {
 }
 
 function InfoRow({ label, value, status }) {
+  const { isDark } = useTheme()
+  const border = isDark ? '#334155' : '#F1F5F9'
+  const text1 = isDark ? '#F1F5F9' : '#0F172A'
+  const text2 = isDark ? '#94A3B8' : '#64748B'
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #F1F5F9" }}>
-      <span style={{ fontSize: 13, color: "#64748B", fontWeight: 600 }}>{label}</span>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: `1px solid ${border}` }}>
+      <span style={{ fontSize: 13, color: text2, fontWeight: 600 }}>{label}</span>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         {status === "ok" && <CheckCircle size={14} color="#22C55E" />}
         {status === "error" && <AlertTriangle size={14} color="#EF4444" />}
-        <span style={{ fontSize: 13, color: "#0F172A", fontWeight: 700 }}>{value}</span>
+        <span style={{ fontSize: 13, color: text1, fontWeight: 700 }}>{value}</span>
       </div>
     </div>
   )
@@ -99,17 +109,26 @@ export default function Configuracoes() {
     } catch (err) { toast.error(err.response?.data?.error || "Erro ao excluir usuário") }
   }
 
-  const inputStyle = { padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#0F172A", fontSize: 13, fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box" }
+  const { isDark } = useTheme()
+  const T = {
+    card:    isDark ? '#1E293B' : '#ffffff',
+    cardAlt: isDark ? '#0F172A' : '#F8FAFC',
+    border:  isDark ? '#334155' : '#E2E8F0',
+    text1:   isDark ? '#F1F5F9' : '#0F172A',
+    text2:   isDark ? '#94A3B8' : '#64748B',
+    inputBg: isDark ? '#0F172A' : '#F8FAFC',
+  }
+  const inputStyle = { padding: "9px 12px", borderRadius: 8, border: `1.5px solid ${T.border}`, background: T.inputBg, color: T.text1, fontSize: 13, fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box" }
   const btnPrimary = { padding: "10px 20px", borderRadius: 8, border: "none", background: "#7C3AED", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }
-  const btnSecondary = { padding: "10px 20px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#fff", color: "#475569", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }
+  const btnSecondary = { padding: "10px 20px", borderRadius: 8, border: `1.5px solid ${T.border}`, background: T.cardAlt, color: T.text2, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }
 
   return (
     <div style={{ padding: "28px 32px" }}>
       <div style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 12 }}>
         <Settings size={22} color="#7C3AED" />
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#0F172A" }}>Configurações</h1>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#64748B" }}>Integrações, sincronizações e status do sistema</p>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: T.text1 }}>Configurações</h1>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: T.text2 }}>Integrações, sincronizações e status do sistema</p>
         </div>
       </div>
 
@@ -122,14 +141,14 @@ export default function Configuracoes() {
       {["Admin", "Diretoria", "Comercial"].includes(userAtual.perfil) && (
         <Section title="Gestão de Usuários" icon={Users}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <span style={{ fontSize: 13, color: "#64748B" }}>{usuarios.length} usuário(s) cadastrado(s)</span>
+            <span style={{ fontSize: 13, color: T.text2 }}>{usuarios.length} usuário(s) cadastrado(s)</span>
             <button onClick={() => setMostrarFormUser(!mostrarFormUser)} style={btnPrimary}>
               {mostrarFormUser ? "Cancelar" : "+ Novo Usuário"}
             </button>
           </div>
 
           {mostrarFormUser && (
-            <form onSubmit={criarUsuario} style={{ background: "#F8FAFC", borderRadius: 10, padding: 16, marginBottom: 16, border: "1px solid #E2E8F0" }}>
+            <form onSubmit={criarUsuario} style={{ background: T.cardAlt, borderRadius: 10, padding: 16, marginBottom: 16, border: `1px solid ${T.border}` }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                 <input required placeholder="Nome completo" value={novoUser.nome} onChange={e => setNovoUser(p => ({...p, nome: e.target.value}))} style={inputStyle} />
                 <input required type="email" placeholder="E-mail" value={novoUser.email} onChange={e => setNovoUser(p => ({...p, email: e.target.value}))} style={inputStyle} />
@@ -146,16 +165,16 @@ export default function Configuracoes() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {usuarios.map(u => (
-              <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", background: "#F8FAFC", borderRadius: 10, border: "1px solid #E2E8F0" }}>
+              <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", background: T.cardAlt, borderRadius: 10, border: `1px solid ${T.border}` }}>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A" }}>{u.nome}</div>
-                  <div style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>{u.email} · <span style={{ color: "#7C3AED", fontWeight: 600 }}>{u.perfil}</span></div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.text1 }}>{u.nome}</div>
+                  <div style={{ fontSize: 12, color: T.text2, marginTop: 2 }}>{u.email} · <span style={{ color: "#7C3AED", fontWeight: 600 }}>{u.perfil}</span></div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: u.ativo === "true" ? "#DCFCE7" : "#FEE2E2", color: u.ativo === "true" ? "#15803D" : "#DC2626" }}>
                     {u.ativo === "true" ? "Ativo" : "Inativo"}
                   </span>
-                  <button onClick={() => toggleAtivo(u)} style={{ fontSize: 11, padding: "5px 12px", borderRadius: 6, border: "1.5px solid #E2E8F0", background: "#fff", color: "#64748B", cursor: "pointer", fontWeight: 600 }}>
+                  <button onClick={() => toggleAtivo(u)} style={{ fontSize: 11, padding: "5px 12px", borderRadius: 6, border: `1.5px solid ${T.border}`, background: T.card, color: T.text2, cursor: "pointer", fontWeight: 600 }}>
                     {u.ativo === "true" ? "Desativar" : "Ativar"}
                   </button>
                   <button onClick={() => excluirUsuario(u)} title="Excluir usuário" style={{ fontSize: 11, padding: "5px 8px", borderRadius: 6, border: "1.5px solid #FCA5A5", background: "#FFF1F2", color: "#DC2626", cursor: "pointer", display: "flex", alignItems: "center" }}>
