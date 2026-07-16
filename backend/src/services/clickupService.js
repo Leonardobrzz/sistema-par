@@ -42,6 +42,7 @@ async function getTasks(listId, page = 0) {
       archived: false,
       include_closed: true,
       subtasks: true,
+      include_markdown_description: false,
       page,
     },
   });
@@ -75,12 +76,15 @@ async function getTimeEntries(teamId, startDate, endDate) {
   return res.data.data || [];
 }
 
-// Busca time entries diretamente de uma lista específica (mais confiável que filtrar por team)
+// Busca time entries de uma lista específica via filtro na API de equipe (endpoint correto no v2)
 async function getTimeEntriesByList(listId, startDate, endDate) {
+  const teamId = process.env.CLICKUP_TEAM_ID;
+  if (!teamId || !listId) return [];
   try {
-    const res = await axios.get(`${BASE_URL}/list/${listId}/time_entries`, {
+    const res = await axios.get(`${BASE_URL}/team/${teamId}/time_entries`, {
       headers: getHeaders(),
       params: {
+        list_id: listId,
         start_date: startDate || Date.now() - 365 * 24 * 60 * 60 * 1000,
         end_date: endDate || Date.now(),
       },
