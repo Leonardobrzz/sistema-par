@@ -9,6 +9,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner'
 import Modal from '../components/common/Modal'
 import Input from '../components/common/Input'
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
 
 const SETORES = ['ARQ', 'INF', 'SAN']
 const STATUS_LIST = [
@@ -56,6 +57,18 @@ function StatusMultiSelect({ value, onChange, options = STATUS_LIST }) {
 export default function GestaoProjetos() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { isDark } = useTheme()
+  const T = {
+    card:    isDark ? '#1E293B' : '#ffffff',
+    cardAlt: isDark ? '#162032' : '#F8FAFC',
+    border:  isDark ? '#334155' : '#E2E8F0',
+    text1:   isDark ? '#F1F5F9' : '#0F172A',
+    text2:   isDark ? '#94A3B8' : '#64748B',
+    text3:   isDark ? '#64748B' : '#94A3B8',
+    inputBg: isDark ? '#0F172A' : '#F8FAFC',
+    hover:   isDark ? '#243048' : '#F8FAFC',
+  }
+
   const [searchParams] = useSearchParams()
   const [allProjects, setAllProjects] = useState([])
   const [loading, setLoading] = useState(true)
@@ -228,7 +241,7 @@ export default function GestaoProjetos() {
               <MagnifyingGlassIcon style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: '#94A3B8', pointerEvents: 'none' }} />
               <input
                 className="form-input"
-                style={{ paddingLeft: 40, background: '#F8FAFC', border: '1px solid #E2E8F0', width: '100%' }}
+                style={{ paddingLeft: 40, background: T.inputBg, border: `1px solid ${T.border}`, width: '100%', color: T.text1 }}
                 placeholder="Buscar por projeto, cliente ou número..."
                 value={filters.busca}
                 onChange={(e) => setFilters({ ...filters, busca: e.target.value })}
@@ -236,7 +249,7 @@ export default function GestaoProjetos() {
             </div>
             <input
               className="form-input"
-              style={{ width: 200, background: '#F8FAFC', border: '1px solid #E2E8F0' }}
+              style={{ width: 200, background: T.inputBg, border: `1px solid ${T.border}`, color: T.text1 }}
               placeholder="Nome do cliente"
               value={filters.cliente}
               onChange={(e) => setFilters({ ...filters, cliente: e.target.value })}
@@ -310,7 +323,7 @@ export default function GestaoProjetos() {
           <LoadingSpinner text="Buscando projetos..." />
         </div>
       ) : (
-        <div className="card overflow-hidden">
+        <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: 'hidden' }}>
 
           {/* Scrollbar espelhado no topo */}
           <div
@@ -329,15 +342,15 @@ export default function GestaoProjetos() {
             <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', minWidth: 700 }}>
               <thead>
                 <tr>
-                  <th className="table-header" style={{ paddingLeft: 20, width: '28%' }}>Projeto</th>
-                  <th className="table-header" style={{ width: '18%' }}>Cliente</th>
-                  <th className="table-header" style={{ width: '11%' }}>Setor</th>
-                  <th className="table-header" style={{ width: '13%' }}>Status</th>
-                  <th className="table-header" style={{ width: '11%', textAlign: 'right' }}>Valor</th>
-                  <th className="table-header" style={{ width: '10%' }}>Entrega</th>
-                  <th className="table-header" style={{ width: '10%' }}>Progresso</th>
-                  {filters.verTarefas && <th className="table-header" style={{ width: '5%', textAlign: 'center' }}>ClickUp</th>}
-                  <th className="table-header" style={{ width: '7%' }} />
+                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}` }} style={{ paddingLeft: 20, width: '28%' }}>Projeto</th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}` }} style={{ width: '18%' }}>Cliente</th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}` }} style={{ width: '11%' }}>Setor</th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}` }} style={{ width: '13%' }}>Status</th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}` }} style={{ width: '11%', textAlign: 'right' }}>Valor</th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}` }} style={{ width: '10%' }}>Entrega</th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}` }} style={{ width: '10%' }}>Progresso</th>
+                  {filters.verTarefas && <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}` }} style={{ width: '5%', textAlign: 'center' }}>ClickUp</th>}
+                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}` }} style={{ width: '7%' }} />
                 </tr>
               </thead>
               <tbody>
@@ -355,38 +368,39 @@ export default function GestaoProjetos() {
                     return (
                       <tr
                         key={p.ID_Projeto}
-                        className="table-row group cursor-pointer"
+                        style={{ borderBottom: `1px solid ${T.border}`, background: T.card, transition: 'background 0.12s', cursor: 'pointer' }}
                         onClick={() => navigate(`/planejamento/${p.ID_Projeto}`)}
+                        onMouseEnter={e => e.currentTarget.style.background = T.hover}
+                        onMouseLeave={e => e.currentTarget.style.background = T.card}
                       >
                         <td style={{ paddingLeft: 16, paddingRight: 12, paddingTop: 11, paddingBottom: 11 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                             <div style={{ width: 3, height: 28, borderRadius: 4, background: accentColor, flexShrink: 0 }} />
                             <div style={{ minWidth: 0 }}>
-                              <p style={{ fontWeight: 700, fontSize: 12.5, color: '#0F172A', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                                className="group-hover:text-par-600 transition-colors">
+                              <p style={{ fontWeight: 700, fontSize: 12.5, color: T.text1, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {p.Nome}
                               </p>
                               {p.Nr_Contrato && (
-                                <p style={{ fontSize: 10.5, color: '#94A3B8', margin: '2px 0 0', fontWeight: 500 }}>
+                                <p style={{ fontSize: 10.5, color: T.text3, margin: '2px 0 0', fontWeight: 500 }}>
                                   {`#${String(p.Nr_Contrato).padStart(4,'0')}`}
                                 </p>
                               )}
                             </div>
                           </div>
                         </td>
-                        <td style={{ padding: '11px 12px', fontSize: 12.5, color: '#374151', fontWeight: 500, maxWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <td style={{ padding: '11px 12px', fontSize: 12.5, color: T.text2, fontWeight: 500, maxWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {p.Cliente || '—'}
                         </td>
-                        <td style={{ padding: '11px 12px', fontSize: 11.5, color: '#94A3B8', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                        <td style={{ padding: '11px 12px', fontSize: 11.5, color: T.text3, fontWeight: 500, whiteSpace: 'nowrap' }}>
                           {p.Setor || '—'}
                         </td>
                         <td style={{ padding: '11px 12px', whiteSpace: 'nowrap' }}>
                           <span className={statusBadgeClass(p.Status)}>{p.Status || 'A Planejar'}</span>
                         </td>
-                        <td style={{ padding: '11px 12px', fontSize: 12.5, fontWeight: 700, color: '#0F172A', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <td style={{ padding: '11px 12px', fontSize: 12.5, fontWeight: 700, color: T.text1, textAlign: 'right', whiteSpace: 'nowrap' }}>
                           {formatBRL(p.Valor_Global)}
                         </td>
-                        <td style={{ padding: '11px 12px', fontSize: 11.5, color: '#374151', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                        <td style={{ padding: '11px 12px', fontSize: 11.5, color: T.text2, fontWeight: 500, whiteSpace: 'nowrap' }}>
                           {formatDate(p.Data_Entrega_Contrato) || '—'}
                         </td>
                         <td style={{ padding: '11px 14px', minWidth: 90 }}>
@@ -395,7 +409,7 @@ export default function GestaoProjetos() {
                             const cor = perc >= 100 ? '#16A34A' : perc >= 60 ? '#2563EB' : perc >= 30 ? '#D97706' : '#94A3B8'
                             return (
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <div style={{ flex: 1, height: 5, background: '#E2E8F0', borderRadius: 4, overflow: 'hidden' }}>
+                                <div style={{ flex: 1, height: 5, background: T.border, borderRadius: 4, overflow: 'hidden' }}>
                                   <div style={{ width: `${perc}%`, height: '100%', background: cor, borderRadius: 4, transition: 'width 0.3s' }} />
                                 </div>
                                 <span style={{ fontSize: 11, fontWeight: 700, color: cor, minWidth: 30 }}>{perc}%</span>
@@ -407,25 +421,21 @@ export default function GestaoProjetos() {
                           <td style={{ padding: '11px 12px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                             {p.Link_ClickUp ? (
                               <a href={p.Link_ClickUp} target="_blank" rel="noreferrer"
-                                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 7, color: '#94A3B8', transition: 'all 0.15s' }}
-                                onMouseEnter={e => { e.currentTarget.style.color = '#1E3A5F'; e.currentTarget.style.background = '#EDF2F7' }}
-                                onMouseLeave={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.background = 'transparent' }}
+                                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 7, color: T.text3, transition: 'all 0.15s' }}
                               >
                                 <ArrowTopRightOnSquareIcon style={{ width: 13, height: 13 }} />
                               </a>
-                            ) : <span style={{ color: '#CBD5E1' }}>—</span>}
+                            ) : <span style={{ color: T.border }}>—</span>}
                           </td>
                         )}
                         <td style={{ padding: '11px 12px', textAlign: 'right' }}>
                           <button
                             onClick={(e) => { e.stopPropagation(); navigate(`/planejamento/${p.ID_Projeto}`) }}
                             style={{
-                              background: '#fff', border: '1px solid #E2E8F0', color: '#475569',
+                              background: T.card, border: `1px solid ${T.border}`, color: T.text2,
                               padding: '4px 12px', borderRadius: 7, fontSize: 11.5, fontWeight: 600,
                               cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', whiteSpace: 'nowrap',
                             }}
-                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#1E3A5F'; e.currentTarget.style.color = '#1E3A5F' }}
-                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.color = '#475569' }}
                           >
                             Abrir
                           </button>
