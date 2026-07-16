@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import api from '../utils/api'
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
 import PaineisClickUp from '../components/PaineisClickUp'
 import ProjetosClickUp from '../components/ProjetosClickUp'
 
@@ -224,10 +225,11 @@ function PARGauge({ label, value, min, max, limitOk, limitWarn, unit = '%', inve
 }
 
 const CustomTooltipBar = ({ active, payload, label }) => {
+  const { isDark } = useTheme()
   if (!active || !payload?.length) return null
   return (
-    <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 10, padding: '10px 14px', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
-      <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4, color: '#0F172A' }}>{label}</div>
+    <div style={{ background: isDark ? '#1E293B' : '#fff', border: `1px solid ${isDark ? '#334155' : '#E2E8F0'}`, borderRadius: 10, padding: '10px 14px', boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}>
+      <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4, color: isDark ? '#F1F5F9' : '#0F172A' }}>{label}</div>
       {payload.map((p, i) => (
         <div key={i} style={{ fontSize: 12, color: p.color, fontWeight: 600 }}>
           {p.name}: {fmtFull(p.value)}
@@ -241,6 +243,8 @@ const CustomTooltipBar = ({ active, payload, label }) => {
 
 function PainelPersonalizar({ secoes, onChange, onClose }) {
   const ref = useRef(null)
+  const { isDark } = useTheme()
+  const T2 = { card: isDark ? '#1E293B' : '#fff', border: isDark ? '#334155' : '#E2E8F0', text1: isDark ? '#F1F5F9' : '#0F172A', text2: isDark ? '#94A3B8' : '#64748B', cardAlt: isDark ? '#162032' : '#F8FAFC' }
 
   useEffect(() => {
     function handler(e) {
@@ -262,11 +266,11 @@ function PainelPersonalizar({ secoes, onChange, onClose }) {
   return (
     <div ref={ref} style={{
       position: 'absolute', top: '100%', right: 0, marginTop: 8, zIndex: 100,
-      background: '#fff', borderRadius: 16, border: '1.5px solid #E2E8F0',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.12)', width: 320, padding: 16,
+      background: T2.card, borderRadius: 16, border: `1.5px solid ${T2.border}`,
+      boxShadow: '0 8px 32px rgba(0,0,0,0.18)', width: 320, padding: 16,
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <span style={{ fontWeight: 800, fontSize: 14, color: '#0F172A' }}>Personalizar Dashboard</span>
+        <span style={{ fontWeight: 800, fontSize: 14, color: T2.text1 }}>Personalizar Dashboard</span>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', display: 'flex', alignItems: 'center' }}>
           <X size={16} />
         </button>
@@ -278,8 +282,8 @@ function PainelPersonalizar({ secoes, onChange, onClose }) {
             <div key={s.id} onClick={() => toggle(s.id)} style={{
               display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
               borderRadius: 10, cursor: 'pointer',
-              background: ativo ? '#F5F3FF' : '#F8FAFC',
-              border: `1.5px solid ${ativo ? '#C4B5FD' : '#E2E8F0'}`,
+              background: ativo ? '#F5F3FF' : T2.cardAlt,
+              border: `1.5px solid ${ativo ? '#C4B5FD' : T2.border}`,
               transition: 'all 0.15s',
             }}>
               <div style={{
@@ -291,7 +295,7 @@ function PainelPersonalizar({ secoes, onChange, onClose }) {
                 {ativo && <Check size={12} color="#fff" strokeWidth={3} />}
               </div>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: ativo ? '#5B21B6' : '#374151' }}>{s.label}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: ativo ? '#5B21B6' : T2.text1 }}>{s.label}</div>
                 <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 1 }}>{s.desc}</div>
               </div>
             </div>
@@ -300,7 +304,7 @@ function PainelPersonalizar({ secoes, onChange, onClose }) {
       </div>
       <button onClick={() => onChange(SECOES_DEFAULT)} style={{
         width: '100%', marginTop: 12, padding: '8px 0', borderRadius: 8,
-        border: '1.5px solid #E2E8F0', background: '#F8FAFC',
+        border: `1.5px solid ${T2.border}`, background: T2.cardAlt,
         fontSize: 12, fontWeight: 700, color: '#64748B', cursor: 'pointer',
       }}>
         Restaurar padrão
@@ -314,6 +318,21 @@ function PainelPersonalizar({ secoes, onChange, onClose }) {
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { isDark } = useTheme()
+
+  // Tokens de tema — usados em todos os estilos inline desta página
+  const T = {
+    bg:       isDark ? '#0F172A' : '#F0F4F8',
+    card:     isDark ? '#1E293B' : '#ffffff',
+    cardAlt:  isDark ? '#162032' : '#F8FAFC',
+    border:   isDark ? '#334155' : '#E2E8F0',
+    text1:    isDark ? '#F1F5F9' : '#0F172A',
+    text2:    isDark ? '#94A3B8' : '#64748B',
+    text3:    isDark ? '#64748B' : '#94A3B8',
+    inputBg:  isDark ? '#0F172A' : '#F8FAFC',
+    hover:    isDark ? '#243048' : '#F8FAFC',
+    shadow:   isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.04)',
+  }
   const [projetos, setProjetos] = useState([])
   const [planejamentos, setPlanejamentos] = useState([])
   const [medicoes, setMedicoes] = useState([])
@@ -515,15 +534,15 @@ export default function Dashboard() {
   const countCaution = projetosRicos.filter(p => p._nivel === 'caution').length
 
   return (
-    <div style={{ padding: '28px 32px', maxWidth: 1400, margin: '0 auto', background: '#F8FAFC', minHeight: '100vh' }}>
+    <div style={{ padding: '28px 32px', maxWidth: 1400, margin: '0 auto', background: T.bg, minHeight: '100vh' }}>
 
       {/* ── Header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em' }}>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: T.text1, letterSpacing: '-0.02em' }}>
             {(() => { const h = new Date().getHours(); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite' })()}, <span style={{ color: '#0284C7' }}>{(user?.nome || '').split(' ')[0]}</span> 👋
           </h1>
-          <p style={{ margin: '3px 0 0', fontSize: 12, color: '#94A3B8', textTransform: 'capitalize' }}>
+          <p style={{ margin: '3px 0 0', fontSize: 12, color: T.text3, textTransform: 'capitalize' }}>
             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
@@ -539,10 +558,10 @@ export default function Dashboard() {
           )}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 10,
-            background: oppStatus?.ok ? '#DCFCE7' : oppStatus?.ok === false ? '#FEE2E2' : '#F1F5F9',
-            border: `1px solid ${oppStatus?.ok ? '#86EFAC' : oppStatus?.ok === false ? '#FCA5A5' : '#E2E8F0'}`,
+            background: oppStatus?.ok ? '#DCFCE7' : oppStatus?.ok === false ? '#FEE2E2' : T.cardAlt,
+            border: `1px solid ${oppStatus?.ok ? '#86EFAC' : oppStatus?.ok === false ? '#FCA5A5' : T.border}`,
             fontSize: 12, fontWeight: 700,
-            color: oppStatus?.ok ? '#15803D' : oppStatus?.ok === false ? '#DC2626' : '#94A3B8',
+            color: oppStatus?.ok ? '#15803D' : oppStatus?.ok === false ? '#DC2626' : T.text3,
           }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: oppStatus?.ok ? '#22C55E' : oppStatus?.ok === false ? '#EF4444' : '#94A3B8', display: 'inline-block' }} />
             OPP {oppStatus?.ok ? 'Online' : oppStatus?.ok === false ? 'Offline' : '...'}
@@ -553,9 +572,9 @@ export default function Dashboard() {
               onClick={() => setMostrarPersonalizar(v => !v)}
               style={{
                 padding: '8px 14px', borderRadius: 10, cursor: 'pointer',
-                border: mostrarPersonalizar ? '1.5px solid #C4B5FD' : '1.5px solid #E2E8F0',
-                background: mostrarPersonalizar ? '#F5F3FF' : '#fff',
-                color: mostrarPersonalizar ? '#7C3AED' : '#475569',
+                border: mostrarPersonalizar ? '1.5px solid #C4B5FD' : `1.5px solid ${T.border}`,
+                background: mostrarPersonalizar ? '#F5F3FF' : T.card,
+                color: mostrarPersonalizar ? '#7C3AED' : T.text2,
                 fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 6,
               }}
             >
@@ -579,14 +598,14 @@ export default function Dashboard() {
         const todosSetores = [...SETORES_FIXOS, ...setoresExtra]
         return (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20, alignItems: 'center' }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', marginRight: 4 }}>SETOR:</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: T.text3, marginRight: 4 }}>SETOR:</span>
             <button
               onClick={() => setFiltroSetor('')}
               style={{
                 padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                border: `1.5px solid ${!filtroSetor ? '#7C3AED' : '#E2E8F0'}`,
-                background: !filtroSetor ? '#EDE9FE' : '#fff',
-                color: !filtroSetor ? '#7C3AED' : '#64748B',
+                border: `1.5px solid ${!filtroSetor ? '#7C3AED' : T.border}`,
+                background: !filtroSetor ? '#EDE9FE' : T.card,
+                color: !filtroSetor ? '#7C3AED' : T.text2,
                 transition: 'all 0.15s',
               }}
             >
@@ -600,9 +619,9 @@ export default function Dashboard() {
                   onClick={() => setFiltroSetor(filtroSetor === s ? '' : s)}
                   style={{
                     padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                    border: `1.5px solid ${filtroSetor === s ? '#7C3AED' : '#E2E8F0'}`,
-                    background: filtroSetor === s ? '#EDE9FE' : '#fff',
-                    color: filtroSetor === s ? '#7C3AED' : '#64748B',
+                    border: `1.5px solid ${filtroSetor === s ? '#7C3AED' : T.border}`,
+                    background: filtroSetor === s ? '#EDE9FE' : T.card,
+                    color: filtroSetor === s ? '#7C3AED' : T.text2,
                     transition: 'all 0.15s',
                     opacity: count === 0 ? 0.5 : 1,
                   }}
@@ -655,10 +674,10 @@ export default function Dashboard() {
       {(vis('financeiro') || vis('par')) && (
         <div style={{ display: 'grid', gridTemplateColumns: vis('financeiro') && vis('par') ? '1.6fr 1fr' : '1fr', gap: 20, marginBottom: 20 }}>
           {vis('financeiro') && (
-            <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+            <div style={{ background: T.card, borderRadius: 18, padding: '22px 24px', border: `1px solid ${T.border}`, boxShadow: `0 2px 12px ${T.shadow}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                 <BadgeDollarSign size={16} style={{ color: '#7C3AED' }} />
-                <span style={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>Faturamento Previsto vs. Recebido</span>
+                <span style={{ fontWeight: 800, fontSize: 15, color: T.text1 }}>Faturamento Previsto vs. Recebido</span>
               </div>
               <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 20 }}>Baseado nos planejamentos aprovados{filtroSetor ? ` · ${filtroSetor}` : ''}</div>
               {medicoesPorMes.length === 0 ? (
@@ -676,7 +695,7 @@ export default function Dashboard() {
                         <stop offset="95%" stopColor="#0EA5E9" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#F1F5F9'} vertical={false} />
                     <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#94A3B8', fontWeight: 600 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={v => fmt(v)} width={70} />
                     <Tooltip content={<CustomTooltipBar />} />
@@ -688,10 +707,10 @@ export default function Dashboard() {
             </div>
           )}
           {vis('par') && (
-            <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+            <div style={{ background: T.card, borderRadius: 18, padding: '22px 24px', border: `1px solid ${T.border}`, boxShadow: `0 2px 12px ${T.shadow}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                 <Target size={16} style={{ color: '#7C3AED' }} />
-                <span style={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>Regras PAR</span>
+                <span style={{ fontWeight: 800, fontSize: 15, color: T.text1 }}>Regras PAR</span>
               </div>
               <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 20 }}>
                 {kpisReais ? `Média de ${kpisReais.count} plano(s) aprovado(s)` : 'Sem planejamentos aprovados'}
@@ -715,10 +734,10 @@ export default function Dashboard() {
       {(vis('pizza') || vis('medicoes')) && (
         <div style={{ display: 'grid', gridTemplateColumns: vis('pizza') && vis('medicoes') ? '1fr 1.4fr' : '1fr', gap: 20, marginBottom: 20 }}>
           {vis('pizza') && (
-            <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+            <div style={{ background: T.card, borderRadius: 18, padding: '22px 24px', border: `1px solid ${T.border}`, boxShadow: `0 2px 12px ${T.shadow}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                 <PieIcon size={16} style={{ color: '#7C3AED' }} />
-                <span style={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>Projetos por Status</span>
+                <span style={{ fontWeight: 800, fontSize: 15, color: T.text1 }}>Projetos por Status</span>
               </div>
               <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 12 }}>
                 {projetosFiltrados.length} projetos{filtroSetor ? ` · ${filtroSetor}` : ' no total'}
@@ -783,18 +802,18 @@ export default function Dashboard() {
             </div>
           )}
           {vis('medicoes') && (
-            <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+            <div style={{ background: T.card, borderRadius: 18, padding: '22px 24px', border: `1px solid ${T.border}`, boxShadow: `0 2px 12px ${T.shadow}` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Calendar size={16} style={{ color: '#7C3AED' }} />
-                    <span style={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>Próximas Medições</span>
+                    <span style={{ fontWeight: 800, fontSize: 15, color: T.text1 }}>Próximas Medições</span>
                   </div>
                   <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>
                     Vencendo nos próximos 30 dias{filtroSetor ? ` · ${filtroSetor}` : ''}
                   </div>
                 </div>
-                <button onClick={() => navigate('/medicoes')} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC', fontSize: 11, fontWeight: 700, color: '#475569', cursor: 'pointer' }}>
+                <button onClick={() => navigate('/medicoes')} style={{ padding: '6px 12px', borderRadius: 8, border: `1px solid ${T.border}`, background: T.cardAlt, fontSize: 11, fontWeight: 700, color: T.text2, cursor: 'pointer' }}>
                   Ver todas →
                 </button>
               </div>
@@ -811,7 +830,7 @@ export default function Dashboard() {
                     return (
                       <div key={i} style={{
                         display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
-                        borderRadius: 10, background: urgente ? '#FEF2F2' : '#F8FAFC',
+                        borderRadius: 10, background: urgente ? '#FEF2F2' : T.cardAlt,
                         border: `1px solid ${urgente ? '#FECACA' : '#E2E8F0'}`,
                       }}>
                         <div style={{
@@ -823,7 +842,7 @@ export default function Dashboard() {
                           <span style={{ fontSize: 8, color: '#94A3B8', fontWeight: 600 }}>dias</span>
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: T.text1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {m.nomeProjeto || m.ID_Projeto}
                           </div>
                           <div style={{ fontSize: 11, color: '#64748B', marginTop: 1 }}>{m.Descricao || '—'}</div>
@@ -848,12 +867,12 @@ export default function Dashboard() {
 
       {/* ── Semáforo de projetos ── */}
       {vis('saude') && (
-        <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', marginBottom: 20 }}>
+        <div style={{ background: T.card, borderRadius: 18, padding: '22px 24px', border: `1px solid ${T.border}`, boxShadow: `0 2px 12px ${T.shadow}`, marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Activity size={16} style={{ color: '#7C3AED' }} />
-                <span style={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>
+                <span style={{ fontWeight: 800, fontSize: 15, color: T.text1 }}>
                   Saúde dos Projetos{filtroSetor ? ` · ${filtroSetor}` : ''}
                 </span>
               </div>
@@ -863,7 +882,7 @@ export default function Dashboard() {
                 <span style={{ color: '#EF4444', fontWeight: 700 }}>● Risco {countDanger}</span>
               </div>
             </div>
-            <button onClick={() => navigate('/projetos')} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC', fontSize: 11, fontWeight: 700, color: '#475569', cursor: 'pointer' }}>
+            <button onClick={() => navigate('/projetos')} style={{ padding: '6px 12px', borderRadius: 8, border: `1px solid ${T.border}`, background: T.cardAlt, fontSize: 11, fontWeight: 700, color: T.text2, cursor: 'pointer' }}>
               Ver todos →
             </button>
           </div>
@@ -880,7 +899,7 @@ export default function Dashboard() {
                 <div style={{ textAlign: 'center', marginTop: 14 }}>
                   <button
                     onClick={() => setMostrarTodosSaude(v => !v)}
-                    style={{ padding: '7px 18px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC', fontSize: 12, fontWeight: 700, color: '#475569', cursor: 'pointer' }}
+                    style={{ padding: '7px 18px', borderRadius: 8, border: `1px solid ${T.border}`, background: T.cardAlt, fontSize: 12, fontWeight: 700, color: T.text2, cursor: 'pointer' }}
                   >
                     {mostrarTodosSaude ? 'Ver menos ▲' : `Ver todos os ${projetosRicos.length} projetos ▼`}
                   </button>
@@ -893,14 +912,14 @@ export default function Dashboard() {
 
       {/* ── Projetos ClickUp por Setor ── */}
       {vis('clickup') && (
-        <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', marginBottom: 20 }}>
+        <div style={{ background: T.card, borderRadius: 18, padding: '22px 24px', border: `1px solid ${T.border}`, boxShadow: `0 2px 12px ${T.shadow}`, marginBottom: 20 }}>
           <ProjetosClickUp filtroSetor={filtroSetor} />
         </div>
       )}
 
       {/* ── Painéis ClickUp ── */}
       {vis('paineis') && (
-        <div style={{ background: '#fff', borderRadius: 18, padding: '22px 24px', border: '1px solid #E2E8F0', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', marginBottom: 20 }}>
+        <div style={{ background: T.card, borderRadius: 18, padding: '22px 24px', border: `1px solid ${T.border}`, boxShadow: `0 2px 12px ${T.shadow}`, marginBottom: 20 }}>
           <PaineisClickUp />
         </div>
       )}
