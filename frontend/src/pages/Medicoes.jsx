@@ -39,7 +39,7 @@ export default function Medicoes() {
       const [medRes, projRes, planRes] = await Promise.all([
         api.get('/medicoes'),
         api.get('/projetos'),
-        api.get('/planejamentos'),
+        api.get('/planejamento'),
       ])
       const tabela = medRes.data.medicoes || medRes.data || []
       const projs = projRes.data.projetos || []
@@ -49,7 +49,7 @@ export default function Medicoes() {
       const parseBRval = v => { if (!v) return 0; const s = String(v).replace(/\./g, '').replace(',', '.'); return parseFloat(s) || 0 }
 
       const doPlanejamento = []
-      const planos = planRes.data.planejamentos || planRes.data || []
+      const planos = Array.isArray(planRes.data) ? planRes.data : (planRes.data.planejamentos || [])
       planos.filter(p => p.Status === 'Aprovado').forEach(plan => {
         if (idsNaTabela.has(plan.ID_Projeto)) return
         const proj = projMap[plan.ID_Projeto] || {}
