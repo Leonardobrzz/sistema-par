@@ -738,18 +738,18 @@ export default function PlanejamentoFinanceiro() {
         {tab === "planejamento" && (<div className="space-y-4">
 
           {/* KPIs */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 10 }}>
             {[
-              { label: "Valor do Contrato", val: fmt(par.V),                                                ok: true },
-              { label: "Custo Total",       val: fmt(par.custoTotalDisplay),                               ok: true },
-              { label: "Lucro Estimado",    val: fmt(par.lucro),          ok: margemOk, sub: `${fmtN(par.lucroPerc)}% (mín 23%)` },
-              { label: "Custo de Produção", val: fmt(par.totalEquipe + par.totalDespesasInternas + par.totalTerceiros), ok: prodOk, sub: `${fmtN(par.custoProducaoPerc)}% (máx 30%)` },
-              { label: "Total Terceirizados", val: fmt(par.totalTerceiros), ok: tercOk },
+              { label: "Valor do Contrato",   val: fmt(par.V),   color: "#0F172A", bg: "#F8FAFC", border: "#E2E8F0", sub: null },
+              { label: "Custo Total",         val: fmt(par.custoTotalDisplay), color: "#0F172A", bg: "#F8FAFC", border: "#E2E8F0", sub: null },
+              { label: "Lucro Estimado",      val: fmt(par.lucro), color: margemOk ? "#15803D" : "#DC2626", bg: margemOk ? "#F0FDF4" : "#FEF2F2", border: margemOk ? "#86EFAC" : "#FECACA", sub: `${fmtN(par.lucroPerc)}% · mín 23%` },
+              { label: "Custo de Produção",   val: fmt(par.totalEquipe + par.totalDespesasInternas + par.totalTerceiros), color: prodOk ? "#92400E" : "#DC2626", bg: prodOk ? "#FFFBEB" : "#FEF2F2", border: prodOk ? "#FDE68A" : "#FECACA", sub: `${fmtN(par.custoProducaoPerc)}% · máx 30%` },
+              { label: "Total Terceirizados", val: fmt(par.totalTerceiros), color: tercOk ? "#1E40AF" : "#DC2626", bg: tercOk ? "#EFF6FF" : "#FEF2F2", border: tercOk ? "#BFDBFE" : "#FECACA", sub: tercOk ? null : `${fmtN(par.percTerceiros)}% · máx 25%` },
             ].map(k => (
-              <div key={k.label} style={{ background: "#fff", borderRadius: 12, padding: "14px 16px", border: `1.5px solid ${k.ok ? "#E2E8F0" : "#FECACA"}` }}>
-                <div style={{ fontSize: 10, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{k.label}</div>
-                <div style={{ fontSize: 20, fontWeight: 900, color: k.ok ? "#0F172A" : "#DC2626" }}>{k.val}</div>
-                {k.sub && <div style={{ fontSize: 11, color: k.ok ? "#64748B" : "#DC2626", marginTop: 2, fontWeight: 600 }}>{k.sub}</div>}
+              <div key={k.label} style={{ background: k.bg, borderRadius: 12, padding: "14px 16px", border: `1.5px solid ${k.border}`, minWidth: 0 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{k.label}</div>
+                <div style={{ fontSize: 16, fontWeight: 900, color: k.color, lineHeight: 1.2, wordBreak: "break-word" }}>{k.val}</div>
+                {k.sub && <div style={{ fontSize: 10, color: k.color, marginTop: 5, fontWeight: 700, opacity: 0.85 }}>{k.sub}</div>}
               </div>
             ))}
           </div>
