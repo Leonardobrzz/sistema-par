@@ -110,6 +110,8 @@ export default function Aprovacao() {
   const [baselineMsg, setBaselineMsg] = useState("")
   const [justBypass, setJustBypass] = useState("")
   const [versaoViewing, setVersaoViewing] = useState(null)
+  const [dadosCompletos, setDadosCompletos] = useState(null)
+  const [loadingDetalhe, setLoadingDetalhe] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -125,12 +127,16 @@ export default function Aprovacao() {
   useEffect(() => {
     if (!selected) return
     setBaselineLoading(true)
+    setLoadingDetalhe(true)
     setVersaoViewing(null)
+    setDadosCompletos(null)
     api.get(`/planejamento/${selected.ID}`).then(r => {
       const dados = r.data?.dadosCompletos || {}
       setBaselineInfo(dados._baseline || null)
       setHistoricoBaselines(dados._historicoBaselines || [])
-    }).catch(() => { setBaselineInfo(null); setHistoricoBaselines([]) }).finally(() => setBaselineLoading(false))
+      setDadosCompletos(dados)
+    }).catch(() => { setBaselineInfo(null); setHistoricoBaselines([]); setDadosCompletos({}) })
+    .finally(() => { setBaselineLoading(false); setLoadingDetalhe(false) })
   }, [selected])
 
   async function acao(tipo) {
@@ -255,10 +261,11 @@ export default function Aprovacao() {
                 <ShieldCheckIcon style={{ width: 44, height: 44, margin: "0 auto 12px", opacity: 0.3 }} />
                 <div style={{ fontWeight: 600, fontSize: 14 }}>Selecione um planejamento para revisar</div>
               </div>
+            ) : loadingDetalhe ? (
+              <div style={{ padding: 60, textAlign: "center", color: T.text3 }}>Carregando planejamento...</div>
             ) : (() => {
-              // Parse Dados_JSON
-              let d = {}
-              try { d = selected.Dados_JSON ? JSON.parse(selected.Dados_JSON) : {} } catch {}
+              // dadosCompletos é o Dados_JSON já parseado + campos extras (_baseline, etc)
+              const d = dadosCompletos || {}
               const V = parseBR(d.valorContrato || selected.Valor_Contrato)
               const ip = parseBR(d.impostosPerc || 20)
               const ta = parseBR(d.taxaAdmPerc || 12)
