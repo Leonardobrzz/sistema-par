@@ -278,8 +278,7 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-// POST /api/planejamento/:id/aprovar — aprova ou rejeita um planejamento
-router.post('/:id/aprovar', async (req, res, next) => {
+async function handleAprovar(req, res, next, acaoForced) {
   try {
     const plan = await db.findOne('Planejamentos', (p) => p.ID === req.params.id);
     if (!plan) return res.status(404).json({ error: 'Planejamento não encontrado.' });
@@ -292,7 +291,8 @@ router.post('/:id/aprovar', async (req, res, next) => {
       return res.status(409).json({ error: `Planejamento está em status "${plan.Status}". Somente "Pendente Aprovação" pode ser aprovado.` });
     }
 
-    const { acao, comentario } = req.body; // acao: 'aprovar' | 'rejeitar'
+    const acao = acaoForced || req.body.acao || 'aprovar';
+    const comentario = req.body.comentario || req.body.justificativa || '';
     if (!['aprovar', 'rejeitar'].includes(acao)) {
       return res.status(400).json({ error: 'Campo "acao" deve ser "aprovar" ou "rejeitar".' });
     }
@@ -364,7 +364,13 @@ router.post('/:id/aprovar', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
+}
+
+// POST /api/planejamento/:id/aprovar — aprova um planejamento
+router.post('/:id/aprovar', (req, res, next) => handleAprovar(req, res, next, 'aprovar'));
+
+// POST /api/planejamento/:id/rejeitar — rejeita um planejamento
+router.post('/:id/rejeitar', (req, res, next) => handleAprovar(req, res, next, 'rejeitar'));
 
 // GET /api/planejamento/pendentes — planejamentos aguardando aprovação
 router.get('/pendentes/lista', async (req, res, next) => {
