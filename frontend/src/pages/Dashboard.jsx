@@ -409,15 +409,37 @@ export default function Dashboard() {
 
   const medicoesPorMes = (() => {
     const meses = {}
+
+    // 1. Medições reais da tabela Medicoes (recebidos e datas de realização)
     medicoesFiltradas.forEach(m => {
       const d = m.Data_Previsao || m.Data_Prevista || m.Data_Emissao_NF
       if (!d) return
       const key = d.slice(0, 7)
       if (!meses[key]) meses[key] = { mes: key, previsto: 0, recebido: 0 }
-      meses[key].previsto += parseFloat(m.Valor_Medicao || m.Valor || 0)
-      if (m.Status_Financeiro === 'Recebido') meses[key].recebido += parseFloat(m.Valor_Medicao || m.Valor || 0)
+      if (m.Status_Financeiro === 'Recebido') {
+        meses[key].recebido += parseFloat(m.Valor_Medicao || m.Valor || 0)
+      }
     })
-    return Object.values(meses).sort((a, b) => a.mes.localeCompare(b.mes)).slice(-6).map(m => ({
+
+    // 2. Medições planejadas dos planejamentos aprovados (Dados_JSON)
+    const plansAtivos = filtroSetor
+      ? aprovados.filter(p => p.Setor === filtroSetor)
+      : aprovados
+    plansAtivos.forEach(plan => {
+      try {
+        const dados = JSON.parse(plan.Dados_JSON || '{}')
+        const meds = dados.medicoes || dados._baseline?.medicoesCronograma || []
+        meds.forEach(m => {
+          const d = m.dataPrevisao || m.dataPrevista || m.dataPrevisaoPlanejada || ''
+          if (!d) return
+          const key = d.slice(0, 7)
+          if (!meses[key]) meses[key] = { mes: key, previsto: 0, recebido: 0 }
+          meses[key].previsto += parseFloat(m.valor || m.valorPlanejado || 0)
+        })
+      } catch {}
+    })
+
+    return Object.values(meses).sort((a, b) => a.mes.localeCompare(b.mes)).slice(-12).map(m => ({
       ...m,
       label: new Date(m.mes + '-01').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
     }))
@@ -595,7 +617,7 @@ export default function Dashboard() {
                 <BadgeDollarSign size={16} style={{ color: '#7C3AED' }} />
                 <span style={{ fontWeight: 800, fontSize: 15, color: '#0F172A' }}>Faturamento Previsto vs. Recebido</span>
               </div>
-              <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 20 }}>Últimos 6 meses · medições{filtroSetor ? ` · ${filtroSetor}` : ''}</div>
+              <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 20 }}>Baseado nos planejamentos aprovados{filtroSetor ? ` · ${filtroSetor}` : ''}</div>
               {medicoesPorMes.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: 13 }}>Nenhuma medição com data registrada ainda</div>
               ) : (
