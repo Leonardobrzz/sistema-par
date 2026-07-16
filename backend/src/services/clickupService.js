@@ -906,21 +906,20 @@ async function syncOsCliente(allLists, projetos) {
   }
 }
 
-// Busca time entries de uma tarefa específica via API do ClickUp
+// Busca time entries de uma tarefa específica via API correta do ClickUp v2
 async function getTimeEntriesByTask(taskId) {
   const teamId = process.env.CLICKUP_TEAM_ID;
   try {
-    const res = await axios.get(`${BASE_URL}/task/${taskId}/time_entries`, {
+    const res = await axios.get(`${BASE_URL}/team/${teamId}/time_entries`, {
       headers: getHeaders(),
       params: {
-        team_id: teamId,
+        task_id: taskId,
         start_date: Date.now() - 365 * 24 * 60 * 60 * 1000,
         end_date: Date.now(),
       },
     });
     return res.data.data || [];
   } catch (err) {
-    // Loga apenas o primeiro erro para não spam
     if (!getTimeEntriesByTask._loggedOnce) {
       console.warn(`[ClickUp] getTimeEntriesByTask ${taskId}:`, err.response?.status, err.response?.data?.err || err.message);
       getTimeEntriesByTask._loggedOnce = true;
