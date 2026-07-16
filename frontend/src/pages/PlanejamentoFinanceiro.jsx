@@ -1089,7 +1089,7 @@ export default function PlanejamentoFinanceiro() {
           </Section>
 
           {/* Seção 5: Equipe */}
-          <Section title="Equipe Interna" open={sections.equipe} onToggle={() => toggle("equipe")} badge={`${form.equipe.length} · ${fmt(par.totalEquipe)}`}>
+          <Section title="Equipe e Despesas Internas" open={sections.equipe} onToggle={() => toggle("equipe")} badge={`${form.equipe.length} · ${fmt(par.totalEquipe)}`}>
             <div style={{ marginTop: 16 }}>
               {(form.equipe || []).map((e, i) => (
                 <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 8, marginBottom: 8, alignItems: "end" }}>
