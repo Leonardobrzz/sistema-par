@@ -1308,31 +1308,6 @@ export default function PlanejamentoFinanceiro() {
                     </div>
                     <BurnBar label="" planejado={comparativo.horas?.totalPlanejado || 0} real={comparativo.horas?.totalRastreado || 0} />
                   </div>
-                  {/* Por colaborador */}
-                  {comparativo.horas?.porColaborador?.length > 0 && (
-                    <div style={{ borderTop: "1px solid #F1F5F9", paddingTop: 14 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>Por colaborador</div>
-                      {comparativo.horas.porColaborador.map((c, i) => (
-                        <div key={i} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: i < comparativo.horas.porColaborador.length - 1 ? "1px solid #F8FAFC" : "none" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#EDE9FE", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 12, color: "#7C3AED", flexShrink: 0 }}>
-                              {(c.colaborador || "?")[0].toUpperCase()}
-                            </div>
-                            <span style={{ fontWeight: 600, fontSize: 13, color: "#0F172A", flex: 1 }}>{c.colaborador || "Não identificado"}</span>
-                            <span style={{ fontSize: 11, color: "#64748B" }}>Est. <strong>{fmtH(c.horasPlanejadas)}</strong></span>
-                            <span style={{ fontSize: 11, color: "#0F172A", fontWeight: 700 }}>Real <strong>{fmtH(c.horasRastreadas)}</strong></span>
-                            {c.desvioPerc !== null && (
-                              <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 5,
-                                background: Math.abs(c.desvioPerc) < 10 ? "#F1F5F9" : c.desvioPerc > 0 ? "#FEE2E2" : "#DCFCE7",
-                                color: Math.abs(c.desvioPerc) < 10 ? "#64748B" : c.desvioPerc > 0 ? "#DC2626" : "#15803D",
-                              }}>{c.desvioPerc >= 0 ? "↑" : "↓"}{Math.abs(fmtN(c.desvioPerc))}%</span>
-                            )}
-                          </div>
-                          <BurnBar label="" planejado={c.horasPlanejadas} real={c.horasRastreadas} />
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
 
