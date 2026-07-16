@@ -830,8 +830,8 @@ export default function Dashboard() {
                     return (
                       <div key={i} style={{
                         display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
-                        borderRadius: 10, background: urgente ? '#FEF2F2' : T.cardAlt,
-                        border: `1px solid ${urgente ? '#FECACA' : '#E2E8F0'}`,
+                        borderRadius: 10, background: urgente ? (isDark ? '#3B0E0E' : '#FEF2F2') : T.cardAlt,
+                        border: `1px solid ${urgente ? (isDark ? '#7F1D1D' : '#FECACA') : T.border}`,
                       }}>
                         <div style={{
                           width: 38, height: 38, borderRadius: 10, flexShrink: 0,
@@ -839,19 +839,19 @@ export default function Dashboard() {
                           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                         }}>
                           <span style={{ fontSize: 14, fontWeight: 900, color: urgente ? '#EF4444' : '#7C3AED', lineHeight: 1 }}>{dias}</span>
-                          <span style={{ fontSize: 8, color: '#94A3B8', fontWeight: 600 }}>dias</span>
+                          <span style={{ fontSize: 8, color: T.text2, fontWeight: 600 }}>dias</span>
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 13, fontWeight: 700, color: T.text1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {m.nomeProjeto || m.ID_Projeto}
                           </div>
-                          <div style={{ fontSize: 11, color: '#64748B', marginTop: 1 }}>{m.Descricao || '—'}</div>
+                          <div style={{ fontSize: 11, color: T.text2, marginTop: 1 }}>{m.Descricao || '—'}</div>
                         </div>
                         <div style={{ textAlign: 'right', flexShrink: 0 }}>
                           <div style={{ fontSize: 13, fontWeight: 800, color: '#7C3AED' }}>
                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(m.Valor_Medicao || m.Valor || 0)}
                           </div>
-                          <div style={{ fontSize: 10, color: '#94A3B8' }}>
+                          <div style={{ fontSize: 10, color: T.text2 }}>
                             {new Date(m.Data_Previsao || m.Data_Prevista).toLocaleDateString('pt-BR')}
                           </div>
                         </div>
