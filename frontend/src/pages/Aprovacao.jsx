@@ -82,6 +82,14 @@ function gerarPDFBaseline(b, nomeProjeto) {
   setTimeout(() => win.print(), 500)
 }
 
+function SectionLabel({ children }) {
+  return (
+    <div style={{ fontSize: 11, fontWeight: 800, color: "#7C3AED", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+      {children}
+    </div>
+  )
+}
+
 export default function Aprovacao() {
   const { isDark } = useTheme()
   const T = {
@@ -306,13 +314,13 @@ export default function Aprovacao() {
                       <div style={{ padding: "10px 14px", borderRadius: 8, background: "#F0FDF4", border: "1px solid #86EFAC", color: "#15803D", fontWeight: 600, fontSize: 13 }}>{successMsg}</div>
                     )}
 
-                    {/* KPIs */}
+                    {/* ── KPIs PAR ── */}
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
                       {[
-                        { label: "Valor Contrato", val: fmt(V), color: T.text1, bg: T.cardAlt },
-                        { label: "Receita Líquida", val: fmt(recLiq), color: "#7C3AED", bg: isDark ? "#1a1040" : "#F5F3FF" },
-                        { label: `Lucro Est. (${lucroPerc.toFixed(1)}%)`, val: fmt(lucro), color: margemOk ? "#15803D" : "#DC2626", bg: margemOk ? (isDark ? "#0f2820" : "#F0FDF4") : (isDark ? "#2a0f0f" : "#FEF2F2") },
-                        { label: `Terc. (${tercPerc2.toFixed(1)}%)`, val: fmt(totalTerc), color: tercOk ? T.text2 : "#DC2626", bg: T.cardAlt },
+                        { label: "Valor Contrato",   val: fmt(V),     color: T.text1, bg: T.cardAlt },
+                        { label: "Receita Líquida",  val: fmt(recLiq), color: "#7C3AED", bg: isDark ? "#1a1040" : "#F5F3FF" },
+                        { label: `Lucro (${lucroPerc.toFixed(1)}%)`,  val: fmt(lucro), color: margemOk ? "#15803D" : "#DC2626", bg: margemOk ? (isDark ? "#0f2820" : "#F0FDF4") : (isDark ? "#2a0f0f" : "#FEF2F2") },
+                        { label: `Terceirizados (${tercPerc2.toFixed(1)}%)`, val: fmt(totalTerc), color: tercOk ? T.text2 : "#DC2626", bg: T.cardAlt },
                       ].map(k => (
                         <div key={k.label} style={{ background: k.bg, borderRadius: 10, padding: "12px 14px", border: `1px solid ${T.border}` }}>
                           <div style={{ fontSize: 10, fontWeight: 700, color: T.text3, textTransform: "uppercase", marginBottom: 4, lineHeight: 1.3 }}>{k.label}</div>
@@ -321,10 +329,10 @@ export default function Aprovacao() {
                       ))}
                     </div>
 
-                    {/* Aviso de margem ou terceirizados */}
+                    {/* ── Aviso PAR ── */}
                     {(!margemOk || !tercOk) && (
                       <div style={{ padding: "12px 16px", borderRadius: 10, background: isDark ? "#2a0f0f" : "#FEF2F2", border: "1.5px solid #FECACA" }}>
-                        <div style={{ fontWeight: 700, color: "#DC2626", fontSize: 13, marginBottom: 4 }}>Atenção — fora da Metodologia PAR</div>
+                        <div style={{ fontWeight: 700, color: "#DC2626", fontSize: 13, marginBottom: 4 }}>⚠ Fora da Metodologia PAR</div>
                         {!margemOk && <div style={{ fontSize: 12, color: "#B91C1C" }}>• Margem ({lucroPerc.toFixed(1)}%) abaixo do mínimo de 23%</div>}
                         {!tercOk && <div style={{ fontSize: 12, color: "#B91C1C", marginTop: 3 }}>• Terceirizados ({tercPerc2.toFixed(1)}%) acima do máximo de 25%</div>}
                         {!tercOk && (
@@ -335,15 +343,78 @@ export default function Aprovacao() {
                       </div>
                     )}
 
-                    {/* Medições */}
+                    {/* ── Detalhamento Financeiro ── */}
+                    {(() => {
+                      const rows = [
+                        ["Valor do Contrato", fmt(V)],
+                        [`Impostos (${ip}%)`, fmt(impostos)],
+                        [`Taxa ADM (${ta}%)`, fmt(taxaAdm)],
+                        [`Comissão (${co}%)`, fmt(comissao)],
+                        ["Receita Líquida", fmt(recLiq), "#7C3AED"],
+                        ["Custo Total", fmt(totalCustos)],
+                        ["Lucro Estimado", fmt(lucro), margemOk ? "#15803D" : "#DC2626"],
+                      ]
+                      return (
+                        <div>
+                          <SectionLabel>💰 Financeiro</SectionLabel>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                            {rows.map(([label, val, color]) => (
+                              <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "7px 12px", borderRadius: 8, background: T.cardAlt, border: `1px solid ${T.border}`, fontSize: 12 }}>
+                                <span style={{ color: T.text2 }}>{label}</span>
+                                <span style={{ fontWeight: 700, color: color || T.text1 }}>{val}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })()}
+
+                    {/* ── Informações Gerais ── */}
+                    {(() => {
+                      const infos = [
+                        d.nomeProjeto && ["Projeto", d.nomeProjeto],
+                        d.cliente && ["Cliente", d.cliente],
+                        d.setor && ["Setor", d.setor],
+                        d.tipologia && ["Tipologia", d.tipologia],
+                        d.empresa && ["Empresa", d.empresa],
+                        d.respPlanejamento && ["Resp. Planejamento", d.respPlanejamento],
+                        d.respAprovacao && ["Resp. Aprovação", d.respAprovacao],
+                        d.nrContratoOS && ["Centro de Custo", d.nrContratoOS],
+                        d.nrOsOpp && ["O.S. OPP", d.nrOsOpp],
+                        d.dataInicioOS && ["Início O.S.", new Date(d.dataInicioOS).toLocaleDateString("pt-BR")],
+                        d.dataEntregaContrato && ["Entrega Contrato", new Date(d.dataEntregaContrato).toLocaleDateString("pt-BR")],
+                        d.dataEntregaPlanejada && ["Entrega Planejada", new Date(d.dataEntregaPlanejada).toLocaleDateString("pt-BR")],
+                      ].filter(Boolean)
+                      if (!infos.length) return null
+                      return (
+                        <div>
+                          <SectionLabel>📋 Informações Gerais</SectionLabel>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                            {infos.map(([label, val]) => (
+                              <div key={label} style={{ display: "flex", flexDirection: "column", padding: "8px 12px", borderRadius: 8, background: T.cardAlt, border: `1px solid ${T.border}` }}>
+                                <span style={{ fontSize: 10, fontWeight: 700, color: T.text3, textTransform: "uppercase", marginBottom: 2 }}>{label}</span>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: T.text1, wordBreak: "break-word" }}>{val}</span>
+                              </div>
+                            ))}
+                          </div>
+                          {d.justificativa && (
+                            <div style={{ marginTop: 6, padding: "10px 12px", borderRadius: 8, background: T.cardAlt, border: `1px solid ${T.border}`, fontSize: 12, color: T.text2 }}>
+                              <span style={{ fontWeight: 700, color: T.text3, fontSize: 10, textTransform: "uppercase" }}>Observações: </span>{d.justificativa}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })()}
+
+                    {/* ── Medições ── */}
                     {medicoes.length > 0 && (
                       <div>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: T.text3, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>📋 Medições ({medicoes.length})</div>
+                        <SectionLabel>📅 Medições ({medicoes.length})</SectionLabel>
                         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                           {medicoes.map((m, i) => (
                             <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderRadius: 8, background: T.cardAlt, border: `1px solid ${T.border}`, fontSize: 12 }}>
-                              <span style={{ color: T.text1, fontWeight: 600 }}>{m.etapa || m.descricao || `Medição ${i+1}`}</span>
-                              <div style={{ display: "flex", gap: 12, color: T.text2 }}>
+                              <span style={{ color: T.text1, fontWeight: 600, flex: 1 }}>{m.etapa || m.descricao || `Medição ${i+1}`}</span>
+                              <div style={{ display: "flex", gap: 12, color: T.text2, flexShrink: 0 }}>
                                 {m.percentual && <span style={{ color: "#7C3AED", fontWeight: 700 }}>{m.percentual}%</span>}
                                 {(m.dataPrevisao || m.data) && <span>{new Date(m.dataPrevisao || m.data).toLocaleDateString("pt-BR")}</span>}
                                 <span style={{ fontWeight: 700, color: "#15803D" }}>{fmt(parseBR(m.valor || m.valorPlanejado))}</span>
@@ -354,40 +425,65 @@ export default function Aprovacao() {
                       </div>
                     )}
 
-                    {/* Equipe */}
+                    {/* ── Equipe Interna ── */}
                     {(d.equipe || []).length > 0 && (
                       <div>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: T.text3, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>👥 Equipe Interna — {fmt(totalEq)}</div>
+                        <SectionLabel>👥 Equipe Interna — {fmt(totalEq)}</SectionLabel>
                         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                          {d.equipe.map((e, i) => (
-                            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, background: T.cardAlt, border: `1px solid ${T.border}`, fontSize: 12 }}>
-                              <span style={{ color: T.text1, fontWeight: 600 }}>{e.colaborador || e.nome || "—"}</span>
-                              <span style={{ color: T.text2 }}>{parseBR(e.horas).toFixed(0)}h · {fmt(parseBR(e.horas) * (parseBR(e.mediaHora) || 36.4))}</span>
-                            </div>
-                          ))}
+                          {d.equipe.map((e, i) => {
+                            const custo = parseBR(e.horas) * (parseBR(e.mediaHora) || 36.4)
+                            return (
+                              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderRadius: 8, background: T.cardAlt, border: `1px solid ${T.border}`, fontSize: 12 }}>
+                                <span style={{ color: T.text1, fontWeight: 600 }}>{e.colaborador || e.nome || "—"}</span>
+                                <div style={{ display: "flex", gap: 12, color: T.text2 }}>
+                                  <span>{parseBR(e.horas).toFixed(0)}h</span>
+                                  {parseBR(e.mediaHora) > 0 && <span>@ R${parseBR(e.mediaHora).toFixed(2)}/h</span>}
+                                  <span style={{ fontWeight: 700, color: T.text1 }}>{fmt(custo)}</span>
+                                </div>
+                              </div>
+                            )
+                          })}
                         </div>
                       </div>
                     )}
 
-                    {/* Terceirizados */}
+                    {/* ── Terceirizados ── */}
                     {(d.terceirizados || []).length > 0 && (
                       <div>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: T.text3, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>🏗 Terceirizados — {fmt(totalTerc)}</div>
+                        <SectionLabel>🏗 Terceirizados — {fmt(totalTerc)}</SectionLabel>
                         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                           {d.terceirizados.map((t, i) => (
-                            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, background: T.cardAlt, border: `1px solid ${T.border}`, fontSize: 12 }}>
-                              <span style={{ color: T.text1, fontWeight: 600 }}>{t.descricao || "—"}</span>
-                              <span style={{ color: "#7C3AED", fontWeight: 700 }}>{fmt(parseBR(t.custo))}</span>
+                            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderRadius: 8, background: T.cardAlt, border: `1px solid ${T.border}`, fontSize: 12 }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ color: T.text1, fontWeight: 600 }}>{t.descricao || "—"}</div>
+                                {t.fornecedor && <div style={{ color: T.text3, fontSize: 11 }}>{t.fornecedor}</div>}
+                              </div>
+                              <span style={{ color: "#7C3AED", fontWeight: 700, flexShrink: 0, marginLeft: 12 }}>{fmt(parseBR(t.custo))}</span>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    {/* Despesas */}
+                    {/* ── Despesas Internas ── */}
+                    {(d.despesasInternas || []).length > 0 && (
+                      <div>
+                        <SectionLabel>🏢 Despesas Internas — {fmt(totalDespInt)}</SectionLabel>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          {d.despesasInternas.map((x, i) => (
+                            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, background: T.cardAlt, border: `1px solid ${T.border}`, fontSize: 12 }}>
+                              <span style={{ color: T.text1 }}>{x.descricao || x.categoria || "—"}</span>
+                              <span style={{ color: T.text2, fontWeight: 700 }}>{fmt(parseBR(x.custo))}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── Despesas Gerais ── */}
                     {(d.despesas || []).length > 0 && (
                       <div>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: T.text3, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>📎 Despesas Gerais — {fmt(totalDesp)}</div>
+                        <SectionLabel>📎 Despesas Gerais — {fmt(totalDesp)}</SectionLabel>
                         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                           {d.despesas.map((x, i) => (
                             <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, background: T.cardAlt, border: `1px solid ${T.border}`, fontSize: 12 }}>
@@ -399,7 +495,7 @@ export default function Aprovacao() {
                       </div>
                     )}
 
-                    {/* Justificativa + botões */}
+                    {/* ── Justificativa + Botões ── */}
                     <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 16 }}>
                       <label style={{ fontWeight: 600, fontSize: 13, color: T.text2, display: "block", marginBottom: 6 }}>Justificativa (opcional)</label>
                       <textarea value={justificativa} onChange={e => setJustificativa(e.target.value)} rows={3}
