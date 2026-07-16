@@ -460,14 +460,40 @@ export default function Dashboard() {
 
   const hoje = new Date()
   const daqui30 = new Date(hoje); daqui30.setDate(daqui30.getDate() + 30)
-  const proximasMedicoes = medicoesFiltradas
-    .filter(m => {
+  const proximasMedicoes = (() => {
+    const daTabela = medicoesFiltradas.filter(m => {
       const d = m.Data_Previsao || m.Data_Prevista
       const dt = d ? new Date(d) : null
       return dt && dt >= hoje && dt <= daqui30 && m.Status !== 'Cancelada' && m.Status !== 'Concluída'
     })
-    .sort((a, b) => new Date(a.Data_Previsao || a.Data_Prevista) - new Date(b.Data_Previsao || b.Data_Prevista))
-    .slice(0, 5)
+    const idsNaTabela = new Set(medicoesFiltradas.map(m => m.ID_Projeto))
+    const doPlano = []
+    aprovados.forEach(plan => {
+      if (idsNaTabela.has(plan.ID_Projeto)) return
+      try {
+        const dados = JSON.parse(plan.Dados_JSON || '{}')
+        const meds = dados.medicoes || dados._baseline?.medicoesCronograma || []
+        meds.forEach((m, idx) => {
+          const d = m.dataPrevisao || m.dataPrevista || ''
+          if (!d) return
+          const dt = new Date(d)
+          if (dt >= hoje && dt <= daqui30) {
+            doPlano.push({
+              ID_Projeto: plan.ID_Projeto,
+              nomeProjeto: plan.Nome || plan.ID_Projeto,
+              Data_Previsao: d,
+              Valor: m.valor || m.valorPlanejado || 0,
+              Descricao: m.descricao || m.etapa || `Medição ${idx + 1}`,
+              Status_Financeiro: 'Pendente',
+            })
+          }
+        })
+      } catch {}
+    })
+    return [...daTabela, ...doPlano]
+      .sort((a, b) => new Date(a.Data_Previsao || a.Data_Prevista) - new Date(b.Data_Previsao || b.Data_Prevista))
+      .slice(0, 5)
+  })()
 
   const NIVEL_ORD = { danger: 0, caution: 1, ok: 2 }
   const projetosRicos = projetosFiltrados
