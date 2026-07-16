@@ -7,6 +7,7 @@ import {
   FileSpreadsheet, ThumbsUp, TrendingUp, Search,
 } from "lucide-react"
 import api from "../utils/api"
+import { useTheme } from "../contexts/ThemeContext"
 
 // ── Formatters ───────────────────────────────────────────────────────────────
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0)
@@ -23,17 +24,25 @@ const fmtH = (h) => {
 // ── Shared styles ────────────────────────────────────────────────────────────
 const SL = { fontSize: 12, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 4 }
 const INPUT = { width: "100%", padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#0F172A", fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }
+// INPUT is kept for static contexts; use INPUT_D (defined inside component) for themed inputs
 
 function Field({ label, children, style }) {
   return <div style={{ display: "flex", flexDirection: "column", gap: 4, ...style }}><label style={SL}>{label}</label>{children}</div>
 }
 
 function Section({ title, open, onToggle, children, badge, limitBadge }) {
+  const { isDark } = useTheme()
+  const Ts = {
+    card: isDark ? '#1E293B' : '#ffffff',
+    border: isDark ? '#334155' : '#E2E8F0',
+    borderSub: isDark ? '#1E293B' : '#F1F5F9',
+    text1: isDark ? '#F1F5F9' : '#0F172A',
+  }
   return (
-    <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
+    <div style={{ background: Ts.card, borderRadius: 14, border: `1.5px solid ${Ts.border}`, overflow: "hidden" }}>
       <button onClick={onToggle} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "14px 20px", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
         {open ? <ChevronDown size={16} color="#7C3AED" /> : <ChevronRight size={16} color="#94A3B8" />}
-        <span style={{ fontWeight: 800, fontSize: 14, color: "#0F172A", flex: 1 }}>{title}</span>
+        <span style={{ fontWeight: 800, fontSize: 14, color: Ts.text1, flex: 1 }}>{title}</span>
         {limitBadge && (
           <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 10px", borderRadius: 6, background: limitBadge.ok ? "#DCFCE7" : "#FEE2E2", color: limitBadge.ok ? "#15803D" : "#DC2626" }}>
             {limitBadge.label}
@@ -41,7 +50,7 @@ function Section({ title, open, onToggle, children, badge, limitBadge }) {
         )}
         {badge != null && <span style={{ fontSize: 12, fontWeight: 700, color: "#7C3AED", background: "#EDE9FE", padding: "2px 10px", borderRadius: 6 }}>{badge}</span>}
       </button>
-      {open && <div style={{ padding: "0 20px 20px", borderTop: "1px solid #F1F5F9" }}>{children}</div>}
+      {open && <div style={{ padding: "0 20px 20px", borderTop: `1px solid ${Ts.borderSub}` }}>{children}</div>}
     </div>
   )
 }
@@ -108,19 +117,30 @@ function BurnBar({ label, planejado, real }) {
 
 // ── Main component ───────────────────────────────────────────────────────────
 function DespesasOPPCard({ despesasOPP, previsto, fmt }) {
+  const { isDark } = useTheme()
+  const Td = {
+    card: isDark ? '#1E293B' : '#ffffff',
+    cardAlt: isDark ? '#162032' : '#F8FAFC',
+    border: isDark ? '#334155' : '#E2E8F0',
+    borderSub: isDark ? '#1E293B' : '#F1F5F9',
+    text1: isDark ? '#F1F5F9' : '#0F172A',
+    text2: isDark ? '#94A3B8' : '#64748B',
+    text3: isDark ? '#64748B' : '#94A3B8',
+    rowBg: isDark ? '#1E293B' : '#ffffff',
+  }
   const [abertos, setAbertos] = useState({})
   const toggle = (gi) => setAbertos(prev => ({ ...prev, [gi]: !prev[gi] }))
   return (
-    <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
-      <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>💰 Despesas Reais — OPP</span>
+    <div style={{ background: Td.card, borderRadius: 14, border: `1.5px solid ${Td.border}`, overflow: "hidden" }}>
+      <div style={{ padding: "14px 20px", borderBottom: `1px solid ${Td.borderSub}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: 11, fontWeight: 800, color: Td.text3, textTransform: "uppercase", letterSpacing: "0.07em" }}>💰 Despesas Reais — OPP</span>
         <div style={{ display: "flex", gap: 20 }}>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Total Previsto</div>
+            <div style={{ fontSize: 10, color: Td.text3, fontWeight: 600, textTransform: "uppercase" }}>Total Previsto</div>
             <div style={{ fontSize: 14, fontWeight: 800, color: "#7C3AED" }}>{fmt(previsto || despesasOPP.totalGasto)}</div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Total Pago</div>
+            <div style={{ fontSize: 10, color: Td.text3, fontWeight: 600, textTransform: "uppercase" }}>Total Pago</div>
             <div style={{ fontSize: 14, fontWeight: 800, color: "#15803D" }}>{fmt(despesasOPP.totalPago)}</div>
           </div>
         </div>
@@ -129,29 +149,29 @@ function DespesasOPPCard({ despesasOPP, previsto, fmt }) {
         {despesasOPP.porCategoria.map((grupo, gi) => {
           const aberto = !!abertos[gi]
           return (
-            <div key={gi} style={{ border: "1px solid #F1F5F9", borderRadius: 10, overflow: "hidden" }}>
-              <button onClick={() => toggle(gi)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "#F8FAFC", border: "none", cursor: "pointer", textAlign: "left" }}>
+            <div key={gi} style={{ border: `1px solid ${Td.borderSub}`, borderRadius: 10, overflow: "hidden" }}>
+              <button onClick={() => toggle(gi)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: Td.cardAlt, border: "none", cursor: "pointer", textAlign: "left" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 11, color: "#64748B", display: "inline-block", transform: aberto ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>▶</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>{grupo.categoria || "Sem categoria"}</span>
-                  <span style={{ fontSize: 11, color: "#94A3B8" }}>({grupo.lancamentos.length})</span>
+                  <span style={{ fontSize: 11, color: Td.text2, display: "inline-block", transform: aberto ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s" }}>▶</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: Td.text1 }}>{grupo.categoria || "Sem categoria"}</span>
+                  <span style={{ fontSize: 11, color: Td.text3 }}>({grupo.lancamentos.length})</span>
                 </div>
                 <div style={{ display: "flex", gap: 16 }}>
-                  <span style={{ fontSize: 11, color: "#64748B" }}>Previsto: <strong style={{ color: "#0F172A" }}>{fmt(grupo.total)}</strong></span>
-                  <span style={{ fontSize: 11, color: "#64748B" }}>Pago: <strong style={{ color: "#15803D" }}>{fmt(grupo.totalPago)}</strong></span>
+                  <span style={{ fontSize: 11, color: Td.text2 }}>Previsto: <strong style={{ color: Td.text1 }}>{fmt(grupo.total)}</strong></span>
+                  <span style={{ fontSize: 11, color: Td.text2 }}>Pago: <strong style={{ color: "#15803D" }}>{fmt(grupo.totalPago)}</strong></span>
                 </div>
               </button>
               {aberto && (
                 <div>
                   {grupo.lancamentos.map((l, li) => (
-                    <div key={li} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 14px 8px 36px", borderTop: "1px solid #F8FAFC", background: "#fff" }}>
+                    <div key={li} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 14px 8px 36px", borderTop: `1px solid ${Td.borderSub}`, background: Td.rowBg }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "#0F172A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.descricao || l.fornecedor}</div>
-                        {l.fornecedor && l.fornecedor !== l.descricao && <div style={{ fontSize: 11, color: "#94A3B8" }}>{l.fornecedor}</div>}
+                        <div style={{ fontSize: 12, fontWeight: 600, color: Td.text1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.descricao || l.fornecedor}</div>
+                        {l.fornecedor && l.fornecedor !== l.descricao && <div style={{ fontSize: 11, color: Td.text3 }}>{l.fornecedor}</div>}
                       </div>
                       <div style={{ display: "flex", gap: 12, alignItems: "center", flexShrink: 0, marginLeft: 12 }}>
-                        <span style={{ fontSize: 11, color: "#94A3B8", whiteSpace: "nowrap" }}>{l.data ? new Date(l.data).toLocaleDateString("pt-BR") : "—"}</span>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: "#0F172A", whiteSpace: "nowrap" }}>{fmt(l.valor)}</span>
+                        <span style={{ fontSize: 11, color: Td.text3, whiteSpace: "nowrap" }}>{l.data ? new Date(l.data).toLocaleDateString("pt-BR") : "—"}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: Td.text1, whiteSpace: "nowrap" }}>{fmt(l.valor)}</span>
                         <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, whiteSpace: "nowrap",
                           background: l.liquidado ? "#DCFCE7" : "#FEF9C3",
                           color: l.liquidado ? "#15803D" : "#92400E" }}>
@@ -171,6 +191,20 @@ function DespesasOPPCard({ despesasOPP, previsto, fmt }) {
 }
 
 export default function PlanejamentoFinanceiro() {
+  const { isDark } = useTheme()
+  const T = {
+    bg:      isDark ? '#0F172A' : '#F8FAFC',
+    card:    isDark ? '#1E293B' : '#ffffff',
+    cardAlt: isDark ? '#162032' : '#F8FAFC',
+    border:  isDark ? '#334155' : '#E2E8F0',
+    text1:   isDark ? '#F1F5F9' : '#0F172A',
+    text2:   isDark ? '#94A3B8' : '#64748B',
+    text3:   isDark ? '#64748B' : '#94A3B8',
+    inputBg: isDark ? '#0F172A' : '#F8FAFC',
+    label:   isDark ? '#94A3B8' : '#475569',
+  }
+  const INPUT_D = { width: "100%", padding: "9px 12px", borderRadius: 8, border: `1.5px solid ${T.border}`, background: T.inputBg, color: T.text1, fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }
+
   const { id: paramId } = useParams()
   const navigate = useNavigate()
 
@@ -564,7 +598,7 @@ export default function PlanejamentoFinanceiro() {
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
         <button onClick={() => navigate("/projetos")}
-          style={{ display: "flex", alignItems: "center", gap: 4, padding: "7px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#fff", color: "#475569", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+          style={{ display: "flex", alignItems: "center", gap: 4, padding: "7px 12px", borderRadius: 8, border: `1.5px solid ${T.border}`, background: T.card, color: T.text2, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
           <ArrowLeft size={15} /> Projetos
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -589,7 +623,7 @@ export default function PlanejamentoFinanceiro() {
         {/* Action buttons */}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button onClick={() => navigate("/relatorios-planejamento")}
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#475569", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: `1.5px solid ${T.border}`, background: T.cardAlt, color: T.text2, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
             <FileSpreadsheet size={15} /> Relatórios
           </button>
           {planStatus && (
@@ -600,7 +634,7 @@ export default function PlanejamentoFinanceiro() {
           {/* Versões anteriores do baseline */}
           {historicoBaselines.map(b => (
             <button key={b.versao} onClick={() => setBaselineViewing(b)}
-              style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#64748B", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+              style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 8, border: `1.5px solid ${T.border}`, background: T.cardAlt, color: T.text2, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
               <Lock size={11} /> {b.versaoLabel}
             </button>
           ))}
@@ -644,7 +678,7 @@ export default function PlanejamentoFinanceiro() {
           <div style={{ position: "relative" }}>
             <Search size={16} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#94A3B8", pointerEvents: "none" }} />
             <input value={filtroBusca} onChange={e => { setFiltroBusca(e.target.value); setFiltroCliente("") }} placeholder="Buscar por projeto, cliente ou número..."
-              style={{ width: "100%", padding: "9px 12px 9px 40px", borderRadius: 8, border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#0F172A", fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+              style={{ width: "100%", padding: "9px 12px 9px 40px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.inputBg, color: T.text1, fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
           </div>
 
           {/* Linha 2: chips setor + status + contador */}
@@ -653,9 +687,9 @@ export default function PlanejamentoFinanceiro() {
             {[{ label: "Todos", val: "" }, { label: "ARQ", val: "Arquitetura" }, { label: "INF", val: "Infraestrutura" }, { label: "SAN", val: "Saneamento" }].map(({ label, val }) => (
               <button key={label} onClick={() => setFiltroSetor(val)}
                 style={{ padding: "4px 12px", borderRadius: 8, border: "1.5px solid", fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
-                  borderColor: filtroSetor === val ? "#7C3AED" : "#E2E8F0",
-                  background: filtroSetor === val ? "#EDE9FE" : "#fff",
-                  color: filtroSetor === val ? "#7C3AED" : "#64748B",
+                  borderColor: filtroSetor === val ? "#7C3AED" : T.border,
+                  background: filtroSetor === val ? "#EDE9FE" : T.card,
+                  color: filtroSetor === val ? "#7C3AED" : T.text2,
                 }}>
                 {label}
               </button>
@@ -695,7 +729,7 @@ export default function PlanejamentoFinanceiro() {
 
           {/* Select de projeto */}
           <select value={projetoId} onChange={e => { setProjetoId(e.target.value); setTab("planejamento") }} disabled={loadingProjetos}
-            style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#0F172A", fontSize: 14, fontFamily: "inherit", outline: "none" }}>
+            style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${T.border}`, background: T.inputBg, color: T.text1, fontSize: 14, fontFamily: "inherit", outline: "none" }}>
             <option value="">— {projetosFiltrados.length} projeto(s) disponível(is) —</option>
             {projetosFiltrados.map(p => <option key={p.ID_Projeto} value={p.ID_Projeto}>{p.Nome}{p.Cliente ? ` · ${p.Cliente}` : ""} [{p.Status}]</option>)}
           </select>
@@ -703,9 +737,9 @@ export default function PlanejamentoFinanceiro() {
       )}
 
       {!projetoId && (
-        <div style={{ textAlign: "center", padding: 60, background: "#F8FAFC", borderRadius: 16, border: "2px dashed #E2E8F0" }}>
-          <Calculator size={40} color="#CBD5E1" style={{ margin: "0 auto 12px" }} />
-          <div style={{ fontWeight: 700, fontSize: 16, color: "#475569" }}>Selecione um projeto para planejar</div>
+        <div style={{ textAlign: "center", padding: 60, background: T.cardAlt, borderRadius: 16, border: `2px dashed ${T.border}` }}>
+          <Calculator size={40} color={T.text3} style={{ margin: "0 auto 12px" }} />
+          <div style={{ fontWeight: 700, fontSize: 16, color: T.text2 }}>Selecione um projeto para planejar</div>
         </div>
       )}
 
@@ -714,7 +748,7 @@ export default function PlanejamentoFinanceiro() {
       {projetoId && !loading && (<>
 
         {/* ── Tabs ── */}
-        <div style={{ display: "flex", gap: 4, background: "#F1F5F9", padding: 4, borderRadius: 12, marginBottom: 24, width: "fit-content" }}>
+        <div style={{ display: "flex", gap: 4, background: T.cardAlt, padding: 4, borderRadius: 12, marginBottom: 24, width: "fit-content" }}>
           {[
             { id: "planejamento", label: "Planejamento", icon: <BadgeDollarSign size={14} /> },
             { id: "real", label: "Plan vs Real", icon: <TrendingUp size={14} />, dot: comparativo?.temBaseline },
@@ -722,9 +756,9 @@ export default function PlanejamentoFinanceiro() {
           ].map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 18px", borderRadius: 9, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "inherit", transition: "all 0.15s",
-                background: tab === t.id ? "#fff" : "transparent",
-                color: tab === t.id ? "#7C3AED" : "#64748B",
-                boxShadow: tab === t.id ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+                background: tab === t.id ? T.card : "transparent",
+                color: tab === t.id ? "#7C3AED" : T.text2,
+                boxShadow: tab === t.id ? "0 1px 4px rgba(0,0,0,0.12)" : "none",
               }}>
               {t.icon} {t.label}
               {t.dot && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E", display: "inline-block" }} />}
@@ -740,14 +774,14 @@ export default function PlanejamentoFinanceiro() {
           {/* KPIs */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 10 }}>
             {[
-              { label: "Valor do Contrato",   val: fmt(par.V),   color: "#0F172A", bg: "#F8FAFC", border: "#E2E8F0", sub: null },
-              { label: "Custo Total",         val: fmt(par.custoTotalDisplay), color: "#0F172A", bg: "#F8FAFC", border: "#E2E8F0", sub: null },
+              { label: "Valor do Contrato",   val: fmt(par.V),   color: T.text1, bg: T.cardAlt, border: T.border, sub: null },
+              { label: "Custo Total",         val: fmt(par.custoTotalDisplay), color: T.text1, bg: T.cardAlt, border: T.border, sub: null },
               { label: "Lucro Estimado",      val: fmt(par.lucro), color: margemOk ? "#15803D" : "#DC2626", bg: margemOk ? "#F0FDF4" : "#FEF2F2", border: margemOk ? "#86EFAC" : "#FECACA", sub: `${fmtN(par.lucroPerc)}% · mín 23%` },
               { label: "Custo de Produção",   val: fmt(par.totalEquipe + par.totalDespesasInternas + par.totalTerceiros), color: prodOk ? "#92400E" : "#DC2626", bg: prodOk ? "#FFFBEB" : "#FEF2F2", border: prodOk ? "#FDE68A" : "#FECACA", sub: `${fmtN(par.custoProducaoPerc)}% · máx 30%` },
               { label: "Total Terceirizados", val: fmt(par.totalTerceiros), color: tercOk ? "#1E40AF" : "#DC2626", bg: tercOk ? "#EFF6FF" : "#FEF2F2", border: tercOk ? "#BFDBFE" : "#FECACA", sub: tercOk ? null : `${fmtN(par.percTerceiros)}% · máx 25%` },
             ].map(k => (
               <div key={k.label} style={{ background: k.bg, borderRadius: 12, padding: "14px 16px", border: `1.5px solid ${k.border}`, minWidth: 0 }}>
-                <div style={{ fontSize: 10, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{k.label}</div>
+                <div style={{ fontSize: 10, fontWeight: 800, color: T.text3, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{k.label}</div>
                 <div style={{ fontSize: 16, fontWeight: 900, color: k.color, lineHeight: 1.2, wordBreak: "break-word" }}>{k.val}</div>
                 {k.sub && <div style={{ fontSize: 10, color: k.color, marginTop: 5, fontWeight: 700, opacity: 0.85 }}>{k.sub}</div>}
               </div>
@@ -1193,7 +1227,7 @@ export default function PlanejamentoFinanceiro() {
           </Section>
 
           {/* Justificativa */}
-          <div style={{ background: "#fff", borderRadius: 14, padding: "20px 24px", border: "1.5px solid #E2E8F0" }}>
+          <div style={{ background: T.card, borderRadius: 14, padding: "20px 24px", border: `1.5px solid ${T.border}` }}>
             <label style={SL}>Justificativa / Observações</label>
             <textarea value={form.justificativa} onChange={e => f("justificativa", e.target.value)} rows={3} style={{ ...INPUT, resize: "vertical" }} placeholder="Notas técnicas, justificativas, condicionantes contratuais..." />
           </div>
@@ -1201,7 +1235,7 @@ export default function PlanejamentoFinanceiro() {
           {/* Botões de salvar */}
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
             <button onClick={() => salvar("Rascunho")} disabled={saving}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 20px", borderRadius: 10, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#475569", fontWeight: 700, fontSize: 13, cursor: saving ? "not-allowed" : "pointer" }}>
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 20px", borderRadius: 10, border: `1.5px solid ${T.border}`, background: T.cardAlt, color: T.text2, fontWeight: 700, fontSize: 13, cursor: saving ? "not-allowed" : "pointer" }}>
               <Save size={16} /> {saving ? "Salvando..." : "Salvar Rascunho"}
             </button>
             <button onClick={() => {
@@ -1232,11 +1266,11 @@ export default function PlanejamentoFinanceiro() {
 
             {/* Toolbar */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontSize: 13, color: "#64748B" }}>
+              <div style={{ fontSize: 13, color: T.text2 }}>
                 Dados de horas sincronizados automaticamente a cada 15 min via ClickUp.
               </div>
               <button onClick={() => carregarComparativo(true)} disabled={loadingComp}
-                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 9, border: "1.5px solid #E2E8F0", background: "#fff", color: "#475569", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 9, border: `1.5px solid ${T.border}`, background: T.card, color: T.text2, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                 <RefreshCw size={14} className={loadingComp ? "animate-spin" : ""} />
                 {loadingComp ? "Atualizando..." : "Atualizar Dados"}
               </button>
@@ -1275,9 +1309,9 @@ export default function PlanejamentoFinanceiro() {
               )}
 
               {/* ── HORAS ── */}
-              <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
-                <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>⏱ Horas — Planejado vs Rastreado</span>
+              <div style={{ background: T.card, borderRadius: 14, border: `1.5px solid ${T.border}`, overflow: "hidden" }}>
+                <div style={{ padding: "14px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: T.text3, textTransform: "uppercase", letterSpacing: "0.07em" }}>⏱ Horas — Planejado vs Rastreado</span>
                 </div>
                 <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
                   {/* KPI row */}
@@ -1315,9 +1349,9 @@ export default function PlanejamentoFinanceiro() {
               <div style={{ display: "grid", gridTemplateColumns: comparativo.medicoes?.length > 0 ? "1fr 1fr" : "1fr", gap: 16 }}>
                 {/* Datas */}
                 {comparativo.datas && (
-                  <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
-                    <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>📅 Datas — Planejado vs Atual</span>
+                  <div style={{ background: T.card, borderRadius: 14, border: `1.5px solid ${T.border}`, overflow: "hidden" }}>
+                    <div style={{ padding: "14px 20px", borderBottom: `1px solid ${T.border}` }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: T.text3, textTransform: "uppercase", letterSpacing: "0.07em" }}>📅 Datas — Planejado vs Atual</span>
                     </div>
                     <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
                       {[
@@ -1329,15 +1363,15 @@ export default function PlanejamentoFinanceiro() {
                         const aDate = d.atual ? new Date(d.atual) : null
                         const diff = pDate && aDate ? Math.round((aDate - pDate) / 86400000) : null
                         return (
-                          <div key={d.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "#F8FAFC", borderRadius: 8 }}>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#475569", minWidth: 130 }}>{d.label}</span>
+                          <div key={d.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: T.cardAlt, borderRadius: 8 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: T.text2, minWidth: 130 }}>{d.label}</span>
                             <div style={{ textAlign: "center", flex: 1 }}>
-                              <div style={{ fontSize: 11, color: "#94A3B8" }}>Plan</div>
-                              <div style={{ fontSize: 12, fontWeight: 600, color: "#475569" }}>{pDate ? pDate.toLocaleDateString("pt-BR") : "—"}</div>
+                              <div style={{ fontSize: 11, color: T.text3 }}>Plan</div>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: T.text2 }}>{pDate ? pDate.toLocaleDateString("pt-BR") : "—"}</div>
                             </div>
                             <div style={{ textAlign: "center", flex: 1 }}>
-                              <div style={{ fontSize: 11, color: "#94A3B8" }}>Atual</div>
-                              <div style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>{aDate ? aDate.toLocaleDateString("pt-BR") : "—"}</div>
+                              <div style={{ fontSize: 11, color: T.text3 }}>Atual</div>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: T.text1 }}>{aDate ? aDate.toLocaleDateString("pt-BR") : "—"}</div>
                             </div>
                             <div style={{ minWidth: 90, textAlign: "right" }}>
                               {diff !== null && <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: diff > 0 ? "#FEE2E2" : diff < 0 ? "#DCFCE7" : "#F1F5F9", color: diff > 0 ? "#DC2626" : diff < 0 ? "#15803D" : "#64748B" }}>{diff > 0 ? `+${diff}d atraso` : diff < 0 ? `${Math.abs(diff)}d adiant.` : "No prazo"}</span>}
@@ -1351,23 +1385,23 @@ export default function PlanejamentoFinanceiro() {
 
                 {/* Medições */}
                 {comparativo.medicoes?.length > 0 && (
-                  <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
-                    <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>📋 Medições — Plan vs Realizado</span>
+                  <div style={{ background: T.card, borderRadius: 14, border: `1.5px solid ${T.border}`, overflow: "hidden" }}>
+                    <div style={{ padding: "14px 20px", borderBottom: `1px solid ${T.border}` }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: T.text3, textTransform: "uppercase", letterSpacing: "0.07em" }}>📋 Medições — Plan vs Realizado</span>
                     </div>
                     <div style={{ overflowX: "auto" }}>
                       <table style={{ width: "100%", borderCollapse: "collapse" }}>
                         <thead>
-                          <tr style={{ background: "#F8FAFC" }}>
+                          <tr style={{ background: T.cardAlt }}>
                             {["Etapa", "%", "Prev.", "Realiz.", "Desvio", "Status"].map(h => (
-                              <th key={h} style={{ padding: "9px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
+                              <th key={h} style={{ padding: "9px 12px", textAlign: "left", fontSize: 10, fontWeight: 700, color: T.text3, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {comparativo.medicoes.map((m, i) => (
-                            <tr key={i} style={{ borderTop: "1px solid #F1F5F9", background: m.atrasoDias > 0 ? "rgba(239,68,68,0.03)" : "#fff" }}>
-                              <td style={{ padding: "10px 12px", fontSize: 12, fontWeight: 700, color: "#0F172A" }}>{m.etapa || "—"}</td>
+                            <tr key={i} style={{ borderTop: `1px solid ${T.border}`, background: m.atrasoDias > 0 ? "rgba(239,68,68,0.05)" : T.card }}>
+                              <td style={{ padding: "10px 12px", fontSize: 12, fontWeight: 700, color: T.text1 }}>{m.etapa || "—"}</td>
                               <td style={{ padding: "10px 12px", fontSize: 12, fontWeight: 800, color: "#7C3AED" }}>{m.percentual ? `${m.percentual}%` : "—"}</td>
                               <td style={{ padding: "10px 12px", fontSize: 11, color: "#64748B", whiteSpace: "nowrap" }}>{m.dataPrevisaoPlanejada ? new Date(m.dataPrevisaoPlanejada).toLocaleDateString("pt-BR") : "—"}</td>
                               <td style={{ padding: "10px 12px", fontSize: 11, color: "#0F172A", whiteSpace: "nowrap" }}>{m.dataRealizacao ? new Date(m.dataRealizacao).toLocaleDateString("pt-BR") : "—"}</td>
@@ -1393,7 +1427,7 @@ export default function PlanejamentoFinanceiro() {
               {comparativo.despesasOPP?.temDados ? (
                 <DespesasOPPCard despesasOPP={comparativo.despesasOPP} previsto={comparativo.terceirizadosPlanejados?.total || 0} fmt={fmt} />
               ) : (
-                <div style={{ background: "#F8FAFC", borderRadius: 14, border: "1.5px solid #E2E8F0", padding: "24px", color: "#94A3B8", fontSize: 13, textAlign: "center" }}>
+                <div style={{ background: T.cardAlt, borderRadius: 14, border: `1.5px solid ${T.border}`, padding: "24px", color: T.text3, fontSize: 13, textAlign: "center" }}>
                   Nenhum lançamento OPP encontrado — preencha o campo "Nome do Centro de Custo" na aba Planejamento.
                 </div>
               )}
@@ -1405,20 +1439,20 @@ export default function PlanejamentoFinanceiro() {
                 const saldo = previsto - gasto
                 const itens = comparativo.terceirizadosPlanejados?.itens || []
                 return (previsto > 0 || gasto > 0) ? (
-                  <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
-                    <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>🏗 Terceirizados</span>
+                  <div style={{ background: T.card, borderRadius: 14, border: `1.5px solid ${T.border}`, overflow: "hidden" }}>
+                    <div style={{ padding: "14px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: T.text3, textTransform: "uppercase", letterSpacing: "0.07em" }}>🏗 Terceirizados</span>
                       <div style={{ display: "flex", gap: 20 }}>
                         <div style={{ textAlign: "right" }}>
-                          <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Total Previsto</div>
+                          <div style={{ fontSize: 10, color: T.text3, fontWeight: 600, textTransform: "uppercase" }}>Total Previsto</div>
                           <div style={{ fontSize: 14, fontWeight: 800, color: "#7C3AED" }}>{fmt(previsto)}</div>
                         </div>
                         <div style={{ textAlign: "right" }}>
-                          <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Gasto (OPP)</div>
-                          <div style={{ fontSize: 14, fontWeight: 800, color: gasto > previsto ? "#DC2626" : "#0F172A" }}>{fmt(gasto)}</div>
+                          <div style={{ fontSize: 10, color: T.text3, fontWeight: 600, textTransform: "uppercase" }}>Gasto (OPP)</div>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: gasto > previsto ? "#DC2626" : T.text1 }}>{fmt(gasto)}</div>
                         </div>
                         <div style={{ textAlign: "right" }}>
-                          <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Saldo Atual</div>
+                          <div style={{ fontSize: 10, color: T.text3, fontWeight: 600, textTransform: "uppercase" }}>Saldo Atual</div>
                           <div style={{ fontSize: 14, fontWeight: 800, color: saldo < 0 ? "#DC2626" : "#15803D" }}>{fmt(saldo)}</div>
                         </div>
                       </div>
@@ -1426,9 +1460,9 @@ export default function PlanejamentoFinanceiro() {
                     {itens.length > 0 && (
                       <div style={{ padding: "12px 20px", display: "flex", flexDirection: "column", gap: 6 }}>
                         {itens.map((t, i) => (
-                          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", background: "#F8FAFC", borderRadius: 8 }}>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: "#0F172A" }}>{t.descricao || "—"}</span>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>{fmt(t.custo)}</span>
+                          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", background: T.cardAlt, borderRadius: 8 }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: T.text1 }}>{t.descricao || "—"}</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: T.text2 }}>{fmt(t.custo)}</span>
                           </div>
                         ))}
                       </div>
@@ -1441,19 +1475,19 @@ export default function PlanejamentoFinanceiro() {
               {comparativo.despesasPlanejadas?.length > 0 && (() => {
                 const total = comparativo.despesasPlanejadas.reduce((s, d) => s + d.valor, 0)
                 return (
-                  <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
-                    <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>📎 Despesas Internas</span>
+                  <div style={{ background: T.card, borderRadius: 14, border: `1.5px solid ${T.border}`, overflow: "hidden" }}>
+                    <div style={{ padding: "14px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: T.text3, textTransform: "uppercase", letterSpacing: "0.07em" }}>📎 Despesas Internas</span>
                       <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Total Planejado</div>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: "#0F172A" }}>{fmt(total)}</div>
+                        <div style={{ fontSize: 10, color: T.text3, fontWeight: 600, textTransform: "uppercase" }}>Total Planejado</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: T.text1 }}>{fmt(total)}</div>
                       </div>
                     </div>
                     <div style={{ padding: "12px 20px", display: "flex", flexDirection: "column", gap: 6 }}>
                       {comparativo.despesasPlanejadas.map((d, i) => (
-                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", background: "#F8FAFC", borderRadius: 8 }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: "#0F172A" }}>{d.descricao || "—"}</span>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>{fmt(d.valor)}</span>
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", background: T.cardAlt, borderRadius: 8 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: T.text1 }}>{d.descricao || "—"}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: T.text2 }}>{fmt(d.valor)}</span>
                         </div>
                       ))}
                     </div>
@@ -1467,36 +1501,36 @@ export default function PlanejamentoFinanceiro() {
                 const totalReal = comparativo.equipePlanejada.reduce((s, e) => s + e.custoReal, 0)
                 const desvio = totalReal - totalPlan
                 return (
-                  <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
-                    <div style={{ padding: "14px 20px", borderBottom: "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.07em" }}>👥 Equipe Interna</span>
+                  <div style={{ background: T.card, borderRadius: 14, border: `1.5px solid ${T.border}`, overflow: "hidden" }}>
+                    <div style={{ padding: "14px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: T.text3, textTransform: "uppercase", letterSpacing: "0.07em" }}>👥 Equipe Interna</span>
                       <div style={{ display: "flex", gap: 20 }}>
                         <div style={{ textAlign: "right" }}>
-                          <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Planejado</div>
+                          <div style={{ fontSize: 10, color: T.text3, fontWeight: 600, textTransform: "uppercase" }}>Planejado</div>
                           <div style={{ fontSize: 13, fontWeight: 800, color: "#7C3AED" }}>{fmt(totalPlan)}</div>
                         </div>
                         <div style={{ textAlign: "right" }}>
-                          <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Real</div>
+                          <div style={{ fontSize: 10, color: T.text3, fontWeight: 600, textTransform: "uppercase" }}>Real</div>
                           <div style={{ fontSize: 13, fontWeight: 800, color: desvio > 0 ? "#DC2626" : "#15803D" }}>{fmt(totalReal)}</div>
                         </div>
                         <div style={{ textAlign: "right" }}>
-                          <div style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>Desvio</div>
-                          <div style={{ fontSize: 13, fontWeight: 800, color: desvio > 0 ? "#DC2626" : desvio < 0 ? "#15803D" : "#64748B" }}>{desvio >= 0 ? "+" : ""}{fmt(desvio)}</div>
+                          <div style={{ fontSize: 10, color: T.text3, fontWeight: 600, textTransform: "uppercase" }}>Desvio</div>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: desvio > 0 ? "#DC2626" : desvio < 0 ? "#15803D" : T.text2 }}>{desvio >= 0 ? "+" : ""}{fmt(desvio)}</div>
                         </div>
                       </div>
                     </div>
                     <div style={{ padding: "12px 20px", display: "flex", flexDirection: "column", gap: 6 }}>
                       {comparativo.equipePlanejada.map((e, i) => (
-                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "#F8FAFC", borderRadius: 8 }}>
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: T.cardAlt, borderRadius: 8 }}>
                           <div style={{ width: 26, height: 26, borderRadius: "50%", background: "#EDE9FE", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 11, color: "#7C3AED", flexShrink: 0 }}>
                             {(e.nome || "?")[0].toUpperCase()}
                           </div>
-                          <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: "#0F172A" }}>{e.nome || "—"}</span>
-                          <span style={{ fontSize: 11, color: "#64748B" }}>{e.horasPlan}h plan.</span>
-                          <span style={{ fontSize: 11, color: "#0F172A", fontWeight: 700 }}>{e.horasReal}h real</span>
-                          <span style={{ fontSize: 11, color: "#94A3B8" }}>@ {fmt(e.valorHora)}/h</span>
+                          <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: T.text1 }}>{e.nome || "—"}</span>
+                          <span style={{ fontSize: 11, color: T.text2 }}>{e.horasPlan}h plan.</span>
+                          <span style={{ fontSize: 11, color: T.text1, fontWeight: 700 }}>{e.horasReal}h real</span>
+                          <span style={{ fontSize: 11, color: T.text3 }}>@ {fmt(e.valorHora)}/h</span>
                           <div style={{ textAlign: "right", minWidth: 80 }}>
-                            <div style={{ fontSize: 11, color: "#64748B" }}>{fmt(e.custoPlan)}</div>
+                            <div style={{ fontSize: 11, color: T.text2 }}>{fmt(e.custoPlan)}</div>
                             <div style={{ fontSize: 12, fontWeight: 700, color: e.custoReal > e.custoPlan ? "#DC2626" : "#15803D" }}>{fmt(e.custoReal)}</div>
                           </div>
                         </div>
@@ -1517,10 +1551,10 @@ export default function PlanejamentoFinanceiro() {
       {showBuscaOS && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
           onClick={() => setShowBuscaOS(false)}>
-          <div style={{ background: "#fff", borderRadius: 16, padding: 28, width: "100%", maxWidth: 620, maxHeight: "80vh", display: "flex", flexDirection: "column", gap: 16 }}
+          <div style={{ background: T.card, borderRadius: 16, padding: 28, width: "100%", maxWidth: 620, maxHeight: "80vh", display: "flex", flexDirection: "column", gap: 16 }}
             onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#0F172A" }}>🔍 Pesquisar O.S. no OPP</h3>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: T.text1 }}>🔍 Pesquisar O.S. no OPP</h3>
               <button onClick={() => setShowBuscaOS(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#94A3B8" }}>×</button>
             </div>
             <input
@@ -1567,27 +1601,27 @@ export default function PlanejamentoFinanceiro() {
       {showEstornoModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
           onClick={() => !estornando && setShowEstornoModal(false)}>
-          <div style={{ background: "#fff", borderRadius: 16, padding: 28, maxWidth: 480, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
+          <div style={{ background: T.card, borderRadius: 16, padding: 28, maxWidth: 480, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
             onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
               <span style={{ fontSize: 22 }}>↩</span>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#0F172A" }}>Estornar Planejamento</h3>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: T.text1 }}>Estornar Planejamento</h3>
             </div>
-            <p style={{ margin: "0 0 16px", fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>
+            <p style={{ margin: "0 0 16px", fontSize: 13, color: T.text2, lineHeight: 1.6 }}>
               Esta ação vai <strong>destravar</strong> o planejamento aprovado para permitir edições e geração de nova baseline.<br />
               Informe o motivo para registrar o histórico.
             </p>
-            <label style={{ fontSize: 12, fontWeight: 700, color: "#475569", display: "block", marginBottom: 6, textTransform: "uppercase" }}>Motivo do estorno *</label>
+            <label style={{ fontSize: 12, fontWeight: 700, color: T.label, display: "block", marginBottom: 6, textTransform: "uppercase" }}>Motivo do estorno *</label>
             <textarea
               value={motivoEstorno}
               onChange={e => setMotivoEstorno(e.target.value)}
               placeholder="Ex: Ajuste no valor do contrato solicitado pelo cliente..."
               rows={4}
-              style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", fontSize: 13, fontFamily: "inherit", outline: "none", resize: "vertical", boxSizing: "border-box", color: "#0F172A" }}
+              style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1.5px solid ${T.border}`, fontSize: 13, fontFamily: "inherit", outline: "none", resize: "vertical", boxSizing: "border-box", color: T.text1, background: T.inputBg }}
             />
             <div style={{ display: "flex", gap: 10, marginTop: 18, justifyContent: "flex-end" }}>
               <button onClick={() => setShowEstornoModal(false)} disabled={estornando}
-                style={{ padding: "9px 18px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#fff", color: "#475569", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                style={{ padding: "9px 18px", borderRadius: 8, border: `1.5px solid ${T.border}`, background: T.card, color: T.text2, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                 Cancelar
               </button>
               <button onClick={confirmarEstorno} disabled={estornando || !motivoEstorno.trim()}
@@ -1606,17 +1640,17 @@ export default function PlanejamentoFinanceiro() {
           display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
         }}>
           <div onClick={e => e.stopPropagation()} style={{
-            background: "#fff", borderRadius: 18, width: "100%", maxWidth: 680,
+            background: T.card, borderRadius: 18, width: "100%", maxWidth: 680,
             maxHeight: "85vh", overflow: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.2)",
           }}>
             {/* Header */}
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "#fff", zIndex: 1 }}>
+            <div style={{ padding: "20px 24px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: T.card, zIndex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <Lock size={16} color="#7C3AED" />
-                <span style={{ fontWeight: 800, fontSize: 16, color: "#0F172A" }}>
+                <span style={{ fontWeight: 800, fontSize: 16, color: T.text1 }}>
                   Baseline {baselineViewing.versaoLabel}
                 </span>
-                <span style={{ fontSize: 11, color: "#64748B", fontWeight: 600 }}>
+                <span style={{ fontSize: 11, color: T.text2, fontWeight: 600 }}>
                   Travado em {new Date(baselineViewing.travadoEm).toLocaleDateString("pt-BR")} por {baselineViewing.travadoPor}
                 </span>
               </div>
@@ -1626,16 +1660,16 @@ export default function PlanejamentoFinanceiro() {
             <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
               {/* Financeiro */}
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Financeiro</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.text3, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Financeiro</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                   {[
                     { label: "Valor do Contrato", val: fmtCur(baselineViewing.valorContrato) },
                     { label: "Impostos", val: `${baselineViewing.impostosPerc}%` },
                     { label: "Taxa Adm", val: `${baselineViewing.taxaAdmPerc}%` },
                   ].map(i => (
-                    <div key={i.label} style={{ background: "#F8FAFC", borderRadius: 10, padding: "12px 14px", border: "1px solid #E2E8F0" }}>
-                      <div style={{ fontSize: 11, color: "#94A3B8", fontWeight: 600 }}>{i.label}</div>
-                      <div style={{ fontSize: 15, fontWeight: 800, color: "#0F172A", marginTop: 4 }}>{i.val}</div>
+                    <div key={i.label} style={{ background: T.cardAlt, borderRadius: 10, padding: "12px 14px", border: `1px solid ${T.border}` }}>
+                      <div style={{ fontSize: 11, color: T.text3, fontWeight: 600 }}>{i.label}</div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: T.text1, marginTop: 4 }}>{i.val}</div>
                     </div>
                   ))}
                 </div>
@@ -1643,16 +1677,16 @@ export default function PlanejamentoFinanceiro() {
 
               {/* Datas */}
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Datas Planejadas</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.text3, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Datas Planejadas</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                   {[
                     { label: "Início OS", val: baselineViewing.dataInicioOS ? new Date(baselineViewing.dataInicioOS).toLocaleDateString("pt-BR") : "—" },
                     { label: "Entrega Contrato", val: baselineViewing.dataEntregaContrato ? new Date(baselineViewing.dataEntregaContrato).toLocaleDateString("pt-BR") : "—" },
                     { label: "Entrega Planejada", val: baselineViewing.dataEntregaPlanejada ? new Date(baselineViewing.dataEntregaPlanejada).toLocaleDateString("pt-BR") : "—" },
                   ].map(i => (
-                    <div key={i.label} style={{ background: "#F8FAFC", borderRadius: 10, padding: "12px 14px", border: "1px solid #E2E8F0" }}>
-                      <div style={{ fontSize: 11, color: "#94A3B8", fontWeight: 600 }}>{i.label}</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A", marginTop: 4 }}>{i.val}</div>
+                    <div key={i.label} style={{ background: T.cardAlt, borderRadius: 10, padding: "12px 14px", border: `1px solid ${T.border}` }}>
+                      <div style={{ fontSize: 11, color: T.text3, fontWeight: 600 }}>{i.label}</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: T.text1, marginTop: 4 }}>{i.val}</div>
                     </div>
                   ))}
                 </div>
@@ -1661,14 +1695,14 @@ export default function PlanejamentoFinanceiro() {
               {/* Equipe */}
               {baselineViewing.horasPorColaborador?.length > 0 && (
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: T.text3, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
                     Equipe — {Number(baselineViewing.totalHorasEstimadas || 0).toFixed(0)}h estimadas
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {baselineViewing.horasPorColaborador.map((c, i) => (
-                      <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "#F8FAFC", borderRadius: 8, border: "1px solid #E2E8F0" }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: "#0F172A" }}>{c.colaborador || "—"}</span>
-                        <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#64748B" }}>
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: T.cardAlt, borderRadius: 8, border: `1px solid ${T.border}` }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: T.text1 }}>{c.colaborador || "—"}</span>
+                        <div style={{ display: "flex", gap: 16, fontSize: 12, color: T.text2 }}>
                           <span>{Number(c.horasEstimadas || 0).toFixed(0)}h</span>
                           <span style={{ fontWeight: 700, color: "#7C3AED" }}>{fmtCur(c.custoEstimado)}</span>
                         </div>
@@ -1681,12 +1715,12 @@ export default function PlanejamentoFinanceiro() {
               {/* Medições */}
               {baselineViewing.medicoes?.length > 0 && (
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Medições Planejadas</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: T.text3, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Medições Planejadas</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {baselineViewing.medicoes.map((m, i) => (
-                      <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "#F8FAFC", borderRadius: 8, border: "1px solid #E2E8F0" }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: "#0F172A" }}>{m.etapa || `Medição ${i+1}`}</span>
-                        <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#64748B" }}>
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: T.cardAlt, borderRadius: 8, border: `1px solid ${T.border}` }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: T.text1 }}>{m.etapa || `Medição ${i+1}`}</span>
+                        <div style={{ display: "flex", gap: 16, fontSize: 12, color: T.text2 }}>
                           <span>{m.percentual}%</span>
                           {m.dataPrevisao && <span>{new Date(m.dataPrevisao).toLocaleDateString("pt-BR")}</span>}
                           <span style={{ fontWeight: 700, color: "#15803D" }}>{fmtCur(m.valor)}</span>
@@ -1729,36 +1763,36 @@ export default function PlanejamentoFinanceiro() {
                   { label: "Total Pago", val: fmt(despesasOPP.totalPago), color: "#15803D" },
                   { label: "A Pagar", val: fmt(despesasOPP.total - despesasOPP.totalPago), color: "#B45309" },
                 ].map(k => (
-                  <div key={k.label} style={{ background: "#fff", borderRadius: 12, border: "1.5px solid #E2E8F0", padding: "14px 18px" }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{k.label}</div>
+                  <div key={k.label} style={{ background: T.card, borderRadius: 12, border: `1.5px solid ${T.border}`, padding: "14px 18px" }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: T.text3, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{k.label}</div>
                     <div style={{ fontSize: 20, fontWeight: 800, color: k.color }}>{k.val}</div>
                   </div>
                 ))}
               </div>
 
               {/* Tabela */}
-              <div style={{ background: "#fff", borderRadius: 12, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
-                <div style={{ padding: "12px 18px", borderBottom: "1px solid #F1F5F9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: 700, fontSize: 13, color: "#0F172A" }}>Lançamentos — {despesasOPP.centroCusto}</span>
-                  <span style={{ fontSize: 12, color: "#94A3B8" }}>{despesasOPP.lancamentos.length} registros</span>
+              <div style={{ background: T.card, borderRadius: 12, border: `1.5px solid ${T.border}`, overflow: "hidden" }}>
+                <div style={{ padding: "12px 18px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontWeight: 700, fontSize: 13, color: T.text1 }}>Lançamentos — {despesasOPP.centroCusto}</span>
+                  <span style={{ fontSize: 12, color: T.text3 }}>{despesasOPP.lancamentos.length} registros</span>
                 </div>
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                     <thead>
-                      <tr style={{ background: "#F8FAFC" }}>
+                      <tr style={{ background: T.cardAlt }}>
                         {["OC", "Descrição", "Fornecedor", "Vencimento", "Valor", "Status"].map(h => (
-                          <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontWeight: 700, color: "#64748B", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
+                          <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontWeight: 700, color: T.text2, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {despesasOPP.lancamentos.map((l, i) => (
-                        <tr key={i} style={{ borderTop: "1px solid #F1F5F9" }}>
+                        <tr key={i} style={{ borderTop: `1px solid ${T.border}` }}>
                           <td style={{ padding: "10px 14px", fontWeight: 700, color: "#7C3AED" }}>{l.oc || "—"}</td>
-                          <td style={{ padding: "10px 14px", color: "#0F172A", maxWidth: 260 }}>{l.descricao}</td>
-                          <td style={{ padding: "10px 14px", color: "#475569" }}>{l.fornecedor || "—"}</td>
-                          <td style={{ padding: "10px 14px", color: "#64748B", whiteSpace: "nowrap" }}>{l.data ? new Date(l.data).toLocaleDateString("pt-BR") : "—"}</td>
-                          <td style={{ padding: "10px 14px", fontWeight: 700, color: "#0F172A", whiteSpace: "nowrap" }}>{fmt(l.valor)}</td>
+                          <td style={{ padding: "10px 14px", color: T.text1, maxWidth: 260 }}>{l.descricao}</td>
+                          <td style={{ padding: "10px 14px", color: T.text2 }}>{l.fornecedor || "—"}</td>
+                          <td style={{ padding: "10px 14px", color: T.text2, whiteSpace: "nowrap" }}>{l.data ? new Date(l.data).toLocaleDateString("pt-BR") : "—"}</td>
+                          <td style={{ padding: "10px 14px", fontWeight: 700, color: T.text1, whiteSpace: "nowrap" }}>{fmt(l.valor)}</td>
                           <td style={{ padding: "10px 14px" }}>
                             <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: l.liquidado ? "#DCFCE7" : "#FEF9C3", color: l.liquidado ? "#15803D" : "#92400E" }}>
                               {l.liquidado ? "Pago" : "Pendente"}
@@ -1773,7 +1807,7 @@ export default function PlanejamentoFinanceiro() {
             </>
           )}
 
-          <button onClick={carregarDespesasOPP} disabled={loadingDespesas} style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#fff", color: "#475569", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+          <button onClick={carregarDespesasOPP} disabled={loadingDespesas} style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 8, border: `1.5px solid ${T.border}`, background: T.card, color: T.text2, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
             <RefreshCw size={13} style={{ animation: loadingDespesas ? "spin 1s linear infinite" : "none" }} /> Atualizar
           </button>
         </div>
