@@ -607,7 +607,7 @@ async function _doSync() {
     }
   }
 
-  const STATUS_ATIVOS = ['Em Andamento', 'Em Andamento (Atrasado)', 'Backlog', 'A Planejar'];
+  const STATUS_ATIVOS = ['Em Andamento', 'Em Andamento (Atrasado)', 'Backlog', 'A Planejar', 'Planejado'];
   const projetos = todosProjectos.filter(p => p.ID_ClickUp && STATUS_ATIVOS.includes(p.Status));
   console.log(`[ClickUp] Sincronizando ${projetos.length}/${todosProjectos.length} projetos ativos.`);
 
