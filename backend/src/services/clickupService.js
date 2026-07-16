@@ -908,18 +908,36 @@ async function syncOsCliente(allLists, projetos) {
 
 // Busca time entries de uma tarefa específica via API do ClickUp
 async function getTimeEntriesByTask(taskId) {
+  const teamId = process.env.CLICKUP_TEAM_ID;
   try {
     const res = await axios.get(`${BASE_URL}/task/${taskId}/time_entries`, {
       headers: getHeaders(),
-      params: { start_date: Date.now() - 365 * 24 * 60 * 60 * 1000, end_date: Date.now() },
+      params: {
+        team_id: teamId,
+        start_date: Date.now() - 365 * 24 * 60 * 60 * 1000,
+        end_date: Date.now(),
+      },
     });
     return res.data.data || [];
-  } catch { return []; }
+  } catch (err) {
+    // Loga apenas o primeiro erro para não spam
+    if (!getTimeEntriesByTask._loggedOnce) {
+      console.warn(`[ClickUp] getTimeEntriesByTask ${taskId}:`, err.response?.status, err.response?.data?.err || err.message);
+      getTimeEntriesByTask._loggedOnce = true;
+    }
+    return [];
+  }
 }
 
 // Sincroniza horas buscando time entries de cada task individualmente (mais confiável que filtro por lista)
 async function syncHorasPorTask(tasks, projeto) {
   let novos = 0, atualizados = 0;
+  // Diagnóstico: testa a primeira tarefa para logar o resultado
+  if (tasks.length > 0) {
+    const primeiraEntries = await getTimeEntriesByTask(tasks[0].id);
+    console.log(`[ClickUp] Diagnóstico task[0] id=${tasks[0].id} name="${tasks[0].name}" → ${primeiraEntries.length} entries`);
+    getTimeEntriesByTask._loggedOnce = false; // reseta para logar erros das demais
+  }
   for (const task of tasks) {
     try {
       const entries = await getTimeEntriesByTask(task.id);
