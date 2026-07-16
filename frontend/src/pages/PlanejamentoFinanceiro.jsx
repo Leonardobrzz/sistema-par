@@ -604,11 +604,11 @@ export default function PlanejamentoFinanceiro() {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <BadgeDollarSign size={20} color="#7C3AED" />
-            <span style={{ fontWeight: 900, fontSize: 18, color: "#0F172A", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            <span style={{ fontWeight: 900, fontSize: 18, color: T.text1, textTransform: "uppercase", letterSpacing: "0.06em" }}>
               Planejamento Financeiro
             </span>
             {(form.nomeProjeto || projetoSelecionado?.Nome) && (
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#64748B" }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: T.text2 }}>
                 — {form.nomeProjeto || projetoSelecionado?.Nome}
               </span>
             )}
