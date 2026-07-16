@@ -28,12 +28,17 @@ function Field({ label, children }) {
   return <div style={{ display: "flex", flexDirection: "column", gap: 4 }}><label style={SL}>{label}</label>{children}</div>
 }
 
-function Section({ title, open, onToggle, children, badge }) {
+function Section({ title, open, onToggle, children, badge, limitBadge }) {
   return (
     <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
       <button onClick={onToggle} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "14px 20px", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
         {open ? <ChevronDown size={16} color="#7C3AED" /> : <ChevronRight size={16} color="#94A3B8" />}
         <span style={{ fontWeight: 800, fontSize: 14, color: "#0F172A", flex: 1 }}>{title}</span>
+        {limitBadge && (
+          <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 10px", borderRadius: 6, background: limitBadge.ok ? "#DCFCE7" : "#FEE2E2", color: limitBadge.ok ? "#15803D" : "#DC2626" }}>
+            {limitBadge.label}
+          </span>
+        )}
         {badge != null && <span style={{ fontSize: 12, fontWeight: 700, color: "#7C3AED", background: "#EDE9FE", padding: "2px 10px", borderRadius: 6 }}>{badge}</span>}
       </button>
       {open && <div style={{ padding: "0 20px 20px", borderTop: "1px solid #F1F5F9" }}>{children}</div>}
@@ -1162,7 +1167,7 @@ export default function PlanejamentoFinanceiro() {
           </Section>
 
           {/* Seção 6: Despesas */}
-          <Section title="Despesas Gerais" open={sections.despesas} onToggle={() => toggle("despesas")} badge={`${form.despesas.length} · ${fmt(par.totalDespesas)}`}>
+          <Section title="Despesas Gerais" open={sections.despesas} onToggle={() => toggle("despesas")} badge={`${form.despesas.length} · ${fmt(par.totalDespesas)}`} limitBadge={{ ok: despGeraisOk, label: `${fmtN(par.percDespesasGerais)}% de 7,5% máx` }}>
             <div style={{ marginTop: 16 }}>
               {(form.despesas || []).map((d, i) => (
                 <div key={i} style={{ display: "grid", gridTemplateColumns: "3fr 1fr auto", gap: 8, marginBottom: 8, alignItems: "end" }}>
