@@ -1,5 +1,16 @@
 /* ── Dark Mode — seletores conservadores ── */
 
+/* CSS custom properties override */
+[data-theme="dark"] {
+  --text:       #F1F5F9;
+  --text-muted: #94A3B8;
+  --text-faint: #64748B;
+  --bg:         #0F172A;
+  --surface:    #1E293B;
+  --border:     #334155;
+  --border-soft:#243048;
+}
+
 /* Body */
 [data-theme="dark"] body,
 [data-theme="dark"] #root {
