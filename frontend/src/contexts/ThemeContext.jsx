@@ -4,26 +4,13 @@ const ThemeContext = createContext()
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
-    // Busca do localStorage ou preferência do sistema
     const stored = localStorage.getItem('par_theme')
     if (stored) return stored
-    
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark'
-    }
-    return 'light'
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   })
 
-  // Aplica o tema na tag HTML
   useEffect(() => {
-    const root = window.document.documentElement
-    
-    if (theme === 'dark') {
-      root.classList.add('dark')
-    } else {
-      root.classList.remove('dark')
-    }
-    
+    document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('par_theme', theme)
   }, [theme])
 
@@ -32,7 +19,7 @@ export function ThemeProvider({ children }) {
   }
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, isDark: theme === 'dark' }}>
       {children}
     </ThemeContext.Provider>
   )

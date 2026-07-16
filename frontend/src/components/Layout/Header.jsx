@@ -3,10 +3,11 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import {
   BellIcon, ArrowRightOnRectangleIcon, Cog6ToothIcon,
   XMarkIcon, ExclamationTriangleIcon, ExclamationCircleIcon,
-  InformationCircleIcon, LinkIcon, CheckIcon,
+  InformationCircleIcon, LinkIcon, CheckIcon, MoonIcon, SunIcon,
 } from '@heroicons/react/24/outline'
 import { useAuth } from '../../contexts/AuthContext'
 import { useAlerts } from '../../contexts/AlertContext'
+import { useTheme } from '../../contexts/ThemeContext'
 import { formatDateTime } from '../../utils/formatters'
 
 const LEVEL_CONFIG = {
@@ -18,6 +19,7 @@ const LEVEL_CONFIG = {
 export default function Header() {
   const { user, logout } = useAuth()
   const { alerts, unreadCount, markAsSeen, resolveAlert } = useAlerts()
+  const { isDark, toggleTheme } = useTheme()
   const [showAlerts, setShowAlerts] = useState(false)
   const [showUser,   setShowUser]   = useState(false)
   const navigate    = useNavigate()
@@ -209,6 +211,29 @@ export default function Header() {
             </div>
           )}
         </div>
+
+        {/* Dark mode toggle */}
+        <button
+          onClick={toggleTheme}
+          title={isDark ? 'Modo claro' : 'Modo escuro'}
+          style={{
+            ...btnStyle,
+            background: isDark ? '#334155' : 'transparent',
+            color: isDark ? '#F1F5F9' : '#5E7899',
+            borderRadius: 20,
+            width: 56,
+            gap: 4,
+            fontSize: 11,
+            fontWeight: 700,
+            transition: 'all 0.25s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = isDark ? '#475569' : '#F1F5F9' }}
+          onMouseLeave={e => { e.currentTarget.style.background = isDark ? '#334155' : 'transparent' }}
+        >
+          {isDark
+            ? <SunIcon  style={{ width: 16, height: 16, color: '#FCD34D' }} />
+            : <MoonIcon style={{ width: 16, height: 16 }} />}
+        </button>
 
         {/* Settings */}
         <button
