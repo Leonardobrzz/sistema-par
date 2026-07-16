@@ -24,8 +24,8 @@ const fmtH = (h) => {
 const SL = { fontSize: 12, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 4 }
 const INPUT = { width: "100%", padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#0F172A", fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }
 
-function Field({ label, children }) {
-  return <div style={{ display: "flex", flexDirection: "column", gap: 4 }}><label style={SL}>{label}</label>{children}</div>
+function Field({ label, children, style }) {
+  return <div style={{ display: "flex", flexDirection: "column", gap: 4, ...style }}><label style={SL}>{label}</label>{children}</div>
 }
 
 function Section({ title, open, onToggle, children, badge, limitBadge }) {
@@ -774,7 +774,7 @@ export default function PlanejamentoFinanceiro() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 14, marginTop: 16 }}>
               <Field label="Nome do Projeto"><input value={form.nomeProjeto} onChange={e => f("nomeProjeto", e.target.value)} style={INPUT} /></Field>
               <Field label="Cliente"><input value={form.cliente} onChange={e => f("cliente", e.target.value)} style={INPUT} /></Field>
-              <Field label="Nome do Centro de Custo">
+              <Field label="Nome do Centro de Custo" style={{ gridColumn: "1 / -1" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <div style={{ display: "flex", gap: 6 }}>
                     <div style={{ flex: 1, position: "relative" }}>
@@ -849,7 +849,7 @@ export default function PlanejamentoFinanceiro() {
                   )}
                 </div>
               </Field>
-              <Field label="O.S. OPP">
+              <Field label="O.S. OPP" style={{ gridColumn: "1 / -1" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <div style={{ display: "flex", gap: 6 }}>
                     <input value={form.nrOsOpp || ""} onChange={e => f("nrOsOpp", e.target.value)} style={{ ...INPUT, background: "#FFFBEB", flex: 1 }} placeholder="Nº da O.S. criada no OPP (ex: 2026/0142)" />
