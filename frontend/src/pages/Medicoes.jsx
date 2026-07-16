@@ -7,11 +7,9 @@ import { formatDate, formatBRL } from '../utils/formatters'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import Modal from '../components/common/Modal'
 import Input from '../components/common/Input'
+import { useTheme } from '../contexts/ThemeContext'
 
 const STATUS_MEDICAO = ['Prevista', 'Em Andamento', 'Concluída', 'Cancelada']
-
-const inp = { padding: "9px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#F8FAFC", color: "#0F172A", fontSize: 13, fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box" }
-const lbl = { fontSize: 12, fontWeight: 700, color: "#475569", display: "block", marginBottom: 5 }
 
 function statusFinBadge(s) {
   if (s === 'Recebido')  return { bg: '#DCFCE7', color: '#15803D' }
@@ -23,6 +21,19 @@ function statusFinBadge(s) {
 const SETORES_PAR = ['Arquitetura', 'Saneamento', 'Infraestrutura', 'Administrativo']
 
 export default function Medicoes() {
+  const { isDark } = useTheme()
+  const T = {
+    bg:      isDark ? '#0F172A' : '#F8FAFC',
+    card:    isDark ? '#1E293B' : '#ffffff',
+    cardAlt: isDark ? '#0F172A' : '#F8FAFC',
+    border:  isDark ? '#334155' : '#E2E8F0',
+    text1:   isDark ? '#F1F5F9' : '#0F172A',
+    text2:   isDark ? '#94A3B8' : '#64748B',
+    text3:   isDark ? '#64748B' : '#CBD5E1',
+    inputBg: isDark ? '#0F172A' : '#F8FAFC',
+  }
+  const inp = { padding: "9px 12px", borderRadius: 8, border: `1.5px solid ${T.border}`, background: T.inputBg, color: T.text1, fontSize: 13, fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box" }
+
   const [medicoes, setMedicoes] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -109,12 +120,12 @@ export default function Medicoes() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <ChartBarIcon style={{ width: 22, height: 22, color: "#00B5CC" }} />
-            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#0F172A" }}>Medições & Faturamento</h1>
+            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: T.text1 }}>Medições & Faturamento</h1>
           </div>
-          <p style={{ margin: 0, fontSize: 13, color: "#64748B" }}>{medicoesFiltradas.length} de {medicoes.length} registros</p>
+          <p style={{ margin: 0, fontSize: 13, color: T.text2 }}>{medicoesFiltradas.length} de {medicoes.length} registros</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={load} style={{ padding: "9px 16px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#fff", color: "#475569", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+          <button onClick={load} style={{ padding: "9px 16px", borderRadius: 8, border: `1.5px solid ${T.border}`, background: T.card, color: T.text2, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
             <ArrowPathIcon style={{ width: 15, height: 15 }} /> Atualizar
           </button>
           <button onClick={() => { setEditItem(null); setShowModal(true) }} style={{ padding: "9px 16px", borderRadius: 8, border: "none", background: "#00B5CC", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
@@ -127,7 +138,7 @@ export default function Medicoes() {
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
         {SETORES_PAR.map(s => (
           <button key={s} onClick={() => setFiltroSetor(filtroSetor === s ? '' : s)}
-            style={{ padding: "5px 14px", borderRadius: 20, border: `1.5px solid ${filtroSetor === s ? "#00B5CC" : "#E2E8F0"}`, background: filtroSetor === s ? "rgba(0,181,204,0.08)" : "#fff", color: filtroSetor === s ? "#007A8A" : "#64748B", fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
+            style={{ padding: "5px 14px", borderRadius: 20, border: `1.5px solid ${filtroSetor === s ? "#00B5CC" : T.border}`, background: filtroSetor === s ? "rgba(0,181,204,0.08)" : T.card, color: filtroSetor === s ? "#007A8A" : T.text2, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
             {s}
           </button>
         ))}
@@ -136,14 +147,14 @@ export default function Medicoes() {
       {/* Filtros linha */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
         {/* Filtro Faturadas/Não Faturadas */}
-        <div style={{ display: "flex", borderRadius: 8, border: "1.5px solid #E2E8F0", overflow: "hidden" }}>
+        <div style={{ display: "flex", borderRadius: 8, border: `1.5px solid ${T.border}`, overflow: "hidden" }}>
           {[
             { v: '', l: 'Todas' },
             { v: 'faturadas', l: 'Faturadas' },
             { v: 'nao_faturadas', l: 'Não Faturadas' },
           ].map(opt => (
             <button key={opt.v} onClick={() => setFiltroFaturamento(opt.v)}
-              style={{ padding: "9px 14px", border: "none", background: filtroFaturamento === opt.v ? "#00B5CC" : "#fff", color: filtroFaturamento === opt.v ? "#fff" : "#475569", fontWeight: 700, fontSize: 12, cursor: "pointer", transition: "background 0.15s" }}>
+              style={{ padding: "9px 14px", border: "none", background: filtroFaturamento === opt.v ? "#00B5CC" : T.card, color: filtroFaturamento === opt.v ? "#fff" : T.text2, fontWeight: 700, fontSize: 12, cursor: "pointer", transition: "background 0.15s" }}>
               {opt.l}
             </button>
           ))}
@@ -167,15 +178,15 @@ export default function Medicoes() {
 
       {/* Tabela */}
       {loading ? (
-        <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #E2E8F0", padding: 60, textAlign: "center" }}>
+        <div style={{ background: T.card, borderRadius: 12, border: `1px solid ${T.border}`, padding: 60, textAlign: "center" }}>
           <LoadingSpinner text="Buscando medições..." />
         </div>
       ) : (
-        <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #E2E8F0", overflow: "hidden" }}>
+        <div style={{ background: T.card, borderRadius: 12, border: `1px solid ${T.border}`, overflow: "hidden" }}>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", whiteSpace: "nowrap" }}>
               <thead>
-                <tr style={{ background: "#F8FAFC" }}>
+                <tr style={{ background: T.cardAlt }}>
                   {[
                     { h: "Setor", align: "center" },
                     { h: "Projeto / Cliente", align: "left" },
@@ -189,7 +200,7 @@ export default function Medicoes() {
                     { h: "Situação", align: "center" },
                     { h: "Ações", align: "right" },
                   ].map(col => (
-                    <th key={col.h} style={{ padding: "12px 14px", fontSize: 11, fontWeight: 700, color: "#64748B", textAlign: col.align, letterSpacing: 0.5, textTransform: "uppercase", borderBottom: "1px solid #E2E8F0" }}>
+                    <th key={col.h} style={{ padding: "12px 14px", fontSize: 11, fontWeight: 700, color: T.text2, textAlign: col.align, letterSpacing: 0.5, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>
                       {col.h}
                     </th>
                   ))}
@@ -198,7 +209,7 @@ export default function Medicoes() {
               <tbody>
                 {medicoesFiltradas.length === 0 ? (
                   <tr>
-                    <td colSpan={11} style={{ textAlign: "center", padding: 48, color: "#64748B", fontSize: 13 }}>
+                    <td colSpan={11} style={{ textAlign: "center", padding: 48, color: T.text2, fontSize: 13 }}>
                       <ChartBarIcon style={{ width: 36, height: 36, margin: "0 auto 10px", opacity: 0.3 }} />
                       <div>Nenhuma medição encontrada</div>
                     </td>
@@ -216,8 +227,8 @@ export default function Medicoes() {
                   const dataMedicao = m.Data_Realizacao || m.Data_Prevista || m.Data_Previsao || ''
                   const linkProduto = m.Link_Produto || m.Link_Contrato || ''
                   return (
-                    <tr key={m.ID_Medicao} style={{ borderBottom: "1px solid #F1F5F9", transition: "background 0.12s" }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#F8FAFC"}
+                    <tr key={m.ID_Medicao} style={{ borderBottom: `1px solid ${T.border}`, transition: "background 0.12s" }}
+                      onMouseEnter={e => e.currentTarget.style.background = isDark ? "#243048" : "#F8FAFC"}
                       onMouseLeave={e => e.currentTarget.style.background = ""}>
                       <td style={{ padding: "11px 14px", textAlign: "center" }}>
                         <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 20, fontSize: 10, fontWeight: 800, background: setorColor.bg, color: setorColor.color }}>
@@ -225,14 +236,14 @@ export default function Medicoes() {
                         </span>
                       </td>
                       <td style={{ padding: "11px 14px" }}>
-                        <div style={{ fontWeight: 700, fontSize: 13, color: "#0F172A", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis" }} title={m.nomeProjeto}>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: T.text1, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis" }} title={m.nomeProjeto}>
                           {m.nomeProjeto || m.ID_Projeto || '—'}
                         </div>
-                        <div style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>
+                        <div style={{ fontSize: 11, color: T.text2, marginTop: 2 }}>
                           {m.cliente || proj.Cliente || <span style={{ color: "#CBD5E1" }}>—</span>}
                         </div>
                       </td>
-                      <td style={{ padding: "11px 14px", textAlign: "center", fontSize: 12, color: "#475569" }}>
+                      <td style={{ padding: "11px 14px", textAlign: "center", fontSize: 12, color: T.text2 }}>
                         {dataMedicao ? formatDate(dataMedicao) : <span style={{ color: "#CBD5E1" }}>—</span>}
                       </td>
                       <td style={{ padding: "11px 14px", textAlign: "center" }}>
@@ -247,7 +258,7 @@ export default function Medicoes() {
                           </span>
                         ) : <span style={{ color: "#CBD5E1" }}>—</span>}
                       </td>
-                      <td style={{ padding: "11px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: valorTotal > 0 ? "#0F172A" : "#CBD5E1" }}>
+                      <td style={{ padding: "11px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: valorTotal > 0 ? T.text1 : T.text3 }}>
                         {valorTotal > 0 ? formatBRL(valorTotal) : '—'}
                       </td>
                       <td style={{ padding: "11px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: valorRecebido > 0 ? "#15803D" : "#CBD5E1" }}>
