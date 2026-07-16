@@ -1287,10 +1287,10 @@ export default function PlanejamentoFinanceiro() {
                       { label: "Rastreadas", val: fmtH(comparativo.horas?.totalRastreado), sub: "logado no ClickUp", color: Math.abs(comparativo.horas?.desvioPerc || 0) < 15 ? "#15803D" : "#DC2626", bg: Math.abs(comparativo.horas?.desvioPerc || 0) < 15 ? "#F0FDF4" : "#FEF2F2" },
                       {
                         label: "Desvio",
-                        val: (() => { const d = comparativo.horas?.desvioAbsoluto || 0; return (d >= 0 ? "+" : "") + fmtH(Math.abs(d)) })(),
+                        val: (() => { const d = comparativo.horas?.desvioAbsoluto || 0; return (d > 0 ? "+" : d < 0 ? "-" : "") + fmtH(Math.abs(d)) })(),
                         sub: comparativo.horas?.desvioAbsoluto < 0 ? "abaixo do estimado" : "acima do estimado",
-                        color: (comparativo.horas?.desvioPerc || 0) > 15 ? "#DC2626" : "#15803D",
-                        bg: (comparativo.horas?.desvioPerc || 0) > 15 ? "#FEF2F2" : "#F0FDF4",
+                        color: (comparativo.horas?.desvioAbsoluto || 0) < 0 ? "#DC2626" : "#15803D",
+                        bg: (comparativo.horas?.desvioAbsoluto || 0) < 0 ? "#FEF2F2" : "#F0FDF4",
                       },
                     ].map(k => (
                       <div key={k.label} style={{ background: k.bg, borderRadius: 10, padding: "14px 16px" }}>
