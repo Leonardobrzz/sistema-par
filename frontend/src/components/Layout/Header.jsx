@@ -63,7 +63,7 @@ export default function Header() {
   const btnStyle = {
     width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
     border: 'none', borderRadius: 9, cursor: 'pointer', background: 'transparent',
-    color: '#5E7899', transition: 'all 0.18s ease',
+    color: isDark ? '#94A3B8' : '#5E7899', transition: 'all 0.18s ease',
   }
 
   return (
@@ -81,18 +81,18 @@ export default function Header() {
 
       {/* Greeting */}
       <div style={{ minWidth: 180 }}>
-        <h2 style={{ fontSize: 14, fontWeight: 700, color: '#0D1B2A', margin: 0 }}>
+        <h2 style={{ fontSize: 14, fontWeight: 700, color: isDark ? '#E2E8F0' : '#0D1B2A', margin: 0 }}>
           {dayGreet()},{' '}
           <span style={{ color: '#00B5CC' }}>{user?.nome?.split(' ')[0]}</span>
         </h2>
-        <p style={{ fontSize: 11, color: '#94AABE', margin: 0, marginTop: 2, textTransform: 'capitalize' }}>
+        <p style={{ fontSize: 11, color: isDark ? '#64748B' : '#94AABE', margin: 0, marginTop: 2, textTransform: 'capitalize' }}>
           {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
         </p>
       </div>
 
       {/* Page title — center */}
       {pageTitle && (
-        <span style={{ fontSize: 13, fontWeight: 700, color: '#64748B', position: 'absolute', left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: isDark ? '#CBD5E1' : '#64748B', position: 'absolute', left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap' }}>
           {pageTitle}
         </span>
       )}
@@ -247,7 +247,7 @@ export default function Header() {
         </button>
 
         {/* Divider */}
-        <div style={{ width: 1, height: 22, background: '#D8E4EE', margin: '0 6px' }} />
+        <div style={{ width: 1, height: 22, background: isDark ? '#334155' : '#D8E4EE', margin: '0 6px' }} />
 
         {/* Logout */}
         <button
