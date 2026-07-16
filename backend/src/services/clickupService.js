@@ -986,30 +986,41 @@ async function syncHorasPorTask(tasks, projeto) {
 
 // Fallback: extrai horas do campo time_spent das tasks (captura lançamentos manuais)
 async function syncHorasDoTimespent(tasks, projeto) {
+  let salvos = 0;
   for (const task of tasks) {
     if (!task.time_spent || parseInt(task.time_spent) === 0) continue;
     const horas = (parseInt(task.time_spent) / 3600000).toFixed(2);
     const entryId = `timespent_${task.id}`;
     const assignee = task.assignees?.[0]?.username || task.assignees?.[0]?.email || 'Não identificado';
 
-    const exists = await db.findOne('Log_Horas', r => r.ID_TimeEntry_ClickUp === entryId);
-    if (!exists) {
-      await db.insertRow('Log_Horas', {
-        ID: entryId,
-        ID_Projeto: projeto.ID_Projeto,
-        Colaborador: assignee,
-        Horas_Estimadas: '',
-        Horas_Logadas: horas,
-        Custo_Calculado: '',
-        Data: new Date().toISOString().split('T')[0],
-        ID_TimeEntry_ClickUp: entryId,
-      });
-      console.log(`[ClickUp] time_spent task "${task.name}": ${horas}h → ${assignee}`);
-    } else if (parseFloat(exists.Horas_Logadas).toFixed(2) !== horas) {
-      await db.updateRowById('Log_Horas', 'ID_TimeEntry_ClickUp', entryId, { ...exists, Horas_Logadas: horas });
-      console.log(`[ClickUp] time_spent atualizado "${task.name}": ${horas}h`);
+    try {
+      const exists = await db.findOne('Log_Horas', r => r.ID_TimeEntry_ClickUp === entryId);
+      if (!exists) {
+        await db.insertRow('Log_Horas', {
+          ID: entryId,
+          ID_Projeto: projeto.ID_Projeto,
+          Colaborador: assignee,
+          Horas_Estimadas: '',
+          Horas_Logadas: horas,
+          Custo_Calculado: '',
+          Data: new Date().toISOString().split('T')[0],
+          ID_TimeEntry_ClickUp: entryId,
+        });
+        console.log(`[ClickUp] time_spent NOVO "${task.name}": ${horas}h → projeto=${projeto.ID_Projeto}`);
+        salvos++;
+      } else {
+        console.log(`[ClickUp] time_spent JÁ EXISTE "${task.name}": exists.Horas_Logadas=${exists.Horas_Logadas} horas=${horas} ID_Projeto_salvo=${exists.ID_Projeto}`);
+        if (parseFloat(exists.Horas_Logadas).toFixed(2) !== horas || exists.ID_Projeto !== projeto.ID_Projeto) {
+          await db.updateRowById('Log_Horas', 'ID_TimeEntry_ClickUp', entryId, { ...exists, Horas_Logadas: horas, ID_Projeto: projeto.ID_Projeto });
+          console.log(`[ClickUp] time_spent ATUALIZADO "${task.name}": ${horas}h`);
+          salvos++;
+        }
+      }
+    } catch (err) {
+      console.error(`[ClickUp] time_spent ERRO "${task.name}":`, err.message);
     }
   }
+  console.log(`[ClickUp] syncHorasDoTimespent ${projeto.Nome}: ${salvos} salvos de ${tasks.filter(t => parseInt(t.time_spent) > 0).length} tasks com horas`);
 }
 
 async function syncTimeEntries(timeEntries, projetos) {
