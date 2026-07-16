@@ -535,19 +535,10 @@ async function syncSingleProject(idProjeto) {
     // 1. Sincroniza Status e Progresso
     await syncProjectStatuses(allTasks, [projeto], allLists);
 
-    // 2. Sincroniza Horas Logadas — busca entries direto da lista (mais confiável), fallback em team entries
-    const listId = projeto.ID_ClickUp;
-    let timeEntries = [];
-    if (listId) {
-      timeEntries = await getTimeEntriesByList(listId);
-      console.log(`[ClickUp] Time entries da lista ${listId}: ${timeEntries.length} entradas`);
-    }
-    if (timeEntries.length === 0) {
-      // Fallback: busca por equipe e filtra
-      timeEntries = await getTimeEntries(teamId);
-      console.log(`[ClickUp] Fallback: ${timeEntries.length} entries da equipe`);
-    }
-    await syncTimeEntries(timeEntries, [projeto]);
+    // 2. Sincroniza Horas Logadas — busca entries por tarefa (mais confiável, independente de list_id)
+    const totalSynced = await syncHorasPorTask(allTasks, projeto);
+    console.log(`[ClickUp] syncHorasPorTask: ${totalSynced} entries processadas para ${projeto.Nome}`);
+    // Fallback time_spent para tarefas sem entries rastreadas
     await syncHorasDoTimespent(allTasks, projeto);
 
     broadcast('sync', { type: 'SYNC_PROJETO_CONCLUIDO', idProjeto });
@@ -915,6 +906,54 @@ async function syncOsCliente(allLists, projetos) {
   }
 }
 
+// Busca time entries de uma tarefa específica via API do ClickUp
+async function getTimeEntriesByTask(taskId) {
+  try {
+    const res = await axios.get(`${BASE_URL}/task/${taskId}/time_entries`, {
+      headers: getHeaders(),
+      params: { start_date: Date.now() - 365 * 24 * 60 * 60 * 1000, end_date: Date.now() },
+    });
+    return res.data.data || [];
+  } catch { return []; }
+}
+
+// Sincroniza horas buscando time entries de cada task individualmente (mais confiável que filtro por lista)
+async function syncHorasPorTask(tasks, projeto) {
+  let novos = 0, atualizados = 0;
+  for (const task of tasks) {
+    try {
+      const entries = await getTimeEntriesByTask(task.id);
+      for (const entry of entries) {
+        const horas = entry.duration ? (parseFloat(entry.duration) / 3600000).toFixed(2) : '0';
+        if (parseFloat(horas) === 0) continue;
+        const entryId = String(entry.id);
+        const colaborador = entry.user?.username || entry.user?.email || task.assignees?.[0]?.username || 'Não identificado';
+        const exists = await db.findOne('Log_Horas', r => String(r.ID_TimeEntry_ClickUp) === entryId);
+        if (!exists) {
+          await db.insertRow('Log_Horas', {
+            ID: entryId,
+            ID_Projeto: projeto.ID_Projeto,
+            Colaborador: colaborador,
+            Horas_Estimadas: '',
+            Horas_Logadas: horas,
+            Custo_Calculado: '',
+            Data: entry.start ? new Date(parseInt(entry.start)).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            ID_TimeEntry_ClickUp: entryId,
+          });
+          novos++;
+        } else if (parseFloat(exists.Horas_Logadas).toFixed(2) !== horas) {
+          await db.updateRowById('Log_Horas', 'ID_TimeEntry_ClickUp', entryId, { ...exists, Horas_Logadas: horas });
+          atualizados++;
+        }
+      }
+    } catch { /* ignora erros por task */ }
+  }
+  if (novos > 0 || atualizados > 0) {
+    console.log(`[ClickUp] syncHorasPorTask ${projeto.Nome}: ${novos} novos, ${atualizados} atualizados`);
+  }
+  return novos + atualizados;
+}
+
 // Fallback: extrai horas do campo time_spent das tasks (captura lançamentos manuais)
 async function syncHorasDoTimespent(tasks, projeto) {
   for (const task of tasks) {
@@ -1186,6 +1225,7 @@ module.exports = {
   getTimeEntries,
   getTimeEntriesByList,
   syncTimeEntries,
+  syncHorasPorTask,
   syncHorasDoTimespent,
   registerWebhook,
   processWebhookEvent,
