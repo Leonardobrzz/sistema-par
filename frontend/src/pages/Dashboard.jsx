@@ -11,6 +11,7 @@ import {
   SlidersHorizontal, X, Check,
 } from 'lucide-react'
 import api from '../utils/api'
+import { useAuth } from '../contexts/AuthContext'
 import PaineisClickUp from '../components/PaineisClickUp'
 import ProjetosClickUp from '../components/ProjetosClickUp'
 
@@ -82,34 +83,37 @@ function calcKpisFromPlan(plan) {
 
 // ── Sub-componentes ──────────────────────────────────────────────────────────
 
-function StatCard({ label, value, sub, icon, color = '#7C3AED', warn, onClick }) {
+function StatCard({ label, value, sub, icon, color = '#7C3AED', bg, warn, onClick }) {
   const isWarn = warn === 'danger'
   const isCaution = warn === 'caution'
+  const solidBg = isWarn ? '#EF4444' : isCaution ? '#F59E0B' : (bg || color)
   return (
     <div
       onClick={onClick}
       style={{
-        background: isWarn ? '#FEF2F2' : isCaution ? '#FFFBEB' : '#fff',
-        border: `1.5px solid ${isWarn ? '#FECACA' : isCaution ? '#FDE68A' : '#E2E8F0'}`,
+        background: solidBg,
         borderRadius: 16, padding: '20px 22px',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+        boxShadow: `0 4px 20px ${solidBg}55`,
         cursor: onClick ? 'pointer' : 'default',
         transition: 'all 0.18s',
+        position: 'relative', overflow: 'hidden',
       }}
-      onMouseEnter={e => { if (onClick) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.09)' } }}
-      onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.04)' }}
+      onMouseEnter={e => { if (onClick) { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 10px 32px ${solidBg}77` } }}
+      onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = `0 4px 20px ${solidBg}55` }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      {/* Decorative circle */}
+      <div style={{ position:'absolute', right:-18, top:-18, width:90, height:90, borderRadius:'50%', background:'rgba(255,255,255,.12)', pointerEvents:'none' }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position:'relative' }}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{label}</div>
-          <div style={{ fontSize: 28, fontWeight: 900, color: isWarn ? '#DC2626' : isCaution ? '#D97706' : color, lineHeight: 1 }}>{value}</div>
-          {sub && <div style={{ fontSize: 12, color: '#64748B', marginTop: 5 }}>{sub}</div>}
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.75)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{label}</div>
+          <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>{value}</div>
+          {sub && <div style={{ fontSize: 11, color: 'rgba(255,255,255,.65)', marginTop: 5 }}>{sub}</div>}
         </div>
         <div style={{
-          width: 42, height: 42, borderRadius: 12, flexShrink: 0,
-          background: isWarn ? '#FEE2E2' : isCaution ? '#FEF3C7' : `${color}18`,
+          width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+          background: 'rgba(255,255,255,.2)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: isWarn ? '#DC2626' : isCaution ? '#D97706' : color,
+          color: '#fff',
         }}>{icon}</div>
       </div>
     </div>
@@ -309,6 +313,7 @@ function PainelPersonalizar({ secoes, onChange, onClose }) {
 
 export default function Dashboard() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [projetos, setProjetos] = useState([])
   const [planejamentos, setPlanejamentos] = useState([])
   const [medicoes, setMedicoes] = useState([])
@@ -449,9 +454,11 @@ export default function Dashboard() {
       {/* ── Header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em' }}>Dashboard PAR</h1>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748B' }}>
-            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em' }}>
+            Bom dia, <span style={{ color: '#0284C7' }}>{(user?.nome || '').split(' ')[0]}</span> 👋
+          </h1>
+          <p style={{ margin: '3px 0 0', fontSize: 12, color: '#94A3B8', textTransform: 'capitalize' }}>
+            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -558,10 +565,10 @@ export default function Dashboard() {
       {/* ── 4 KPI Cards ── */}
       {vis('kpis') && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-          <StatCard label="Projetos em Andamento" value={emAndamento.length} sub={`${projetosFiltrados.length} total · ${concluidos.length} concluídos`} icon={<FolderOpen size={20} />} color="#0EA5E9" onClick={() => navigate('/projetos')} />
-          <StatCard label="Planejamentos Aprovados" value={fmt(totalContrato)} sub={`${aprovados.length} planejamento(s) aprovado(s)`} icon={<Briefcase size={20} />} color="#7C3AED" />
+          <StatCard label="Projetos em Andamento" value={emAndamento.length} sub={`${projetosFiltrados.length} total · ${concluidos.length} concluídos`} icon={<FolderOpen size={20} />} bg="#22C55E" onClick={() => navigate('/projetos')} />
+          <StatCard label="Carteira Aprovada" value={fmt(totalContrato)} sub={`${aprovados.length} planejamento(s) aprovado(s)`} icon={<Briefcase size={20} />} bg="#EF4444" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <StatCard label="Total Recebido" value={fmt(totalRecebido)} sub={periodoRecebido.inicio || periodoRecebido.fim ? 'filtrado por período' : 'medições com status Recebido'} icon={<CheckCircle2 size={20} />} color="#16A34A" />
+            <StatCard label="Total Recebido" value={fmt(totalRecebido)} sub={periodoRecebido.inicio || periodoRecebido.fim ? 'filtrado por período' : 'medições com status Recebido'} icon={<CheckCircle2 size={20} />} bg="#0EA5E9" />
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <input type="date" value={periodoRecebido.inicio} onChange={e => setPeriodoRecebido(p => ({ ...p, inicio: e.target.value }))}
                 style={{ flex: 1, padding: '5px 8px', borderRadius: 6, border: '1.5px solid #E2E8F0', fontSize: 11, color: '#475569', fontFamily: 'inherit', outline: 'none' }} />
@@ -573,8 +580,8 @@ export default function Dashboard() {
               )}
             </div>
           </div>
-          <StatCard label="A Receber" value={fmt(totalAReceber)} sub="medições pendentes/em andamento" icon={<BadgeDollarSign size={20} />} color="#D97706"
-            warn={totalAReceber > 0 ? 'caution' : null} onClick={() => navigate('/medicoes')} />
+          <StatCard label="A Receber" value={fmt(totalAReceber)} sub="medições pendentes/em andamento" icon={<BadgeDollarSign size={20} />} bg="#F59E0B"
+            onClick={() => navigate('/medicoes')} />
         </div>
       )}
 
