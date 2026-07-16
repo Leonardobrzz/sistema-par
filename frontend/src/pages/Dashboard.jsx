@@ -393,7 +393,20 @@ export default function Dashboard() {
     return true
   })
   const totalRecebido = medicoesPeriodo.reduce((s, m) => s + parseFloat(m.Valor_Medicao || m.Valor || 0), 0)
-  const totalAReceber = medicoesFiltradas.filter(m => m.Status_Financeiro !== 'Recebido' && m.Status !== 'Cancelada').reduce((s, m) => s + parseFloat(m.Valor_Medicao || m.Valor || 0), 0)
+
+  // A Receber: soma medições da tabela + medições planejadas dos planejamentos aprovados
+  const totalAReceberTabela = medicoesFiltradas.filter(m => m.Status_Financeiro !== 'Recebido' && m.Status !== 'Cancelada').reduce((s, m) => s + parseFloat(m.Valor_Medicao || m.Valor || 0), 0)
+  const totalAReceberPlanejado = aprovados.reduce((s, plan) => {
+    // IDs já em Medicoes — evita dupla contagem
+    const idsNaTabela = new Set(medicoesFiltradas.map(m => m.ID_Projeto))
+    if (idsNaTabela.has(plan.ID_Projeto)) return s
+    try {
+      const dados = JSON.parse(plan.Dados_JSON || '{}')
+      const meds = dados.medicoes || dados._baseline?.medicoesCronograma || []
+      return s + meds.reduce((ss, m) => ss + parseFloat(m.valor || m.valorPlanejado || 0), 0)
+    } catch { return s }
+  }, 0)
+  const totalAReceber = totalAReceberTabela + totalAReceberPlanejado
   const alertasCriticos = alertas.filter(a => a.Nivel === 'error')
 
   const STATUS_VISIVEIS_GRAFICO = ['Backlog', 'A Planejar', 'Em Andamento', 'Em Andamento (Atrasado)', 'Paralisado', 'Pausado']
