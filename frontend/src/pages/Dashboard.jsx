@@ -386,7 +386,7 @@ export default function Dashboard() {
   const totalContrato = aprovados.reduce((s, p) => s + parseFloat(p.Valor_Contrato || 0), 0)
   const medicoesPeriodo = medicoesFiltradas.filter(m => {
     if (m.Status_Financeiro !== 'Recebido') return false
-    const d = m.Data_Recebimento || m.Data_Prevista || m.Data_Emissao_NF
+    const d = m.Data_Recebimento || m.Data_Previsao || m.Data_Prevista || m.Data_Emissao_NF
     if (!d) return true
     if (periodoRecebido.inicio && d < periodoRecebido.inicio) return false
     if (periodoRecebido.fim && d > periodoRecebido.fim) return false
@@ -410,7 +410,7 @@ export default function Dashboard() {
   const medicoesPorMes = (() => {
     const meses = {}
     medicoesFiltradas.forEach(m => {
-      const d = m.Data_Prevista || m.Data_Emissao_NF
+      const d = m.Data_Previsao || m.Data_Prevista || m.Data_Emissao_NF
       if (!d) return
       const key = d.slice(0, 7)
       if (!meses[key]) meses[key] = { mes: key, previsto: 0, recebido: 0 }
@@ -427,10 +427,11 @@ export default function Dashboard() {
   const daqui30 = new Date(hoje); daqui30.setDate(daqui30.getDate() + 30)
   const proximasMedicoes = medicoesFiltradas
     .filter(m => {
-      const d = m.Data_Prevista ? new Date(m.Data_Prevista) : null
-      return d && d >= hoje && d <= daqui30 && m.Status !== 'Cancelada' && m.Status !== 'Concluída'
+      const d = m.Data_Previsao || m.Data_Prevista
+      const dt = d ? new Date(d) : null
+      return dt && dt >= hoje && dt <= daqui30 && m.Status !== 'Cancelada' && m.Status !== 'Concluída'
     })
-    .sort((a, b) => new Date(a.Data_Prevista) - new Date(b.Data_Prevista))
+    .sort((a, b) => new Date(a.Data_Previsao || a.Data_Prevista) - new Date(b.Data_Previsao || b.Data_Prevista))
     .slice(0, 5)
 
   const NIVEL_ORD = { danger: 0, caution: 1, ok: 2 }
@@ -730,7 +731,7 @@ export default function Dashboard() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {proximasMedicoes.map((m, i) => {
-                    const dias = Math.ceil((new Date(m.Data_Prevista) - hoje) / 86400000)
+                    const dias = Math.ceil((new Date(m.Data_Previsao || m.Data_Prevista) - hoje) / 86400000)
                     const urgente = dias <= 7
                     return (
                       <div key={i} style={{
@@ -757,7 +758,7 @@ export default function Dashboard() {
                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(m.Valor_Medicao || 0)}
                           </div>
                           <div style={{ fontSize: 10, color: '#94A3B8' }}>
-                            {new Date(m.Data_Prevista).toLocaleDateString('pt-BR')}
+                            {new Date(m.Data_Previsao || m.Data_Prevista).toLocaleDateString('pt-BR')}
                           </div>
                         </div>
                       </div>
