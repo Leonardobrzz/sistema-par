@@ -249,7 +249,7 @@ export default function PlanejamentoFinanceiro() {
         taxaAdmPerc:       p.Taxa_Adm_Perc      || d.taxaAdmPerc       || "12",
         dataInicioOS:         p.Data_Inicio_OS         || d.dataInicioOS         || "",
         dataOsExterna:        p.Data_OS_Externa        || d.dataOsExterna        || "",
-        dataEntregaContrato:  p.Data_Entrega_Contrato  || d.dataEntregaContrato  || proj.Data_Entrega_Contrato || "",
+        dataEntregaContrato:  p.Data_Entrega_Contrato  || d.dataEntregaContrato  || "",
         dataEntregaPlanejada: p.Data_Entrega_Planejada || d.dataEntregaPlanejada || "",
         medicoes:      Array.isArray(d.medicoes)      ? d.medicoes      : [],
         terceirizados: Array.isArray(d.terceirizados)  ? d.terceirizados : [],
@@ -259,7 +259,7 @@ export default function PlanejamentoFinanceiro() {
       })
     } catch {
       setPlanId(null); setPlanStatus(null); setBaseline(null); setHistoricoBaselines([])
-      setForm({ ...FORM0, nomeProjeto: proj.Nome || "", cliente: proj.Cliente || "", setor: proj.Setor || "", linkClickUp: proj.Link_ClickUp || "", dataEntregaContrato: proj.Data_Entrega_Contrato || "", valorContrato: proj.Valor_Global || "" })
+      setForm({ ...FORM0, nomeProjeto: proj.Nome || "", cliente: proj.Cliente || "", setor: proj.Setor || "", linkClickUp: proj.Link_ClickUp || "", valorContrato: proj.Valor_Global || "" })
     }
     setLoading(false)
   }, [projetos])
