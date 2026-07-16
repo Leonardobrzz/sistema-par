@@ -931,24 +931,6 @@ async function getTimeEntriesByTask(taskId) {
 // Sincroniza horas buscando time entries de cada task individualmente (mais confiável que filtro por lista)
 async function syncHorasPorTask(tasks, projeto) {
   let novos = 0, atualizados = 0;
-  // Diagnóstico: loga time_spent das primeiras tasks com valor > 0
-  const comHoras = tasks.filter(t => t.time_spent && parseInt(t.time_spent) > 0);
-  console.log(`[ClickUp] Diagnóstico: ${tasks.length} tasks, ${comHoras.length} com time_spent > 0`);
-  if (comHoras.length > 0) {
-    const t = comHoras[0];
-    console.log(`[ClickUp] Diagnóstico task com horas: id=${t.id} name="${t.name}" time_spent=${t.time_spent}`);
-  } else {
-    // Mostra time_spent raw da primeira task para ver o formato
-    const t = tasks[0];
-    console.log(`[ClickUp] Diagnóstico task[0]: id=${t?.id} name="${t?.name}" time_spent=${JSON.stringify(t?.time_spent)}`);
-    // Busca entries via API para a task com mais estimativa de tempo
-    const comEstimativa = tasks.filter(t => t.time_estimate && parseInt(t.time_estimate) > 0);
-    if (comEstimativa.length > 0) {
-      const te = comEstimativa[0];
-      const entries = await getTimeEntriesByTask(te.id);
-      console.log(`[ClickUp] Diagnóstico task com estimativa: id=${te.id} name="${te.name}" time_estimate=${te.time_estimate} → ${entries.length} time entries`);
-    }
-  }
   getTimeEntriesByTask._loggedOnce = false;
   for (const task of tasks) {
     try {
