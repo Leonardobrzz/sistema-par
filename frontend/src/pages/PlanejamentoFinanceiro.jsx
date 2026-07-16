@@ -1004,7 +1004,17 @@ export default function PlanejamentoFinanceiro() {
                   </Field>
                   <Field label={i === 0 ? "%" : ""}>
                     {isEditing
-                      ? <input type="text" inputMode="decimal" value={m.percentual || ""} onChange={e => editRow("medicoes", i, "percentual", e.target.value)} style={{ ...INPUT, background: '#F0FDF4', color: '#15803D' }} placeholder="auto" />
+                      ? <input type="text" inputMode="decimal" value={m.percentual || ""} onChange={e => {
+                          const novoPerc = e.target.value
+                          const vc = parseBR(form.valorContrato)
+                          const pNum = parseBR(novoPerc)
+                          const valorAuto = vc > 0 && pNum > 0 ? (vc * pNum / 100).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.') : m.valor
+                          setForm(prev => {
+                            const updated = [...prev.medicoes]
+                            updated[i] = { ...updated[i], percentual: novoPerc, valor: valorAuto }
+                            return { ...prev, medicoes: updated }
+                          })
+                        }} style={{ ...INPUT, background: '#F0FDF4', color: '#15803D' }} placeholder="ex: 50" />
                       : <div style={CELL}>{m.percentual ? `${m.percentual}%` : <span style={{ color: "#CBD5E1" }}>—</span>}</div>}
                   </Field>
                   <Field label={i === 0 ? "Data Prevista" : ""}>
