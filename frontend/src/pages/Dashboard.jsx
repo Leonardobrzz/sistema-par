@@ -403,7 +403,8 @@ export default function Dashboard() {
     try {
       const dados = JSON.parse(plan.Dados_JSON || '{}')
       const meds = dados.medicoes || dados._baseline?.medicoesCronograma || []
-      return s + meds.reduce((ss, m) => ss + parseFloat(m.valor || m.valorPlanejado || 0), 0)
+      const parseBRv = v => { if (!v) return 0; const s = String(v).replace(/\./g, '').replace(',', '.'); return parseFloat(s) || 0 }
+      return s + meds.reduce((ss, m) => ss + parseBRv(m.valor || m.valorPlanejado || 0), 0)
     } catch { return s }
   }, 0)
   const totalAReceber = totalAReceberTabela + totalAReceberPlanejado
@@ -447,7 +448,8 @@ export default function Dashboard() {
           if (!d) return
           const key = d.slice(0, 7)
           if (!meses[key]) meses[key] = { mes: key, previsto: 0, recebido: 0 }
-          meses[key].previsto += parseFloat(m.valor || m.valorPlanejado || 0)
+          const _parseBR = v => { if (!v) return 0; const s = String(v).replace(/\./g, '').replace(',', '.'); return parseFloat(s) || 0 }
+          meses[key].previsto += _parseBR(m.valor || m.valorPlanejado || 0)
         })
       } catch {}
     })
@@ -466,10 +468,12 @@ export default function Dashboard() {
       const dt = d ? new Date(d) : null
       return dt && dt >= hoje && dt <= daqui30 && m.Status !== 'Cancelada' && m.Status !== 'Concluída'
     })
+    const parseBRval = v => { if (!v) return 0; const s = String(v).replace(/\./g, '').replace(',', '.'); return parseFloat(s) || 0 }
     const idsNaTabela = new Set(medicoesFiltradas.map(m => m.ID_Projeto))
     const doPlano = []
     aprovados.forEach(plan => {
       if (idsNaTabela.has(plan.ID_Projeto)) return
+      const proj = projetos.find(p => p.ID_Projeto === plan.ID_Projeto)
       try {
         const dados = JSON.parse(plan.Dados_JSON || '{}')
         const meds = dados.medicoes || dados._baseline?.medicoesCronograma || []
@@ -480,9 +484,9 @@ export default function Dashboard() {
           if (dt >= hoje && dt <= daqui30) {
             doPlano.push({
               ID_Projeto: plan.ID_Projeto,
-              nomeProjeto: plan.Nome || plan.ID_Projeto,
+              nomeProjeto: proj?.Nome || proj?.nome || plan.ID_Projeto,
               Data_Previsao: d,
-              Valor: m.valor || m.valorPlanejado || 0,
+              Valor: parseBRval(m.valor || m.valorPlanejado || 0),
               Descricao: m.descricao || m.etapa || `Medição ${idx + 1}`,
               Status_Financeiro: 'Pendente',
             })
