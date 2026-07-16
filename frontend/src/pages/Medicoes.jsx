@@ -36,12 +36,45 @@ export default function Medicoes() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [medRes, projRes] = await Promise.all([
+      const [medRes, projRes, planRes] = await Promise.all([
         api.get('/medicoes'),
         api.get('/projetos'),
+        api.get('/planejamentos'),
       ])
-      setMedicoes(medRes.data.medicoes || medRes.data || [])
-      setProjetos(projRes.data.projetos || [])
+      const tabela = medRes.data.medicoes || medRes.data || []
+      const projs = projRes.data.projetos || []
+      const projMap = Object.fromEntries(projs.map(p => [p.ID_Projeto, p]))
+      const idsNaTabela = new Set(tabela.map(m => m.ID_Projeto))
+
+      const parseBRval = v => { if (!v) return 0; const s = String(v).replace(/\./g, '').replace(',', '.'); return parseFloat(s) || 0 }
+
+      const doPlanejamento = []
+      const planos = planRes.data.planejamentos || planRes.data || []
+      planos.filter(p => p.Status === 'Aprovado').forEach(plan => {
+        if (idsNaTabela.has(plan.ID_Projeto)) return
+        const proj = projMap[plan.ID_Projeto] || {}
+        try {
+          const dados = JSON.parse(plan.Dados_JSON || '{}')
+          const meds = dados.medicoes || dados._baseline?.medicoesCronograma || []
+          meds.forEach((m, idx) => {
+            doPlanejamento.push({
+              ID_Medicao: `plan_${plan.ID_Projeto}_${idx}`,
+              ID_Projeto: plan.ID_Projeto,
+              nomeProjeto: proj.Nome || plan.ID_Projeto,
+              cliente: proj.Cliente || proj.Nome_Cliente || '',
+              setor: proj.Setor || '',
+              Data_Previsao: m.dataPrevisao || m.dataPrevista || '',
+              Valor: parseBRval(m.valor || m.valorPlanejado || 0),
+              Descricao: m.descricao || m.etapa || `Medição ${idx + 1}`,
+              Status_Financeiro: 'Pendente',
+              _doPlanejamento: true,
+            })
+          })
+        } catch {}
+      })
+
+      setMedicoes([...tabela, ...doPlanejamento])
+      setProjetos(projs)
     } catch {
       toast.error('Erro ao carregar medições')
     } finally {
