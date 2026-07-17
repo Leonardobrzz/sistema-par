@@ -4,7 +4,7 @@ import { toast } from "react-hot-toast"
 import {
   BadgeDollarSign, Save, Calculator, AlertTriangle, Plus, Trash2,
   CheckCircle, ChevronDown, ChevronRight, ArrowLeft, Lock, RefreshCw,
-  FileSpreadsheet, ThumbsUp, TrendingUp, Search,
+  FileSpreadsheet, ThumbsUp, TrendingUp, Search, Printer,
 } from "lucide-react"
 import api from "../utils/api"
 import { useTheme } from "../contexts/ThemeContext"
@@ -582,6 +582,211 @@ export default function PlanejamentoFinanceiro() {
     } catch { toast.error("Erro ao gerar Excel") }
   }
 
+  function gerarPDF() {
+    if (!projetoId) return
+    const par = calcPAR(form)
+    const fV = (v) => Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+    const fN = (v, d = 1) => Number(v || 0).toFixed(d)
+    const fD = (s) => {
+      if (!s) return "—"
+      const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/)
+      return m ? `${m[3]}/${m[2]}/${m[1]}` : s
+    }
+    const margemOk = par.lucroPerc >= 23
+    const tercOk   = par.percTerceiros <= 25
+    const prodOk   = par.custoProducaoPerc <= 30
+    const despOk   = par.percDespesasGerais <= 7.5
+
+    const rowsHtml = (headers, rows, empty = "Nenhum item") => {
+      if (!rows.length) return `<p style="color:#94A3B8;font-size:11px;padding:4px 0">${empty}</p>`
+      return `<table>
+        <thead><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr></thead>
+        <tbody>${rows.map((row, i) => `<tr class="${i % 2 === 0 ? "" : "alt"}">${row.map(c => `<td>${c ?? "—"}</td>`).join("")}</tr>`).join("")}</tbody>
+      </table>`
+    }
+
+    const medicoes   = form.medicoes || []
+    const equipe     = form.equipe || []
+    const terceiros  = form.terceirizados || []
+    const despInt    = form.despesasInternas || []
+    const despGerais = form.despesas || []
+
+    const totalMed = medicoes.reduce((s, m) => s + pBR(m.valor), 0)
+    const percMed  = medicoes.reduce((s, m) => s + pBR(m.percentual), 0)
+
+    const kpi = (label, value, ok, sub = "") =>
+      `<div class="kpi ${ok ? "ok" : "nok"}">
+        <div class="kpi-label">${label}</div>
+        <div class="kpi-val">${value}</div>
+        ${sub ? `<div class="kpi-sub">${sub}</div>` : ""}
+      </div>`
+
+    const finRow = (label, value, destaque = false, colorVal = "") =>
+      `<div class="fin-row${destaque ? " destaque" : ""}">
+        <span class="label">${label}</span>
+        <strong${colorVal ? ` style="color:${colorVal}"` : ""}>${value}</strong>
+      </div>`
+
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Relatório PAR — ${form.nomeProjeto || ""}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #0F172A; padding: 24px; }
+  .tag { font-size: 9px; font-weight: 700; color: #7C3AED; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; }
+  h1 { font-size: 18px; font-weight: 900; margin-bottom: 2px; }
+  .sub { font-size: 11px; color: #64748B; margin-bottom: 20px; }
+  h2 { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #475569;
+       margin: 20px 0 8px; border-bottom: 1.5px solid #CBD5E1; padding-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  th { background: #F1F5F9; padding: 7px 10px; text-align: left; font-weight: 700; color: #475569;
+       font-size: 10px; text-transform: uppercase; border: 1px solid #CBD5E1; }
+  td { padding: 7px 10px; border: 1px solid #E2E8F0; vertical-align: middle; }
+  tr.alt td { background: #F8FAFC; }
+  .kpis { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .kpi { border: 1.5px solid #CBD5E1; border-radius: 6px; padding: 8px 12px; min-width: 110px; flex: 1; }
+  .kpi-label { font-size: 9px; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 3px; }
+  .kpi-val { font-size: 15px; font-weight: 900; }
+  .kpi-sub { font-size: 9px; font-weight: 600; margin-top: 2px; }
+  .kpi.ok .kpi-val, .kpi.ok .kpi-sub { color: #15803D; }
+  .kpi.nok .kpi-val, .kpi.nok .kpi-sub { color: #DC2626; }
+  .fin { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px; }
+  .fin-row { display: flex; justify-content: space-between; padding: 5px 10px;
+             background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 4px; }
+  .fin-row.destaque { background: #F0FDF4; font-weight: 700; }
+  .label { color: #64748B; }
+  .obs { padding: 10px 14px; background: #FFFBEB; border: 1px solid #FDE68A;
+         border-radius: 6px; font-size: 11px; color: #92400E; line-height: 1.6; margin-top: 4px; }
+  .status { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+  .status-aprovado { background: #DCFCE7; color: #15803D; }
+  .status-pendente { background: #FEF3C7; color: #B45309; }
+  .status-rascunho { background: #F1F5F9; color: #64748B; }
+  .status-rejeitado{ background: #FEE2E2; color: #DC2626; }
+  .footer { margin-top: 28px; padding-top: 10px; border-top: 1px solid #E2E8F0;
+            font-size: 9px; color: #94A3B8; display: flex; justify-content: space-between; }
+  @page { size: A4; margin: 12mm; }
+  @media print { body { padding: 0; } }
+</style>
+</head>
+<body>
+  <div class="tag">Planejamento Financeiro — Sistema PAR · Jota Barros Projetos</div>
+  <h1>${form.nomeProjeto || projetoSelecionado?.Nome || ""}</h1>
+  <div class="sub">
+    ${form.cliente ? `Cliente: <strong>${form.cliente}</strong> &nbsp;·&nbsp; ` : ""}
+    ${form.setor   ? `Setor: <strong>${form.setor}</strong> &nbsp;·&nbsp; ` : ""}
+    ${form.tipologia ? `Tipologia: <strong>${form.tipologia}</strong> &nbsp;·&nbsp; ` : ""}
+    Status: <span class="status status-${(planStatus || "rascunho").toLowerCase().replace(" ", "-").replace("ã","a").replace("ç","c")}">${planStatus || "Rascunho"}</span>
+  </div>
+
+  <h2>Indicadores PAR</h2>
+  <div class="kpis">
+    ${kpi("Valor do Contrato",  fV(par.V),              par.V > 0)}
+    ${kpi("Receita Líquida",    fV(par.receitaLiquida), par.receitaLiquida > 0)}
+    ${kpi("Lucro Estimado",     fV(par.lucro),          margemOk, `${fN(par.lucroPerc)}% (mín 23%)`)}
+    ${kpi("Terceirizados",      `${fN(par.percTerceiros)}%`, tercOk, "máx 25%")}
+    ${kpi("Custo de Produção",  `${fN(par.custoProducaoPerc)}%`, prodOk, "máx 30%")}
+    ${kpi("Despesas Gerais",    `${fN(par.percDespesasGerais)}%`, despOk, "máx 7,5%")}
+  </div>
+
+  <h2>Resumo Financeiro</h2>
+  <div class="fin">
+    ${finRow("Valor Bruto", fV(par.V))}
+    ${finRow(`Impostos (${fN(par.ip)}%)`, `- ${fV(par.impostos)}`)}
+    ${finRow(`Taxa Adm. (${fN(par.ta)}%)`, `- ${fV(par.taxaAdm)}`)}
+    ${finRow("Comissão (7,5%)", `- ${fV(par.comissao)}`)}
+    ${finRow("Receita Líquida", fV(par.receitaLiquida), true)}
+    ${finRow("Equipe Interna", `- ${fV(par.totalEquipe)}`)}
+    ${finRow("Terceirizados", `- ${fV(par.totalTerceiros)}`)}
+    ${finRow("Despesas Internas", `- ${fV(par.totalDespesasInternas)}`)}
+    ${finRow("Despesas Gerais", `- ${fV(par.totalDespesas)}`)}
+    ${finRow("Lucro Estimado", fV(par.lucro), true, margemOk ? "#15803D" : "#DC2626")}
+  </div>
+
+  <h2>Informações Gerais</h2>
+  <table><tbody>
+    ${[
+      ["Empresa",               form.empresa],
+      ["Responsável Planejamento", form.respPlanejamento],
+      ["Responsável Aprovação", form.respAprovacao],
+      ["Centro de Custo / O.S.", form.nrContratoOS],
+      ["N° O.S. OPP",           form.nrOsOpp],
+      ["Data Início O.S.",       fD(form.dataInicioOS)],
+      ["Data O.S. Externa",      fD(form.dataOsExterna)],
+      ["Entrega Contrato",       fD(form.dataEntregaContrato)],
+      ["Entrega Planejada",      fD(form.dataEntregaPlanejada)],
+    ].filter(([,v]) => v && v !== "—").map(([l,v]) =>
+      `<tr><td style="width:40%;color:#64748B">${l}</td><td><strong>${v}</strong></td></tr>`
+    ).join("")}
+  </tbody></table>
+
+  <h2>Cronograma de Medições (${medicoes.length} etapa${medicoes.length !== 1 ? "s" : ""})</h2>
+  ${rowsHtml(
+    ["Etapa / Descrição", "Valor (R$)", "%", "Status Físico", "Status Financeiro", "Previsão", "Realização"],
+    medicoes.map(m => [
+      m.etapa || "—",
+      m.valor ? fV(pBR(m.valor)) : "—",
+      m.percentual ? `${m.percentual}%` : "—",
+      m.statusFisico || "—",
+      m.statusFinanceiro || "—",
+      fD(m.dataPrevisao),
+      fD(m.dataRealizacao),
+    ])
+  )}
+  ${medicoes.length > 0 ? `<p style="font-size:11px;font-weight:700;color:#15803D;margin-top:4px">
+    Total medições: ${fV(totalMed)} &nbsp;·&nbsp; Soma %: ${fN(percMed, 2)}%
+  </p>` : ""}
+
+  <h2>Equipe Interna (${equipe.length} membro${equipe.length !== 1 ? "s" : ""} · ${fV(par.totalEquipe)})</h2>
+  ${rowsHtml(
+    ["Colaborador", "Horas Est.", "R$/Hora", "Custo Estimado"],
+    equipe.map(e => [
+      e.colaborador || "—",
+      `${pBR(e.horas)}h`,
+      fV(pBR(e.mediaHora) || 36.4),
+      fV(pBR(e.horas) * (pBR(e.mediaHora) || 36.4)),
+    ])
+  )}
+
+  ${despInt.length > 0 ? `
+  <h2>Despesas Internas (${despInt.length} · ${fV(par.totalDespesasInternas)})</h2>
+  ${rowsHtml(
+    ["Serviço", "Vínculo", "Ref. Contrato", "Custo"],
+    despInt.map(t => [t.servico, t.vinculo, fV(pBR(t.valorRef)), fV(pBR(t.custo))])
+  )}` : ""}
+
+  <h2>Serviços Terceirizados (${terceiros.length} · ${fV(par.totalTerceiros)})</h2>
+  ${rowsHtml(
+    ["Serviço", "Vínculo", "Ref. Contrato", "Custo"],
+    terceiros.map(t => [t.servico, t.vinculo, fV(pBR(t.valorRef)), fV(pBR(t.custo))])
+  )}
+
+  ${despGerais.length > 0 ? `
+  <h2>Despesas Gerais (${despGerais.length} · ${fV(par.totalDespesas)})</h2>
+  ${rowsHtml(
+    ["Descrição", "Valor"],
+    despGerais.map(d => [d.descricao, fV(pBR(d.valor))])
+  )}` : ""}
+
+  ${form.justificativa ? `
+  <h2>Justificativa / Observações</h2>
+  <div class="obs">${form.justificativa}</div>` : ""}
+
+  <div class="footer">
+    <span>Sistema PAR · Jota Barros Projetos</span>
+    <span>Emitido em ${new Date().toLocaleString("pt-BR")}</span>
+  </div>
+</body>
+</html>`
+
+    const janela = window.open("", "_blank")
+    janela.document.write(html)
+    janela.document.close()
+    janela.focus()
+    setTimeout(() => janela.print(), 600)
+  }
+
   // ── Status badge colors ───────────────────────────────────────────────────
   const statusCfg = {
     "Rascunho":            { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0" },
@@ -651,6 +856,14 @@ export default function PlanejamentoFinanceiro() {
             <button onClick={travarBaseline} disabled={lockingBaseline}
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1.5px solid #C7D2FE", background: "#EEF2FF", color: "#4338CA", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
               <Lock size={14} /> {lockingBaseline ? "Travando..." : "Baseline"}
+            </button>
+          )}
+
+          {/* PDF disponível quando há projeto selecionado */}
+          {projetoId && (
+            <button onClick={gerarPDF}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1.5px solid #C7D2FE", background: "#EEF2FF", color: "#4338CA", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+              <Printer size={14} /> PDF
             </button>
           )}
 
