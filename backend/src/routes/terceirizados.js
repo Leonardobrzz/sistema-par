@@ -5,9 +5,11 @@ const db = process.env.USE_POSTGRES === 'true'
   : require('../services/googleSheetsService');
 const { authMiddleware } = require('../middleware/auth');
 const { createAlert } = require('../services/alertService');
+const { auditMiddleware } = require('../middleware/audit');
 
 const router = express.Router();
 router.use(authMiddleware);
+const audit = auditMiddleware('Terceirizados');
 
 const TETO_AVISO = parseFloat(process.env.TETO_TERCEIROS_AVISO || '15');
 const TETO_BLOQUEIO = parseFloat(process.env.TETO_TERCEIROS_BLOQUEIO || '20');
@@ -114,7 +116,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // POST /api/terceirizados — cria novo terceirizado
-router.post('/', async (req, res, next) => {
+router.post('/', audit, async (req, res, next) => {
   try {
     const {
       idProjeto, ID_Projeto,
@@ -225,7 +227,7 @@ router.post('/', async (req, res, next) => {
 });
 
 // PUT /api/terceirizados/:id — atualiza status ou dados
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', audit, async (req, res, next) => {
   try {
     const row = await db.findOne('Terceirizados', (r) => r.ID === req.params.id);
     if (!row) return res.status(404).json({ error: 'Terceirizado não encontrado.' });
@@ -253,7 +255,7 @@ router.put('/:id', async (req, res, next) => {
 });
 
 // DELETE /api/terceirizados/:id — cancela (soft delete)
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', audit, async (req, res, next) => {
   try {
     const row = await db.findOne('Terceirizados', (r) => r.ID === req.params.id);
     if (!row) return res.status(404).json({ error: 'Terceirizado não encontrado.' });

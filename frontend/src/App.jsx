@@ -20,6 +20,7 @@ import RelatorioFinal from './pages/RelatorioFinal'
 import RelatoriosPlanejamentoPAR from './pages/RelatoriosPlanejamentoPAR'
 import ChecklistIntegridade from './pages/ChecklistIntegridade'
 import ExtratoProjeto from './pages/ExtratoProjeto'
+import Auditoria from './pages/Auditoria'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -65,6 +66,7 @@ export default function App() {
               <Route path="alertas" element={<Alertas />} />
               <Route path="checklist" element={<ChecklistIntegridade />} />
               <Route path="extrato" element={<ExtratoProjeto />} />
+              <Route path="auditoria" element={<Auditoria />} />
             </Route>
           </Routes>
         </AlertProvider>

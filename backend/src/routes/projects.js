@@ -2,9 +2,11 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const db = process.env.USE_POSTGRES === 'true' ? require('../services/postgresService') : require('../services/googleSheetsService');
 const { authMiddleware } = require('../middleware/auth');
+const { auditMiddleware } = require('../middleware/audit');
 
 const router = express.Router();
 router.use(authMiddleware);
+const audit = auditMiddleware('Projetos_Contratos');
 
 // GET /api/projetos — lista todos os projetos com filtros
 router.get('/', async (req, res, next) => {
@@ -175,7 +177,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // POST /api/projetos — cria novo projeto
-router.post('/', async (req, res, next) => {
+router.post('/', audit, async (req, res, next) => {
   try {
     const { nome, cliente, valorGlobal, centroCusto, idClickUp, setor, tipologia, empresa, dataInicio, dataEntregaContrato, dataEntregaPlanejada, linkClickUp } = req.body;
 
@@ -215,7 +217,7 @@ router.post('/', async (req, res, next) => {
 });
 
 // PUT /api/projetos/:id — atualiza projeto
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', audit, async (req, res, next) => {
   try {
     const project = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === req.params.id);
     if (!project) return res.status(404).json({ error: 'Projeto não encontrado.' });
@@ -236,7 +238,7 @@ router.put('/:id', async (req, res, next) => {
 
 
 
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', audit, async (req, res, next) => {
   try {
     const project = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === req.params.id);
     if (!project) return res.status(404).json({ error: 'Projeto não encontrado.' });

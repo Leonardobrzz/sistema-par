@@ -2,6 +2,7 @@
 const { v4: uuidv4 } = require('uuid');
 const db = process.env.USE_POSTGRES === 'true' ? require('../services/postgresService') : require('../services/googleSheetsService');
 const { authMiddleware } = require('../middleware/auth');
+const { auditMiddleware, registrarAuditoria } = require('../middleware/audit');
 
 // ── Constantes hardcoded PAR (Metodologia Jota Barros) ───────────────────────
 const MARGEM_MINIMA_PERC      = 23;    // ⚠️ HARDCODE — nunca pode ser menor
@@ -13,6 +14,7 @@ const PRAZO_MAX_PLANEJAMENTO  = 7;     // dias — máximo para sair do status "
 
 const router = express.Router();
 router.use(authMiddleware);
+const audit = auditMiddleware('Planejamentos');
 
 // Calcula os totais financeiros de um planejamento
 // Aceita vírgula ou ponto como separador decimal (formato BR ou EN)
@@ -163,7 +165,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // POST /api/planejamento — cria ou salva rascunho de planejamento
-router.post('/', async (req, res, next) => {
+router.post('/', audit, async (req, res, next) => {
   try {
     const dados = req.body;
     const totais = calcularTotais(dados);
@@ -360,6 +362,15 @@ async function handleAprovar(req, res, next, acaoForced) {
     }
 
     console.log(`[Aprovação] Planejamento ${plan.ID} ${novoStatus} por ${req.user.nome}`);
+    registrarAuditoria({
+      tabela: 'Planejamentos',
+      acao: acao === 'aprovar' ? 'APROVACAO' : 'REJEICAO',
+      idRegistro: plan.ID,
+      nomeRegistro: plan.Nome_Projeto,
+      dadosAntes: { Status: plan.Status },
+      dadosDepois: { Status: novoStatus },
+      usuario: req.user,
+    });
     res.json(updated);
   } catch (err) {
     next(err);

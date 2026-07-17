@@ -36,6 +36,21 @@ async function ensureSheetsExist() {
     `ALTER TABLE "Planejamentos" ADD COLUMN IF NOT EXISTS "Travado" TEXT`,
     `ALTER TABLE "Planejamentos" ADD COLUMN IF NOT EXISTS "Travado_Em" TEXT`,
     `ALTER TABLE "Planejamentos" ADD COLUMN IF NOT EXISTS "Travado_Por" TEXT`,
+    `CREATE TABLE IF NOT EXISTS "Auditoria" (
+      "ID_Auditoria" TEXT PRIMARY KEY,
+      "Tabela" TEXT NOT NULL,
+      "Acao" TEXT NOT NULL,
+      "ID_Registro" TEXT,
+      "Nome_Registro" TEXT,
+      "Dados_Antes" TEXT,
+      "Dados_Depois" TEXT,
+      "Usuario_ID" TEXT,
+      "Usuario_Nome" TEXT,
+      "Usuario_Email" TEXT,
+      "Criado_Em" TIMESTAMPTZ DEFAULT NOW()
+    )`,
+    `CREATE INDEX IF NOT EXISTS "idx_auditoria_tabela" ON "Auditoria" ("Tabela")`,
+    `CREATE INDEX IF NOT EXISTS "idx_auditoria_criado" ON "Auditoria" ("Criado_Em" DESC)`,
   ];
   for (const sql of migrations) {
     try { await p.query(sql); } catch (e) { console.warn('[Migration]', e.message); }

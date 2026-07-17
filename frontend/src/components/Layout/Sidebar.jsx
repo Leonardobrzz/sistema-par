@@ -4,7 +4,7 @@ import {
   HomeIcon, FolderIcon, CalculatorIcon, UsersIcon,
   ChartBarIcon, DocumentTextIcon, Cog6ToothIcon,
   ArrowUpTrayIcon, BellAlertIcon, ShieldCheckIcon, BuildingOffice2Icon,
-  BanknotesIcon, KeyIcon, ClipboardDocumentListIcon,
+  BanknotesIcon, KeyIcon, ClipboardDocumentListIcon, ClockIcon,
 } from '@heroicons/react/24/outline'
 import { useAuth } from '../../contexts/AuthContext'
 import { useAlerts } from '../../contexts/AlertContext'
@@ -41,6 +41,7 @@ const NAV_GROUPS = [
     label: 'Sistema',
     items: [
       { to: '/alertas',        label: 'Central de Alertas',     icon: BellAlertIcon },
+      { to: '/auditoria',      label: 'Auditoria',              icon: ClockIcon,                perfis: ['Admin','Diretoria'] },
       { to: '/configuracoes',  label: 'Configurações',          icon: Cog6ToothIcon,            perfis: ['Admin','Coordenador','Diretoria'] },
     ],
   },

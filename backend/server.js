@@ -25,6 +25,7 @@ const relatorioFinalRoutes = require('./src/routes/relatorio-final');
 const clickupDashboardsRoutes = require('./src/routes/clickup-dashboards');
 const checklistRoutes = require('./src/routes/checklist');
 const extratoRoutes = require('./src/routes/extrato');
+const auditoriaRoutes = require('./src/routes/auditoria');
 
 const app = express();
 const server = http.createServer(app);
@@ -55,6 +56,7 @@ app.use('/api/relatorios', relatoriosRoutes);
 app.use('/api/relatorio-final', relatorioFinalRoutes);
 app.use('/api/checklist', checklistRoutes);
 app.use('/api/extrato', extratoRoutes);
+app.use('/api/auditoria', auditoriaRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
