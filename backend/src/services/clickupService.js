@@ -618,16 +618,25 @@ async function _doSync() {
   // 3. Recarregar projetos após import
   const todosProjectos = await db.readSheet('Projetos_Contratos');
 
-  // DIAG: verifica projetos cujo ID_ClickUp não existe em nenhuma lista de allLists
+  // DIAG: auto-corrige ID_ClickUp de projetos cujo ID não existe em allLists mas nome da lista bate
   const allListIds = new Set(allLists.filter(i => !i._isFolder).map(i => i.id));
   const projSemMatch = todosProjectos.filter(p => p.ID_ClickUp && !allListIds.has(p.ID_ClickUp));
-  if (projSemMatch.length > 0) {
-    console.log(`[ClickUp DIAG] ${projSemMatch.length} projetos com ID_ClickUp que NÃO existe em allLists (ID errado ou desatualizado):`);
-    projSemMatch.slice(0, 10).forEach(p => console.log(`[ClickUp DIAG]   ID_Projeto=${p.ID_Projeto} Nome="${p.Nome}" ID_ClickUp=${p.ID_ClickUp} Status=${p.Status}`));
+  console.log(`[ClickUp DIAG] ${projSemMatch.length} projetos com ID_ClickUp que NÃO existe em allLists.`);
+
+  // Tenta corrigir: para cada projeto com ID errado, busca lista cujo nome contém o código do projeto
+  let correcoes = 0;
+  for (const proj of projSemMatch) {
+    const codigo = (proj.Nome || '').split(' ')[0]; // ex: "ARQ-2025-1"
+    if (!codigo || codigo.length < 4) continue;
+    const listaMatch = allLists.find(l => !l._isFolder && l.name && l.name.includes(codigo));
+    if (listaMatch && listaMatch.id !== proj.ID_ClickUp) {
+      console.log(`[ClickUp FIX] "${proj.Nome}": ID_ClickUp ${proj.ID_ClickUp} → ${listaMatch.id} ("${listaMatch.name}")`);
+      await db.updateRowById('Projetos_Contratos', 'ID_Projeto', proj.ID_Projeto, { ID_ClickUp: listaMatch.id });
+      proj.ID_ClickUp = listaMatch.id; // atualiza em memória também
+      correcoes++;
+    }
   }
-  // Listas sem projeto correspondente (candidatos para auto-corrigir)
-  const listasSemProjeto = allLists.filter(i => !i._isFolder && !todosProjectos.find(p => p.ID_ClickUp === i.id));
-  console.log(`[ClickUp DIAG] ${listasSemProjeto.length} listas do ClickUp sem projeto correspondente no banco.`);
+  if (correcoes > 0) console.log(`[ClickUp FIX] ${correcoes} ID_ClickUp corrigidos automaticamente.`);
 
   // 3a. Passagem leve: atualiza status de TODOS os projetos com base no status da lista no ClickUp
   // (não busca tasks — apenas usa allLists que já está em memória)
