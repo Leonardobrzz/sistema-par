@@ -35,18 +35,20 @@ async function getFolderlessLists(spaceId) {
   return res.data.lists || [];
 }
 
-async function getTasks(listId, page = 0) {
-  const res = await axiosClickUp.get(`${BASE_URL}/list/${listId}/task`, {
-    headers: getHeaders(),
-    params: {
-      archived: false,
-      include_closed: true,
-      subtasks: true,
-      include_markdown_description: false,
-      page,
-    },
-  });
-  return res.data.tasks || [];
+async function getTasks(listId) {
+  const allTasks = [];
+  let page = 0;
+  while (true) {
+    const res = await axiosClickUp.get(`${BASE_URL}/list/${listId}/task`, {
+      headers: getHeaders(),
+      params: { archived: false, include_closed: true, subtasks: true, include_markdown_description: false, page },
+    });
+    const batch = res.data.tasks || [];
+    allTasks.push(...batch);
+    if (batch.length < 100) break;
+    page++;
+  }
+  return allTasks;
 }
 
 // Extrai o valor de um campo personalizado pelo nome (case-insensitive)
