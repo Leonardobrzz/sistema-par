@@ -761,8 +761,8 @@ async function _doSync() {
         for (const e of res.data.data || []) {
           if (seenEntryIds.has(e.id)) continue;
           seenEntryIds.add(e.id);
-          const listId = e.task?.list?.id;
-          const folderId = e.task?.folder?.id;
+          const listId = e.task_location?.list_id || e.task?.list?.id;
+          const folderId = e.task_location?.folder_id || e.task?.folder?.id;
           e._idProjeto = listIdToProject[listId] || listIdToProject[folderId] || '';
           allTimeEntries.push(e);
         }
@@ -771,7 +771,13 @@ async function _doSync() {
       }
       chunkStart = chunkEnd + 1;
     }
-    console.log(`[ClickUp] Total time entries coletadas (3 anos, chunks 3d): ${allTimeEntries.length}`);
+    const entriesPorProjeto = {};
+    for (const e of allTimeEntries) {
+      if (!e._idProjeto) continue;
+      entriesPorProjeto[e._idProjeto] = (entriesPorProjeto[e._idProjeto] || 0) + 1;
+    }
+    const semProjeto = allTimeEntries.filter(e => !e._idProjeto).length;
+    console.log(`[ClickUp] Total time entries: ${allTimeEntries.length} (${semProjeto} sem projeto mapeado, ${Object.keys(entriesPorProjeto).length} projetos cobertos)`);
     await syncTimeEntries(allTimeEntries, projetos, listIdToProject);
   } catch (err) {
     console.error('[ClickUp] Erro ao sincronizar time entries:', err.message);
