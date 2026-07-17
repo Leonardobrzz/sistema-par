@@ -697,38 +697,42 @@ async function _doSync() {
   // 5. Gerar alertas (atrasadas, sem responsável, etc.)
   await gerarAlertas(allTasks, projetos);
 
-  // 6. Sincronizar horas logadas
+  // 6. Sincronizar horas logadas — busca por lista/projeto para garantir precisão
   try {
-    const timeEntries = await getTimeEntries(teamId);
-
-    // DIAGNÓSTICO: mostra os ID_ClickUp dos projetos ativos vs list_ids das entries
-    const entryListIds = [...new Set(timeEntries.map(e => e.task_location?.list_id || e.task?.list?.id).filter(Boolean))];
-    const entryFolderIds = [...new Set(timeEntries.map(e => e.task_location?.folder_id || e.task?.folder?.id).filter(Boolean))];
-    console.log(`[ClickUp DIAG] ${timeEntries.length} entries · ${entryListIds.length} list_ids únicos · ${entryFolderIds.length} folder_ids únicos`);
-    for (const p of projetos) {
-      if (!p.ID_ClickUp) continue;
-      const matchList = entryListIds.includes(p.ID_ClickUp);
-      const matchFolder = entryFolderIds.includes(p.ID_ClickUp);
-      if (matchList || matchFolder) {
-        const count = timeEntries.filter(e => (e.task_location?.list_id || e.task?.list?.id) === p.ID_ClickUp || (e.task_location?.folder_id || e.task?.folder?.id) === p.ID_ClickUp).length;
-        console.log(`[ClickUp DIAG] MATCH "${p.Nome}" ID_ClickUp=${p.ID_ClickUp} matchList=${matchList} matchFolder=${matchFolder} entries=${count}`);
-      } else if (p.Nome?.toLowerCase().includes('polícia') || p.Nome?.toLowerCase().includes('delegacia')) {
-        console.log(`[ClickUp DIAG] SEM MATCH "${p.Nome}" ID_ClickUp=${p.ID_ClickUp} — não está em nenhuma entry`);
-        console.log(`[ClickUp DIAG] Primeiros 5 list_ids das entries: ${entryListIds.slice(0,5).join(', ')}`);
-      }
-    }
-
-    // Monta mapa extra: listId → ID_Projeto a partir das tasks já buscadas
+    // Coleta IDs de lista únicos: ID_ClickUp do projeto + listIds das tasks buscadas
     const listIdToProject = {};
+    for (const p of projetos) {
+      if (p.ID_ClickUp) listIdToProject[p.ID_ClickUp] = p.ID_Projeto;
+    }
     for (const t of allTasks) {
       if (!t._listId) continue;
-      const proj = projetos.find(p =>
-        p.ID_ClickUp === t._listId ||
-        p.ID_ClickUp === t._folderId
-      );
+      const proj = projetos.find(p => p.ID_ClickUp === t._listId || p.ID_ClickUp === t._folderId);
       if (proj) listIdToProject[t._listId] = proj.ID_Projeto;
     }
-    await syncTimeEntries(timeEntries, projetos, listIdToProject);
+
+    const uniqueListIds = Object.keys(listIdToProject);
+    console.log(`[ClickUp] Buscando time entries de ${uniqueListIds.length} listas...`);
+
+    const allTimeEntries = [];
+    const seenEntryIds = new Set();
+    for (const listId of uniqueListIds) {
+      try {
+        const entries = await getTimeEntriesByList(listId);
+        for (const e of entries) {
+          if (!seenEntryIds.has(e.id)) {
+            seenEntryIds.add(e.id);
+            // Garante que a entry tem a referência do projeto
+            e._idProjeto = listIdToProject[listId];
+            allTimeEntries.push(e);
+          }
+        }
+        if (entries.length > 0) console.log(`[ClickUp] Lista ${listId}: ${entries.length} entries`);
+      } catch (err) {
+        console.warn(`[ClickUp] Erro entries lista ${listId}:`, err.message);
+      }
+    }
+    console.log(`[ClickUp] Total time entries coletadas: ${allTimeEntries.length}`);
+    await syncTimeEntries(allTimeEntries, projetos, listIdToProject);
   } catch (err) {
     console.error('[ClickUp] Erro ao sincronizar time entries:', err.message);
   }
@@ -1077,8 +1081,8 @@ async function syncTimeEntries(timeEntries, projetos, extraListMap = {}) {
     const listId    = entry.task_location?.list_id  || entry.task?.list?.id;
     const folderId  = entry.task_location?.folder_id || entry.task?.folder?.id;
 
-    // Ordem de resolução: listId direto → folderId direto → sub-lista mapeada via tasks
-    const idProjeto = projectById[listId] || projectById[folderId] || extraListMap[listId] || '';
+    // Prioridade: tag da busca por lista → listId direto → folderId → extraListMap
+    const idProjeto = entry._idProjeto || projectById[listId] || projectById[folderId] || extraListMap[listId] || '';
 
     if (!idProjeto) continue;
 
