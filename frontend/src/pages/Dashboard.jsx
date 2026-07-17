@@ -194,6 +194,7 @@ function SemafProjeto({ projeto, onClick }) {
 }
 
 function PARGauge({ label, value, min, max, limitOk, limitWarn, unit = '%', invert = false }) {
+  const { isDark } = useTheme()
   const perc = Math.min(Math.max((value / max) * 100, 0), 100)
   const ok = invert ? value >= limitOk : value <= limitOk
   const warn = !ok && (invert ? value >= limitWarn : value <= limitWarn)
@@ -203,21 +204,21 @@ function PARGauge({ label, value, min, max, limitOk, limitWarn, unit = '%', inve
   return (
     <div style={{ marginBottom: 18 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{label}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#94A3B8' : '#374151' }}>{label}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 18, fontWeight: 900, color }}>{fmtN(value)}{unit}</span>
           <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: `${color}18`, color }}>{label2}</span>
         </div>
       </div>
-      <div style={{ position: 'relative', height: 10, background: '#F1F5F9', borderRadius: 99, overflow: 'visible' }}>
+      <div style={{ position: 'relative', height: 10, background: isDark ? '#334155' : '#F1F5F9', borderRadius: 99, overflow: 'visible' }}>
         <div style={{ height: '100%', width: `${perc}%`, background: color, borderRadius: 99, transition: 'width 0.7s cubic-bezier(.4,0,.2,1)' }} />
         <div style={{
           position: 'absolute', top: -4, bottom: -4,
           left: `${(limitOk / max) * 100}%`,
-          width: 2, background: '#94A3B8', borderRadius: 1,
+          width: 2, background: isDark ? '#64748B' : '#94A3B8', borderRadius: 1,
         }} />
       </div>
-      <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 4 }}>
+      <div style={{ fontSize: 10, color: isDark ? '#64748B' : '#94A3B8', marginTop: 4 }}>
         Limite PAR: {invert ? `≥ ${limitOk}${unit}` : `≤ ${limitOk}${unit}`}
       </div>
     </div>
