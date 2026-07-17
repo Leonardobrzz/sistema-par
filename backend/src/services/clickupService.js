@@ -66,14 +66,22 @@ async function getListFields(listId) {
 }
 
 async function getTimeEntries(teamId, startDate, endDate) {
-  const res = await axios.get(`${BASE_URL}/team/${teamId}/time_entries`, {
-    headers: getHeaders(),
-    params: {
-      start_date: startDate || Date.now() - 180 * 24 * 60 * 60 * 1000,
-      end_date: endDate || Date.now(),
-    },
-  });
-  return res.data.data || [];
+  // Busca paginada para cobrir mais de 100 entries; janela de 3 anos para capturar projetos antigos
+  const start = startDate || Date.now() - 3 * 365 * 24 * 60 * 60 * 1000;
+  const end = endDate || Date.now();
+  const allEntries = [];
+  let page = 0;
+  while (true) {
+    const res = await axios.get(`${BASE_URL}/team/${teamId}/time_entries`, {
+      headers: getHeaders(),
+      params: { start_date: start, end_date: end, page },
+    });
+    const batch = res.data.data || [];
+    allEntries.push(...batch);
+    if (batch.length < 100) break;
+    page++;
+  }
+  return allEntries;
 }
 
 // Busca time entries de uma lista específica via filtro na API de equipe (endpoint correto no v2)
@@ -85,7 +93,7 @@ async function getTimeEntriesByList(listId, startDate, endDate) {
       headers: getHeaders(),
       params: {
         list_id: listId,
-        start_date: startDate || Date.now() - 365 * 24 * 60 * 60 * 1000,
+        start_date: startDate || Date.now() - 3 * 365 * 24 * 60 * 60 * 1000,
         end_date: endDate || Date.now(),
       },
     });
@@ -1018,19 +1026,18 @@ async function syncTimeEntries(timeEntries, projetos) {
     // Projetos de lista: Setor vazio ou diferente do Nome
     const isFolderProject = p.Setor && p.Setor.trim() !== '' && p.Nome === p.Setor;
     
-    if (isFolderProject) {
-      projectMapFolder[p.ID_ClickUp] = p.ID_Projeto;
-    } else {
-      projectMapList[p.ID_ClickUp] = p.ID_Projeto;
-    }
+    // Mapeia tanto como lista quanto como pasta — independente da heurística isFolderProject
+    // Assim qualquer projeto encontra suas entries pelo ID que estiver salvo no Sheets
+    projectMapList[p.ID_ClickUp] = p.ID_Projeto;
+    projectMapFolder[p.ID_ClickUp] = p.ID_Projeto;
   }
 
   let novos = 0;
   let atualizados = 0;
 
-  // Log diagnóstico: mostra os list_ids únicos das entries vs os IDs mapeados
   const uniqueListIds = [...new Set(timeEntries.map(e => e.task_location?.list_id || e.task?.list?.id).filter(Boolean))];
-  console.log(`[ClickUp] list_ids nas entries: ${uniqueListIds.slice(0,10).join(', ')}`);
+  const uniqueFolderIds = [...new Set(timeEntries.map(e => e.task_location?.folder_id || e.task?.folder?.id).filter(Boolean))];
+  console.log(`[ClickUp] ${timeEntries.length} entries · list_ids: ${uniqueListIds.slice(0,10).join(',')} · folder_ids: ${uniqueFolderIds.slice(0,10).join(',')}`);
   console.log(`[ClickUp] projectMapList keys: ${Object.keys(projectMapList).join(', ')}`);
 
   for (const entry of timeEntries) {
