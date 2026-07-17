@@ -686,7 +686,18 @@ async function _doSync() {
   // 6. Sincronizar horas logadas
   try {
     const timeEntries = await getTimeEntries(teamId);
-    await syncTimeEntries(timeEntries, projetos);
+    // Monta mapa extra: listId → ID_Projeto a partir das tasks já buscadas
+    // Isso cobre casos onde a time entry retorna list_id de sub-lista mas o projeto tem folder_id
+    const listIdToProject = {};
+    for (const t of allTasks) {
+      if (!t._listId) continue;
+      const proj = projetos.find(p =>
+        p.ID_ClickUp === t._listId ||
+        p.ID_ClickUp === t._folderId
+      );
+      if (proj) listIdToProject[t._listId] = proj.ID_Projeto;
+    }
+    await syncTimeEntries(timeEntries, projetos, listIdToProject);
   } catch (err) {
     console.error('[ClickUp] Erro ao sincronizar time entries:', err.message);
   }
@@ -1013,23 +1024,13 @@ async function syncHorasDoTimespent(tasks, projeto) {
   console.log(`[ClickUp] syncHorasDoTimespent ${projeto.Nome}: ${salvos} salvos de ${tasks.filter(t => parseInt(t.time_spent) > 0).length} tasks com horas`);
 }
 
-async function syncTimeEntries(timeEntries, projetos) {
+async function syncTimeEntries(timeEntries, projetos, extraListMap = {}) {
   console.log(`[ClickUp] Sincronizando ${timeEntries.length} time entries...`);
-  
-  // Mapeia tanto por listId quanto por folderId → ID_Projeto
-  const projectMapList = {};
-  const projectMapFolder = {};
+
+  // Map: qualquer ID_ClickUp do projeto → ID_Projeto (lista ou pasta)
+  const projectById = {};
   for (const p of projetos || []) {
-    if (!p.ID_ClickUp) continue;
-    
-    // Projetos de pasta: convencionado no auto-import que se Nome === Setor, é projeto de PASTA
-    // Projetos de lista: Setor vazio ou diferente do Nome
-    const isFolderProject = p.Setor && p.Setor.trim() !== '' && p.Nome === p.Setor;
-    
-    // Mapeia tanto como lista quanto como pasta — independente da heurística isFolderProject
-    // Assim qualquer projeto encontra suas entries pelo ID que estiver salvo no Sheets
-    projectMapList[p.ID_ClickUp] = p.ID_Projeto;
-    projectMapFolder[p.ID_ClickUp] = p.ID_Projeto;
+    if (p.ID_ClickUp) projectById[p.ID_ClickUp] = p.ID_Projeto;
   }
 
   let novos = 0;
@@ -1038,14 +1039,15 @@ async function syncTimeEntries(timeEntries, projetos) {
   const uniqueListIds = [...new Set(timeEntries.map(e => e.task_location?.list_id || e.task?.list?.id).filter(Boolean))];
   const uniqueFolderIds = [...new Set(timeEntries.map(e => e.task_location?.folder_id || e.task?.folder?.id).filter(Boolean))];
   console.log(`[ClickUp] ${timeEntries.length} entries · list_ids: ${uniqueListIds.slice(0,10).join(',')} · folder_ids: ${uniqueFolderIds.slice(0,10).join(',')}`);
-  console.log(`[ClickUp] projectMapList keys: ${Object.keys(projectMapList).join(', ')}`);
+  console.log(`[ClickUp] projectById keys: ${Object.keys(projectById).join(', ')}`);
+  console.log(`[ClickUp] extraListMap keys: ${Object.keys(extraListMap).slice(0,10).join(', ')}`);
 
   for (const entry of timeEntries) {
     const listId    = entry.task_location?.list_id  || entry.task?.list?.id;
     const folderId  = entry.task_location?.folder_id || entry.task?.folder?.id;
 
-    // Tenta achar o projeto: primeiro pela lista, depois pela pasta
-    const idProjeto = projectMapList[listId] || projectMapFolder[folderId] || '';
+    // Ordem de resolução: listId direto → folderId direto → sub-lista mapeada via tasks
+    const idProjeto = projectById[listId] || projectById[folderId] || extraListMap[listId] || '';
 
     if (!idProjeto) continue;
 
