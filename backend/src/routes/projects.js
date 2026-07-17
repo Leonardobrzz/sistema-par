@@ -54,8 +54,11 @@ router.get('/', async (req, res, next) => {
       const medicoesConcluidas = meds.filter((m) => m.Status_Financeiro === 'Recebido').length;
       const totalMedicoes = meds.length;
 
-      const horasLogadas = horas.reduce((s, l) => s + parseFloat(l.Horas_Logadas || 0), 0);
-      const horasEstimadas = plan ? (horas.reduce((s, l) => s + parseFloat(l.Horas_Estimadas || 0), 0)) : 0;
+      // Prefere entradas reais da API (ID numérico) sobre timespent_xxx para evitar dupla contagem
+      const horasReais = horas.filter(l => !String(l.ID_TimeEntry_ClickUp || '').startsWith('timespent_'));
+      const horasParaSomar = horasReais.length > 0 ? horasReais : horas;
+      const horasLogadas = horasParaSomar.reduce((s, l) => s + parseFloat(l.Horas_Logadas || 0), 0);
+      const horasEstimadas = plan ? (horasParaSomar.reduce((s, l) => s + parseFloat(l.Horas_Estimadas || 0), 0)) : 0;
 
       const alertasProj = alertasAtivos.filter(
         (a) => a.ID_Projeto === p.ID_Projeto && a.Status?.toLowerCase() === 'ativo'
@@ -145,9 +148,11 @@ router.get('/:id', async (req, res, next) => {
     const planejamento = await db.findOne('Planejamentos', (p) => p.ID_Projeto === project.ID_Projeto);
     const alertas = await db.findRows('Alertas', (a) => a.ID_Projeto === project.ID_Projeto && a.Status?.toLowerCase() === 'ativo');
 
-    // Horas logadas
+    // Horas logadas (prefere entradas reais da API sobre timespent_xxx)
     const logHoras = await db.findRows('Log_Horas', (l) => l.ID_Projeto === project.ID_Projeto);
-    const totalHorasLogadas = logHoras.reduce((s, l) => s + parseFloat(l.Horas_Logadas || 0), 0);
+    const logHorasReais = logHoras.filter(l => !String(l.ID_TimeEntry_ClickUp || '').startsWith('timespent_'));
+    const logHorasParaSomar = logHorasReais.length > 0 ? logHorasReais : logHoras;
+    const totalHorasLogadas = logHorasParaSomar.reduce((s, l) => s + parseFloat(l.Horas_Logadas || 0), 0);
 
     // Custos reais (Opportune)
     const custosOPP = await db.findRows('Custos_OPP', (c) => c.ID_Projeto === project.ID_Projeto);
