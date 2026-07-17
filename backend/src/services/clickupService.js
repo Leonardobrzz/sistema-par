@@ -98,24 +98,32 @@ async function getTimeEntries(teamId, startDate, endDate) {
   return allEntries;
 }
 
-// Busca time entries de uma lista específica via filtro na API de equipe (endpoint correto no v2)
+// Busca time entries de uma lista específica em chunks de 30 dias (API limita ~100 por request)
 async function getTimeEntriesByList(listId, startDate, endDate) {
   const teamId = process.env.CLICKUP_TEAM_ID;
   if (!teamId || !listId) return [];
-  try {
-    const res = await axios.get(`${BASE_URL}/team/${teamId}/time_entries`, {
-      headers: getHeaders(),
-      params: {
-        list_id: listId,
-        start_date: startDate || Date.now() - 3 * 365 * 24 * 60 * 60 * 1000,
-        end_date: endDate || Date.now(),
-      },
-    });
-    return res.data.data || [];
-  } catch (err) {
-    console.warn(`[ClickUp] Não foi possível buscar time entries da lista ${listId}:`, err.message);
-    return [];
+  const end = endDate || Date.now();
+  const start = startDate || Date.now() - 3 * 365 * 24 * 60 * 60 * 1000;
+  const chunkMs = 30 * 24 * 60 * 60 * 1000;
+  const allEntries = [];
+  const seenIds = new Set();
+  let chunkStart = start;
+  while (chunkStart < end) {
+    const chunkEnd = Math.min(chunkStart + chunkMs, end);
+    try {
+      const res = await axios.get(`${BASE_URL}/team/${teamId}/time_entries`, {
+        headers: getHeaders(),
+        params: { list_id: listId, start_date: chunkStart, end_date: chunkEnd },
+      });
+      for (const entry of res.data.data || []) {
+        if (!seenIds.has(entry.id)) { seenIds.add(entry.id); allEntries.push(entry); }
+      }
+    } catch (err) {
+      console.warn(`[ClickUp] Erro time entries lista ${listId} chunk ${new Date(chunkStart).toISOString().slice(0,7)}:`, err.message);
+    }
+    chunkStart = chunkEnd + 1;
   }
+  return allEntries;
 }
 
 async function getTaskById(taskId) {
