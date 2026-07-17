@@ -731,9 +731,9 @@ async function _doSync() {
   // 5. Gerar alertas (atrasadas, sem responsável, etc.)
   await gerarAlertas(allTasks, projetos);
 
-  // 6. Sincronizar horas logadas — busca por lista/projeto para garantir precisão
+  // 6. Sincronizar horas logadas — fetch global por equipe com chunks de 3 dias (evita limite de 100/req)
   try {
-    // Coleta IDs de lista únicos: ID_ClickUp do projeto + listIds das tasks buscadas
+    // Mapa listId → ID_Projeto para o match após o fetch global
     const listIdToProject = {};
     for (const p of projetos) {
       if (p.ID_ClickUp) listIdToProject[p.ID_ClickUp] = p.ID_Projeto;
@@ -744,28 +744,34 @@ async function _doSync() {
       if (proj) listIdToProject[t._listId] = proj.ID_Projeto;
     }
 
-    const uniqueListIds = Object.keys(listIdToProject);
-    console.log(`[ClickUp] Buscando time entries de ${uniqueListIds.length} listas...`);
-
+    const teamId = process.env.CLICKUP_TEAM_ID;
+    const end = Date.now();
+    const start = end - 3 * 365 * 24 * 60 * 60 * 1000; // 3 anos
+    const chunkMs = 3 * 24 * 60 * 60 * 1000; // chunks de 3 dias (~400 reqs total)
     const allTimeEntries = [];
     const seenEntryIds = new Set();
-    for (const listId of uniqueListIds) {
+    let chunkStart = start;
+    while (chunkStart < end) {
+      const chunkEnd = Math.min(chunkStart + chunkMs, end);
       try {
-        const entries = await getTimeEntriesByList(listId);
-        for (const e of entries) {
-          if (!seenEntryIds.has(e.id)) {
-            seenEntryIds.add(e.id);
-            // Garante que a entry tem a referência do projeto
-            e._idProjeto = listIdToProject[listId];
-            allTimeEntries.push(e);
-          }
+        const res = await axios.get(`${BASE_URL}/team/${teamId}/time_entries`, {
+          headers: getHeaders(),
+          params: { start_date: chunkStart, end_date: chunkEnd },
+        });
+        for (const e of res.data.data || []) {
+          if (seenEntryIds.has(e.id)) continue;
+          seenEntryIds.add(e.id);
+          const listId = e.task?.list?.id;
+          const folderId = e.task?.folder?.id;
+          e._idProjeto = listIdToProject[listId] || listIdToProject[folderId] || '';
+          allTimeEntries.push(e);
         }
-        if (entries.length > 0) console.log(`[ClickUp] Lista ${listId}: ${entries.length} entries`);
       } catch (err) {
-        console.warn(`[ClickUp] Erro entries lista ${listId}:`, err.message);
+        console.warn(`[ClickUp] Chunk time entries ${new Date(chunkStart).toISOString().slice(0,10)}: ${err.message}`);
       }
+      chunkStart = chunkEnd + 1;
     }
-    console.log(`[ClickUp] Total time entries coletadas: ${allTimeEntries.length}`);
+    console.log(`[ClickUp] Total time entries coletadas (3 anos, chunks 3d): ${allTimeEntries.length}`);
     await syncTimeEntries(allTimeEntries, projetos, listIdToProject);
   } catch (err) {
     console.error('[ClickUp] Erro ao sincronizar time entries:', err.message);
