@@ -26,6 +26,7 @@ const clickupDashboardsRoutes = require('./src/routes/clickup-dashboards');
 const checklistRoutes = require('./src/routes/checklist');
 const extratoRoutes = require('./src/routes/extrato');
 const auditoriaRoutes = require('./src/routes/auditoria');
+const dashboardFinanceiroRoutes = require('./src/routes/dashboard-financeiro');
 
 const app = express();
 const server = http.createServer(app);
@@ -57,6 +58,7 @@ app.use('/api/relatorio-final', relatorioFinalRoutes);
 app.use('/api/checklist', checklistRoutes);
 app.use('/api/extrato', extratoRoutes);
 app.use('/api/auditoria', auditoriaRoutes);
+app.use('/api/dashboard-financeiro', dashboardFinanceiroRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

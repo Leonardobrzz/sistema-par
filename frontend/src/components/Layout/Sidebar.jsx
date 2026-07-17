@@ -4,7 +4,7 @@ import {
   HomeIcon, FolderIcon, CalculatorIcon, UsersIcon,
   ChartBarIcon, DocumentTextIcon, Cog6ToothIcon,
   ArrowUpTrayIcon, BellAlertIcon, ShieldCheckIcon, BuildingOffice2Icon,
-  BanknotesIcon, KeyIcon, ClipboardDocumentListIcon, ClockIcon,
+  BanknotesIcon, KeyIcon, ClipboardDocumentListIcon, ClockIcon, PresentationChartLineIcon,
 } from '@heroicons/react/24/outline'
 import { useAuth } from '../../contexts/AuthContext'
 import { useAlerts } from '../../contexts/AlertContext'
@@ -25,7 +25,8 @@ const NAV_GROUPS = [
       { to: '/planejamento', label: 'Plan. Financeiro',         icon: CalculatorIcon,           perfis: ['PO','Coordenador','Admin','Diretoria'] },
       { to: '/aprovacao',    label: 'Aprovações & Baseline',    icon: ShieldCheckIcon,          perfis: ['PO','Coordenador','Admin','Diretoria'], badge: 'aprovacao' },
       { to: '/medicoes',     label: 'Medições & Faturamento',   icon: ChartBarIcon,             perfis: ['PO','Financeiro','Comercial','Coordenador','Admin','Diretoria'] },
-      { to: '/extrato',      label: 'Extrato por Projeto',      icon: BanknotesIcon,            perfis: ['Financeiro','Coordenador','Admin','Diretoria'] },
+      { to: '/extrato',               label: 'Extrato por Projeto',      icon: BanknotesIcon,               perfis: ['Financeiro','Coordenador','Admin','Diretoria'] },
+      { to: '/dashboard-financeiro',  label: 'Dashboard Financeiro',     icon: PresentationChartLineIcon,   perfis: ['Financeiro','Coordenador','Admin','Diretoria'] },
     ],
   },
   {
