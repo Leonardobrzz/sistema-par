@@ -700,8 +700,25 @@ async function _doSync() {
   // 6. Sincronizar horas logadas
   try {
     const timeEntries = await getTimeEntries(teamId);
+
+    // DIAGNÓSTICO: mostra os ID_ClickUp dos projetos ativos vs list_ids das entries
+    const entryListIds = [...new Set(timeEntries.map(e => e.task_location?.list_id || e.task?.list?.id).filter(Boolean))];
+    const entryFolderIds = [...new Set(timeEntries.map(e => e.task_location?.folder_id || e.task?.folder?.id).filter(Boolean))];
+    console.log(`[ClickUp DIAG] ${timeEntries.length} entries · ${entryListIds.length} list_ids únicos · ${entryFolderIds.length} folder_ids únicos`);
+    for (const p of projetos) {
+      if (!p.ID_ClickUp) continue;
+      const matchList = entryListIds.includes(p.ID_ClickUp);
+      const matchFolder = entryFolderIds.includes(p.ID_ClickUp);
+      if (matchList || matchFolder) {
+        const count = timeEntries.filter(e => (e.task_location?.list_id || e.task?.list?.id) === p.ID_ClickUp || (e.task_location?.folder_id || e.task?.folder?.id) === p.ID_ClickUp).length;
+        console.log(`[ClickUp DIAG] MATCH "${p.Nome}" ID_ClickUp=${p.ID_ClickUp} matchList=${matchList} matchFolder=${matchFolder} entries=${count}`);
+      } else if (p.Nome?.toLowerCase().includes('polícia') || p.Nome?.toLowerCase().includes('delegacia')) {
+        console.log(`[ClickUp DIAG] SEM MATCH "${p.Nome}" ID_ClickUp=${p.ID_ClickUp} — não está em nenhuma entry`);
+        console.log(`[ClickUp DIAG] Primeiros 5 list_ids das entries: ${entryListIds.slice(0,5).join(', ')}`);
+      }
+    }
+
     // Monta mapa extra: listId → ID_Projeto a partir das tasks já buscadas
-    // Isso cobre casos onde a time entry retorna list_id de sub-lista mas o projeto tem folder_id
     const listIdToProject = {};
     for (const t of allTasks) {
       if (!t._listId) continue;
