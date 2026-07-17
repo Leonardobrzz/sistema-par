@@ -623,17 +623,23 @@ async function _doSync() {
   const projSemMatch = todosProjectos.filter(p => p.ID_ClickUp && !allListIds.has(p.ID_ClickUp));
   console.log(`[ClickUp DIAG] ${projSemMatch.length} projetos com ID_ClickUp que NÃO existe em allLists.`);
 
-  // Tenta corrigir: para cada projeto com ID errado, busca lista cujo nome contém o código do projeto
+  // Tenta corrigir: apenas projetos cujo nome começa com código no padrão "ARQ-2025-1", "INF-2023-5", etc.
+  const codigoRegex = /^[A-Z]{2,8}[-_]\d{4}[-_]\d+/;
   let correcoes = 0;
   for (const proj of projSemMatch) {
-    const codigo = (proj.Nome || '').split(' ')[0]; // ex: "ARQ-2025-1"
-    if (!codigo || codigo.length < 4) continue;
-    const listaMatch = allLists.find(l => !l._isFolder && l.name && l.name.includes(codigo));
-    if (listaMatch && listaMatch.id !== proj.ID_ClickUp) {
+    const nome = proj.Nome || '';
+    const codigoMatch = nome.match(codigoRegex);
+    if (!codigoMatch) continue; // ignora projetos sem código no padrão
+    const codigo = codigoMatch[0]; // ex: "ARQ-2025-1"
+    const listasMatch = allLists.filter(l => !l._isFolder && l.name && l.name.startsWith(codigo));
+    if (listasMatch.length === 1) { // só corrige se houver exatamente 1 lista com esse código
+      const listaMatch = listasMatch[0];
       console.log(`[ClickUp FIX] "${proj.Nome}": ID_ClickUp ${proj.ID_ClickUp} → ${listaMatch.id} ("${listaMatch.name}")`);
       await db.updateRowById('Projetos_Contratos', 'ID_Projeto', proj.ID_Projeto, { ID_ClickUp: listaMatch.id });
-      proj.ID_ClickUp = listaMatch.id; // atualiza em memória também
+      proj.ID_ClickUp = listaMatch.id;
       correcoes++;
+    } else if (listasMatch.length > 1) {
+      console.log(`[ClickUp FIX SKIP] "${proj.Nome}": ${listasMatch.length} listas com código "${codigo}", ambíguo.`);
     }
   }
   if (correcoes > 0) console.log(`[ClickUp FIX] ${correcoes} ID_ClickUp corrigidos automaticamente.`);
