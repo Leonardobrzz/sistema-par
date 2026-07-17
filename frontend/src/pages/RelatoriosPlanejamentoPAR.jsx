@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { FileText, ChevronDown, ChevronRight, Printer, Search, X, ArrowLeft } from "lucide-react"
 import api from "../utils/api"
+import { useTheme } from "../contexts/ThemeContext"
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0)
 const fmtN = (v, dec = 1) => Number(v || 0).toFixed(dec)
@@ -40,19 +41,27 @@ function KPI({ label, value, ok, sub }) {
 }
 
 function Tabela({ headers, rows, emptyText }) {
-  if (!rows.length) return <div style={{ fontSize: 12, color: "#94A3B8", padding: "10px 0" }}>{emptyText || "Nenhum item"}</div>
+  const { isDark } = useTheme()
+  const T = {
+    border:  isDark ? '#334155' : '#E2E8F0',
+    borderAlt: isDark ? '#1E293B' : '#F1F5F9',
+    thead:   isDark ? '#1E293B' : '#F8FAFC',
+    text1:   isDark ? '#F1F5F9' : '#0F172A',
+    text2:   isDark ? '#94A3B8' : '#64748B',
+  }
+  if (!rows.length) return <div style={{ fontSize: 12, color: T.text2, padding: "10px 0" }}>{emptyText || "Nenhum item"}</div>
   return (
-    <div style={{ overflowX: "auto", borderRadius: 8, border: "1px solid #E2E8F0" }}>
+    <div style={{ overflowX: "auto", borderRadius: 8, border: `1px solid ${T.border}` }}>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
-          <tr style={{ background: "#F8FAFC" }}>
-            {headers.map(h => <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: "#64748B", fontSize: 11, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>)}
+          <tr style={{ background: T.thead }}>
+            {headers.map(h => <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontWeight: 700, color: T.text2, fontSize: 11, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>)}
           </tr>
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={i} style={{ borderTop: "1px solid #F1F5F9" }}>
-              {row.map((cell, j) => <td key={j} style={{ padding: "9px 12px", color: "#0F172A", fontWeight: j === 0 ? 600 : 400 }}>{cell}</td>)}
+            <tr key={i} style={{ borderTop: `1px solid ${T.borderAlt}` }}>
+              {row.map((cell, j) => <td key={j} style={{ padding: "9px 12px", color: T.text1, fontWeight: j === 0 ? 600 : 400 }}>{cell}</td>)}
             </tr>
           ))}
         </tbody>
@@ -62,6 +71,16 @@ function Tabela({ headers, rows, emptyText }) {
 }
 
 function DetalheRelatorio({ plano }) {
+  const { isDark } = useTheme()
+  const T = {
+    bg:      isDark ? '#0F172A' : '#F8FAFC',
+    card:    isDark ? '#1E293B' : '#ffffff',
+    cardAlt: isDark ? '#0F172A' : '#F8FAFC',
+    border:  isDark ? '#334155' : '#E2E8F0',
+    text1:   isDark ? '#F1F5F9' : '#0F172A',
+    text2:   isDark ? '#94A3B8' : '#64748B',
+    text3:   isDark ? '#475569' : '#94A3B8',
+  }
   const d = plano.dadosCompletos || {}
   const par = calcPAR(d)
   const margemOk = par.lucroPerc >= 23
@@ -263,8 +282,8 @@ function DetalheRelatorio({ plano }) {
           <div style={{ fontSize: 10, fontWeight: 700, color: "#7C3AED", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
             Relatório PAR — Planejamento Aprovado
           </div>
-          <h1 style={{ fontSize: 18, fontWeight: 900, color: "#0F172A" }}>{plano.Nome_Projeto}</h1>
-          <div style={{ fontSize: 12, color: "#64748B", marginTop: 4 }}>
+          <h1 style={{ fontSize: 18, fontWeight: 900, color: T.text1 }}>{plano.Nome_Projeto}</h1>
+          <div style={{ fontSize: 12, color: T.text2, marginTop: 4 }}>
             {plano.Cliente && <span>Cliente: <strong>{plano.Cliente}</strong> &nbsp;·&nbsp; </span>}
             {plano.Setor && <span>Setor: <strong>{plano.Setor}</strong> &nbsp;·&nbsp; </span>}
             <span>Status: <strong style={{ color: "#15803D" }}>{plano.Status}</strong></span>
@@ -272,7 +291,7 @@ function DetalheRelatorio({ plano }) {
         </div>
 
         {/* KPIs */}
-        <h2 style={{ fontSize: 11, fontWeight: 800, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, borderBottom: "1.5px solid #E2E8F0", paddingBottom: 6 }}>Indicadores PAR</h2>
+        <h2 style={{ fontSize: 11, fontWeight: 800, color: T.text2, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, borderBottom: `1.5px solid ${T.border}`, paddingBottom: 6 }}>Indicadores PAR</h2>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
           <KPI label="Valor do Contrato" value={fmt(par.V)} ok={par.V > 0} />
           <KPI label="Receita Líquida" value={fmt(par.receitaLiquida)} ok={par.receitaLiquida > 0} />
@@ -284,7 +303,7 @@ function DetalheRelatorio({ plano }) {
         </div>
 
         {/* Resumo Financeiro */}
-        <h2 style={{ fontSize: 11, fontWeight: 800, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, borderBottom: "1.5px solid #E2E8F0", paddingBottom: 6 }}>Resumo Financeiro</h2>
+        <h2 style={{ fontSize: 11, fontWeight: 800, color: T.text2, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, borderBottom: `1.5px solid ${T.border}`, paddingBottom: 6 }}>Resumo Financeiro</h2>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
           {[
             ["Valor Bruto", fmt(par.V)],
@@ -298,15 +317,15 @@ function DetalheRelatorio({ plano }) {
             ["Despesas Gerais", `- ${fmt(par.totalDespesas)}`],
             ["Lucro Estimado", fmt(par.lucro)],
           ].map(([l, v]) => (
-            <div key={l} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", background: l === "Receita Líquida" || l === "Lucro Estimado" ? "#F0FDF4" : "#F8FAFC", borderRadius: 6, fontSize: 12, border: "1px solid #E2E8F0" }}>
-              <span style={{ color: "#475569" }}>{l}</span>
-              <span style={{ fontWeight: 700, color: l === "Lucro Estimado" ? (margemOk ? "#15803D" : "#DC2626") : "#0F172A" }}>{v}</span>
+            <div key={l} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", background: l === "Receita Líquida" || l === "Lucro Estimado" ? "#F0FDF4" : T.cardAlt, borderRadius: 6, fontSize: 12, border: `1px solid ${T.border}` }}>
+              <span style={{ color: T.text2 }}>{l}</span>
+              <span style={{ fontWeight: 700, color: l === "Lucro Estimado" ? (margemOk ? "#15803D" : "#DC2626") : T.text1 }}>{v}</span>
             </div>
           ))}
         </div>
 
         {/* Informações Gerais */}
-        <h2 style={{ fontSize: 11, fontWeight: 800, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, borderBottom: "1.5px solid #E2E8F0", paddingBottom: 6 }}>Informações Gerais</h2>
+        <h2 style={{ fontSize: 11, fontWeight: 800, color: T.text2, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, borderBottom: `1.5px solid ${T.border}`, paddingBottom: 6 }}>Informações Gerais</h2>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20, fontSize: 12 }}>
           {[
             ["Empresa", d.empresa || plano.Empresa],
@@ -320,15 +339,15 @@ function DetalheRelatorio({ plano }) {
             ["Data Entrega Contrato", fmtData(d.dataEntregaContrato || plano.Data_Entrega_Contrato)],
             ["Data Entrega Planejada", fmtData(d.dataEntregaPlanejada)],
           ].filter(([, v]) => v).map(([l, v]) => (
-            <div key={l} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", background: "#F8FAFC", borderRadius: 6, border: "1px solid #E2E8F0" }}>
-              <span style={{ color: "#64748B" }}>{l}</span>
-              <span style={{ fontWeight: 600, color: "#0F172A", textAlign: "right", maxWidth: 200 }}>{v}</span>
+            <div key={l} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", background: T.cardAlt, borderRadius: 6, border: `1px solid ${T.border}` }}>
+              <span style={{ color: T.text2 }}>{l}</span>
+              <span style={{ fontWeight: 600, color: T.text1, textAlign: "right", maxWidth: 200 }}>{v}</span>
             </div>
           ))}
         </div>
 
         {/* Cronograma de Medições */}
-        <h2 style={{ fontSize: 11, fontWeight: 800, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, borderBottom: "1.5px solid #E2E8F0", paddingBottom: 6 }}>
+        <h2 style={{ fontSize: 11, fontWeight: 800, color: T.text2, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, borderBottom: `1.5px solid ${T.border}`, paddingBottom: 6 }}>
           Cronograma de Medições ({medicoes.length} etapas)
         </h2>
         <div style={{ marginBottom: 20 }}>
@@ -350,7 +369,7 @@ function DetalheRelatorio({ plano }) {
         </div>
 
         {/* Equipe Interna */}
-        <h2 style={{ fontSize: 11, fontWeight: 800, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, borderBottom: "1.5px solid #E2E8F0", paddingBottom: 6 }}>
+        <h2 style={{ fontSize: 11, fontWeight: 800, color: T.text2, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, borderBottom: `1.5px solid ${T.border}`, paddingBottom: 6 }}>
           Equipe Interna ({equipe.length} membros · {fmt(par.totalEquipe)})
         </h2>
         <div style={{ marginBottom: 20 }}>
@@ -367,7 +386,7 @@ function DetalheRelatorio({ plano }) {
 
         {/* Despesas Internas */}
         {despesasInternas.length > 0 && (<>
-          <h2 style={{ fontSize: 11, fontWeight: 800, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, borderBottom: "1.5px solid #E2E8F0", paddingBottom: 6 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 800, color: T.text2, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, borderBottom: `1.5px solid ${T.border}`, paddingBottom: 6 }}>
             Despesas Internas ({despesasInternas.length} · {fmt(par.totalDespesasInternas)})
           </h2>
           <div style={{ marginBottom: 20 }}>
@@ -388,7 +407,7 @@ function DetalheRelatorio({ plano }) {
         </>)}
 
         {/* Serviços Terceirizados */}
-        <h2 style={{ fontSize: 11, fontWeight: 800, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, borderBottom: "1.5px solid #E2E8F0", paddingBottom: 6 }}>
+        <h2 style={{ fontSize: 11, fontWeight: 800, color: T.text2, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, borderBottom: `1.5px solid ${T.border}`, paddingBottom: 6 }}>
           Serviços Terceirizados ({terceirizados.length} · {fmt(par.totalTerceiros)})
         </h2>
         <div style={{ marginBottom: 20 }}>
@@ -409,7 +428,7 @@ function DetalheRelatorio({ plano }) {
 
         {/* Despesas Gerais */}
         {despesas.length > 0 && (<>
-          <h2 style={{ fontSize: 11, fontWeight: 800, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, borderBottom: "1.5px solid #E2E8F0", paddingBottom: 6 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 800, color: T.text2, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, borderBottom: `1.5px solid ${T.border}`, paddingBottom: 6 }}>
             Despesas Gerais ({despesas.length} · {fmt(par.totalDespesas)})
           </h2>
           <div style={{ marginBottom: 20 }}>
@@ -423,8 +442,8 @@ function DetalheRelatorio({ plano }) {
         {/* Justificativa */}
         {d.justificativa && (
           <>
-            <h2 style={{ fontSize: 11, fontWeight: 800, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, borderBottom: "1.5px solid #E2E8F0", paddingBottom: 6 }}>Justificativa / Observações</h2>
-            <div style={{ padding: "12px 14px", background: "#FFFBEB", borderRadius: 8, border: "1px solid #FDE68A", fontSize: 12, color: "#92400E", lineHeight: 1.6, marginBottom: 20 }}>
+            <h2 style={{ fontSize: 11, fontWeight: 800, color: T.text2, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, borderBottom: `1.5px solid ${T.border}`, paddingBottom: 6 }}>Justificativa / Observações</h2>
+            <div style={{ padding: "12px 14px", background: isDark ? "#2D1F00" : "#FFFBEB", borderRadius: 8, border: `1px solid ${isDark ? "#78350F" : "#FDE68A"}`, fontSize: 12, color: isDark ? "#FCD34D" : "#92400E", lineHeight: 1.6, marginBottom: 20 }}>
               {d.justificativa}
             </div>
           </>
@@ -514,6 +533,17 @@ function imprimirConsolidado(lista, detalhes) {
 
 export default function RelatoriosPlanejamentoPAR() {
   const navigate = useNavigate()
+  const { isDark } = useTheme()
+  const T = {
+    bg:      isDark ? '#0F172A' : '#F8FAFC',
+    card:    isDark ? '#1E293B' : '#ffffff',
+    cardAlt: isDark ? '#0F172A' : '#F8FAFC',
+    border:  isDark ? '#334155' : '#E2E8F0',
+    text1:   isDark ? '#F1F5F9' : '#0F172A',
+    text2:   isDark ? '#94A3B8' : '#64748B',
+    text3:   isDark ? '#475569' : '#94A3B8',
+    inputBg: isDark ? '#1E293B' : '#F8FAFC',
+  }
   const [planejamentos, setPlanejamentos] = useState([])
   const [loading, setLoading] = useState(true)
   const [busca, setBusca] = useState("")
@@ -562,11 +592,11 @@ export default function RelatoriosPlanejamentoPAR() {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
         <button onClick={() => navigate("/planejamento")}
-          style={{ display: "flex", alignItems: "center", gap: 4, padding: "7px 12px", borderRadius: 8, border: "1.5px solid #E2E8F0", background: "#fff", color: "#475569", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+          style={{ display: "flex", alignItems: "center", gap: 4, padding: "7px 12px", borderRadius: 8, border: `1.5px solid ${T.border}`, background: T.card, color: T.text2, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
           <ArrowLeft size={15} /> Planejamento
         </button>
         <FileText size={22} color="#7C3AED" />
-        <span style={{ fontWeight: 900, fontSize: 18, color: "#0F172A", textTransform: "uppercase", letterSpacing: "0.06em", flex: 1 }}>
+        <span style={{ fontWeight: 900, fontSize: 18, color: T.text1, textTransform: "uppercase", letterSpacing: "0.06em", flex: 1 }}>
           Relatórios — Planejamentos Aprovados
         </span>
         <span style={{ fontSize: 12, fontWeight: 700, color: "#15803D", background: "#DCFCE7", padding: "4px 12px", borderRadius: 20 }}>
@@ -579,20 +609,20 @@ export default function RelatoriosPlanejamentoPAR() {
       </div>
 
       {/* Filtros */}
-      <div style={{ background: "#fff", borderRadius: 14, padding: "16px 20px", border: "1.5px solid #E2E8F0", marginBottom: 20, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+      <div style={{ background: T.card, borderRadius: 14, padding: "16px 20px", border: `1.5px solid ${T.border}`, marginBottom: 20, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {SETORES.map(s => (
             <button key={s} onClick={() => setFiltroSetor(filtroSetor === s ? "" : s)}
-              style={{ padding: "5px 12px", borderRadius: 20, border: `1.5px solid ${filtroSetor === s ? "#7C3AED" : "#E2E8F0"}`, background: filtroSetor === s ? "#EDE9FE" : "#F8FAFC", color: filtroSetor === s ? "#7C3AED" : "#64748B", fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
+              style={{ padding: "5px 12px", borderRadius: 20, border: `1.5px solid ${filtroSetor === s ? "#7C3AED" : T.border}`, background: filtroSetor === s ? "#EDE9FE" : T.cardAlt, color: filtroSetor === s ? "#7C3AED" : T.text2, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
               {s}
             </button>
           ))}
         </div>
-        <div style={{ flex: 1, minWidth: 200, display: "flex", alignItems: "center", gap: 8, background: "#F8FAFC", border: "1.5px solid #E2E8F0", borderRadius: 20, padding: "5px 12px" }}>
-          <Search size={14} color="#94A3B8" />
+        <div style={{ flex: 1, minWidth: 200, display: "flex", alignItems: "center", gap: 8, background: T.inputBg, border: `1.5px solid ${T.border}`, borderRadius: 20, padding: "5px 12px" }}>
+          <Search size={14} color={T.text3} />
           <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar projeto ou cliente..."
-            style={{ border: "none", background: "transparent", outline: "none", fontSize: 12, flex: 1, color: "#0F172A", fontFamily: "inherit" }} />
-          {busca && <button onClick={() => setBusca("")} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", display: "flex" }}><X size={14} /></button>}
+            style={{ border: "none", background: "transparent", outline: "none", fontSize: 12, flex: 1, color: T.text1, fontFamily: "inherit" }} />
+          {busca && <button onClick={() => setBusca("")} style={{ background: "none", border: "none", cursor: "pointer", color: T.text3, display: "flex" }}><X size={14} /></button>}
         </div>
         {(filtroSetor || busca) && (
           <button onClick={() => { setFiltroSetor(""); setBusca("") }}
@@ -603,15 +633,15 @@ export default function RelatoriosPlanejamentoPAR() {
       </div>
 
       {loading && (
-        <div style={{ textAlign: "center", padding: 60, color: "#94A3B8" }}>
+        <div style={{ textAlign: "center", padding: 60, color: T.text2 }}>
           Carregando planejamentos aprovados...
         </div>
       )}
 
       {!loading && filtrados.length === 0 && (
-        <div style={{ textAlign: "center", padding: 60, background: "#F8FAFC", borderRadius: 16, border: "2px dashed #E2E8F0" }}>
-          <FileText size={40} color="#CBD5E1" style={{ margin: "0 auto 12px" }} />
-          <div style={{ fontWeight: 700, fontSize: 15, color: "#475569" }}>Nenhum planejamento aprovado encontrado</div>
+        <div style={{ textAlign: "center", padding: 60, background: T.cardAlt, borderRadius: 16, border: `2px dashed ${T.border}` }}>
+          <FileText size={40} color={T.text3} style={{ margin: "0 auto 12px" }} />
+          <div style={{ fontWeight: 700, fontSize: 15, color: T.text2 }}>Nenhum planejamento aprovado encontrado</div>
         </div>
       )}
 
@@ -624,23 +654,23 @@ export default function RelatoriosPlanejamentoPAR() {
           const margemOk = par ? par.lucroPerc >= 23 : true
 
           return (
-            <div key={p.ID_Projeto} style={{ background: "#fff", borderRadius: 14, border: `1.5px solid ${estaAberto ? "#7C3AED" : "#E2E8F0"}`, overflow: "hidden", transition: "border-color 0.2s" }}>
+            <div key={p.ID_Projeto} style={{ background: T.card, borderRadius: 14, border: `1.5px solid ${estaAberto ? "#7C3AED" : T.border}`, overflow: "hidden", transition: "border-color 0.2s" }}>
               {/* Linha resumo — clicável */}
               <button onClick={() => setAberto(estaAberto ? null : p.ID_Projeto)}
-                style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", background: estaAberto ? "#FAFAFF" : "#fff", border: "none", cursor: "pointer", textAlign: "left" }}>
-                {estaAberto ? <ChevronDown size={16} color="#7C3AED" /> : <ChevronRight size={16} color="#94A3B8" />}
+                style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", background: estaAberto ? (isDark ? '#1E1040' : '#FAFAFF') : T.card, border: "none", cursor: "pointer", textAlign: "left" }}>
+                {estaAberto ? <ChevronDown size={16} color="#7C3AED" /> : <ChevronRight size={16} color={T.text3} />}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 800, fontSize: 14, color: "#0F172A", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <div style={{ fontWeight: 800, fontSize: 14, color: T.text1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {p.Nome_Projeto}
                   </div>
-                  <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{p.Cliente}</div>
+                  <div style={{ fontSize: 11, color: T.text2, marginTop: 2 }}>{p.Cliente}</div>
                 </div>
                 {p.Setor && (
                   <span style={{ fontSize: 10, fontWeight: 700, color: "#7C3AED", background: "#EDE9FE", padding: "2px 8px", borderRadius: 20, whiteSpace: "nowrap" }}>{p.Setor}</span>
                 )}
                 {par && (
-                  <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#64748B", flexShrink: 0 }}>
-                    <span><span style={{ fontWeight: 700, color: "#0F172A" }}>{fmt(par.V)}</span> contrato</span>
+                  <div style={{ display: "flex", gap: 16, fontSize: 12, color: T.text2, flexShrink: 0 }}>
+                    <span><span style={{ fontWeight: 700, color: T.text1 }}>{fmt(par.V)}</span> contrato</span>
                     <span style={{ fontWeight: 700, color: margemOk ? "#15803D" : "#DC2626" }}>{fmtN(par.lucroPerc)}% margem</span>
                   </div>
                 )}
@@ -651,9 +681,9 @@ export default function RelatoriosPlanejamentoPAR() {
 
               {/* Detalhe expandido */}
               {estaAberto && (
-                <div style={{ padding: "0 24px 24px", borderTop: "1px solid #F1F5F9" }}>
+                <div style={{ padding: "0 24px 24px", borderTop: `1px solid ${T.border}` }}>
                   {!detalhe ? (
-                    <div style={{ padding: 20, color: "#94A3B8", fontSize: 13 }}>Carregando detalhes...</div>
+                    <div style={{ padding: 20, color: T.text2, fontSize: 13 }}>Carregando detalhes...</div>
                   ) : (
                     <div style={{ marginTop: 20 }}>
                       <DetalheRelatorio plano={detalhe} />
