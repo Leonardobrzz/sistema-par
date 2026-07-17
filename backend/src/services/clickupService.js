@@ -618,6 +618,19 @@ async function _doSync() {
   // 3. Recarregar projetos após import
   const todosProjectos = await db.readSheet('Projetos_Contratos');
 
+  // DIAG: mostra IDs das listas em pastas com nome "POLÍCIA" para comparar com ID_ClickUp do projeto
+  const polFolderLists = allLists.filter(i => !i._isFolder && (i._folderName || '').toLowerCase().includes('pol'));
+  if (polFolderLists.length > 0) {
+    console.log(`[ClickUp DIAG] Listas na pasta POLÍCIA FEDERAL:`);
+    polFolderLists.forEach(l => console.log(`[ClickUp DIAG]   lista.id=${l.id} nome="${l.name}" folderId=${l._folderId}`));
+  }
+  const projPol = todosProjectos.find(p => p.Nome?.toLowerCase().includes('delegacia') || p.Nome?.toLowerCase().includes('polícia federal'));
+  if (projPol) {
+    console.log(`[ClickUp DIAG] Projeto no banco: "${projPol.Nome}" ID_ClickUp=${projPol.ID_ClickUp} Status=${projPol.Status}`);
+    const match = polFolderLists.find(l => l.id === projPol.ID_ClickUp);
+    console.log(`[ClickUp DIAG] ID_ClickUp bate com lista no ClickUp? ${match ? 'SIM ✓' : 'NÃO ✗'}`);
+  }
+
   // 3a. Passagem leve: atualiza status de TODOS os projetos com base no status da lista no ClickUp
   // (não busca tasks — apenas usa allLists que já está em memória)
   const allListsById = {};
