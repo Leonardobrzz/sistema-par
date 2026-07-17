@@ -66,21 +66,35 @@ async function getListFields(listId) {
 }
 
 async function getTimeEntries(teamId, startDate, endDate) {
-  // Busca paginada para cobrir mais de 100 entries; janela de 3 anos para capturar projetos antigos
-  const start = startDate || Date.now() - 3 * 365 * 24 * 60 * 60 * 1000;
+  // A API ClickUp limita time_entries a 100 por request e não tem paginação real.
+  // Solução: dividir em chunks de 30 dias e acumular, deduplicando por entry.id
   const end = endDate || Date.now();
+  const start = startDate || Date.now() - 3 * 365 * 24 * 60 * 60 * 1000;
+  const chunkMs = 30 * 24 * 60 * 60 * 1000;
   const allEntries = [];
-  let page = 0;
-  while (true) {
-    const res = await axios.get(`${BASE_URL}/team/${teamId}/time_entries`, {
-      headers: getHeaders(),
-      params: { start_date: start, end_date: end, page },
-    });
-    const batch = res.data.data || [];
-    allEntries.push(...batch);
-    if (batch.length < 100) break;
-    page++;
+  const seenIds = new Set();
+
+  let chunkStart = start;
+  while (chunkStart < end) {
+    const chunkEnd = Math.min(chunkStart + chunkMs, end);
+    try {
+      const res = await axios.get(`${BASE_URL}/team/${teamId}/time_entries`, {
+        headers: getHeaders(),
+        params: { start_date: chunkStart, end_date: chunkEnd },
+      });
+      const batch = res.data.data || [];
+      for (const entry of batch) {
+        if (!seenIds.has(entry.id)) {
+          seenIds.add(entry.id);
+          allEntries.push(entry);
+        }
+      }
+    } catch (err) {
+      console.warn(`[ClickUp] Erro ao buscar time entries ${new Date(chunkStart).toISOString().slice(0,10)}→${new Date(chunkEnd).toISOString().slice(0,10)}: ${err.message}`);
+    }
+    chunkStart = chunkEnd + 1;
   }
+  console.log(`[ClickUp] Total time entries coletadas (3 anos, chunks 30d): ${allEntries.length}`);
   return allEntries;
 }
 
