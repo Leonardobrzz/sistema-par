@@ -136,16 +136,16 @@ export default function Auditoria() {
 
         {/* Tabela */}
         <select value={filtroTabela} onChange={e => setFiltroTabela(e.target.value)}
-          style={{ padding: "6px 12px", borderRadius: 20, border: `1.5px solid ${filtroTabela ? "#7C3AED" : T.border}`, background: filtroTabela ? "#EDE9FE" : T.cardAlt, color: filtroTabela ? "#7C3AED" : T.text2, fontWeight: 600, fontSize: 12, cursor: "pointer", outline: "none" }}>
+          style={{ padding: "6px 14px", borderRadius: 20, border: `1.5px solid ${filtroTabela ? "#7C3AED" : T.border}`, background: T.inputBg, color: filtroTabela ? "#7C3AED" : T.text2, fontWeight: 600, fontSize: 12, cursor: "pointer", outline: "none", appearance: "none", WebkitAppearance: "none" }}>
           <option value="">Todos os módulos</option>
-          {TABELAS.map(t => <option key={t} value={t}>{TABELA_LABEL[t] || t}</option>)}
+          {TABELAS.map(t => <option key={t} value={t} style={{ background: isDark ? "#1E293B" : "#fff", color: isDark ? "#F1F5F9" : "#0F172A" }}>{TABELA_LABEL[t] || t}</option>)}
         </select>
 
         {/* Ação */}
         <select value={filtroAcao} onChange={e => setFiltroAcao(e.target.value)}
-          style={{ padding: "6px 12px", borderRadius: 20, border: `1.5px solid ${filtroAcao ? "#7C3AED" : T.border}`, background: filtroAcao ? "#EDE9FE" : T.cardAlt, color: filtroAcao ? "#7C3AED" : T.text2, fontWeight: 600, fontSize: 12, cursor: "pointer", outline: "none" }}>
+          style={{ padding: "6px 14px", borderRadius: 20, border: `1.5px solid ${filtroAcao ? "#7C3AED" : T.border}`, background: T.inputBg, color: filtroAcao ? "#7C3AED" : T.text2, fontWeight: 600, fontSize: 12, cursor: "pointer", outline: "none", appearance: "none", WebkitAppearance: "none" }}>
           <option value="">Todas as ações</option>
-          {ACOES.map(a => <option key={a} value={a}>{ACAO_LABEL[a]?.label || a}</option>)}
+          {ACOES.map(a => <option key={a} value={a} style={{ background: isDark ? "#1E293B" : "#fff", color: isDark ? "#F1F5F9" : "#0F172A" }}>{ACAO_LABEL[a]?.label || a}</option>)}
         </select>
 
         {/* Usuário */}
