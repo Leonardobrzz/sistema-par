@@ -936,13 +936,16 @@ export default function PlanejamentoFinanceiro() {
                     "Orçamento Completo",
                   ].map(t => <option key={t}>{t}</option>)
                   : form.setor === "Infraestrutura" ? [
-                    "Projeto de Pavimentação Viária (Asfalto/CBUQ/TSD)",
-                    "Projeto de Pavimentação Viária (Estrada Vicinal)",
-                    "Projeto de Drenagem Urbana",
-                    "Projeto de Vias Urbanas com Passeios",
-                    "Projeto de Vias Urbanas sem Passeios",
-                    "Orçamento Completo",
-                    "Topografia / Geologia",
+                    "PROJETO DE PAVIMENTAÇÃO VIÁRIA – ASFALTO (CBUQ/TSD)",
+                    "PROJETO DE PAVIMENTAÇÃO VIÁRIA – INTERTRAVADO",
+                    "PROJETO DE PAVIMENTAÇÃO VIÁRIA – PEDRAS",
+                    "PROJETO DE VIAS URBANAS COM PASSEIOS",
+                    "PROJETO DE RECUPERAÇÃO DE ESTRADAS VICINAIS",
+                    "PROJETO DE MACRO/MICRODRENAGEM",
+                    "PROJETO DE PASSAGEM MOLHADA",
+                    "ELABORAÇÃO DE ESTUDOS/TOPOGRAFIA/GEOLOGIA",
+                    "ELABORAÇÃO DE ORÇAMENTO DE OBRA",
+                    "OUTROS",
                   ].map(t => <option key={t}>{t}</option>)
                   : form.tipologia ? <option value={form.tipologia}>{form.tipologia}</option> : null}
                 </select>
