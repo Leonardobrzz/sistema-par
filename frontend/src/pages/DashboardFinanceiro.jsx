@@ -43,51 +43,146 @@ function Secao({ titulo, children, T }) {
   )
 }
 
-function exportarExcel(dados) {
+function gerarRelatorio(dados) {
   if (!dados) return
   const { kpis, receitaMensal, rentabilidade, aging, fluxoCaixa90, setores } = dados
+  const fV = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+  const fN = (v, d = 1) => Number(v || 0).toFixed(d)
+  const mL = (ym) => { if (!ym) return ''; const [y, m] = ym.split('-'); return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][parseInt(m)-1]+'/'+y.slice(2) }
+  const emissao = new Date().toLocaleString('pt-BR')
 
-  const csvBlocks = []
+  const pBar = (perc, cor) =>
+    '<div style="height:8px;background:#E2E8F0;border-radius:99px;overflow:hidden;margin-top:4px"><div style="height:100%;width:'+Math.min(perc,100)+'%;background:'+cor+';border-radius:99px"></div></div>'
 
-  csvBlocks.push("KPIs FINANCEIROS")
-  csvBlocks.push("Carteira Aprovada;Recebido;A Receber;Em Atraso")
-  csvBlocks.push([kpis.totalCarteira, kpis.totalRecebido, kpis.totalAReceber, kpis.totalAtrasado].join(";"))
-  csvBlocks.push("")
+  const kpiCard = (label, value, cor, sub) =>
+    '<div style="flex:1;min-width:130px;background:#fff;border:1.5px solid #E2E8F0;border-radius:10px;padding:16px 18px;border-top:4px solid '+cor+'">'+
+    '<div style="font-size:9px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">'+label+'</div>'+
+    '<div style="font-size:20px;font-weight:900;color:'+cor+'">'+value+'</div>'+
+    (sub ? '<div style="font-size:10px;color:#64748B;margin-top:3px">'+sub+'</div>' : '')+
+    '</div>'
 
-  csvBlocks.push("RECEITA MENSAL (18 meses)")
-  csvBlocks.push("Mês;Recebido (R$);Previsto (R$)")
-  receitaMensal.forEach(r => csvBlocks.push(`${r.mes};${r.recebido};${r.previsto}`))
-  csvBlocks.push("")
+  const section = (title, acento, body) =>
+    '<div style="margin-bottom:24px;background:#fff;border-radius:12px;border:1px solid #E2E8F0;overflow:hidden">'+
+    '<div style="background:'+acento+';padding:10px 18px">'+
+    '<span style="font-size:10px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.08em">'+title+'</span></div>'+
+    '<div style="padding:18px">'+body+'</div></div>'
 
-  csvBlocks.push("FLUXO DE CAIXA - PRÓXIMOS 90 DIAS")
-  csvBlocks.push("Mês;Valor (R$);Qtd Medições")
-  fluxoCaixa90.forEach(f => csvBlocks.push(`${f.mes};${f.valor};${f.qtd}`))
-  csvBlocks.push("")
+  const barSVG = (items, keyVal, keyLabel, cor) => {
+    const max = Math.max(...items.map(i => i[keyVal]), 1)
+    const W = 500, H = 90, bw = Math.max(6, Math.floor((W-40)/items.length)-6)
+    const bars = items.map((item, i) => {
+      const x = 20 + i * ((W-40)/items.length) + 2
+      const h = Math.max(2, (item[keyVal]/max)*(H-16))
+      const y = H - h - 12
+      return '<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+h+'" rx="3" fill="'+cor+'"/>'+
+             '<text x="'+(x+bw/2)+'" y="'+H+'" text-anchor="middle" font-size="8" fill="#64748B">'+mL(item[keyLabel])+'</text>'
+    }).join('')
+    return '<svg viewBox="0 0 '+W+' '+(H+4)+'" style="width:100%;overflow:visible">'+bars+'</svg>'
+  }
 
-  csvBlocks.push("INADIMPLÊNCIA / AGING")
-  csvBlocks.push("Faixa;Valor (R$)")
-  csvBlocks.push(`Até 30 dias;${aging.ate30}`)
-  csvBlocks.push(`31 a 60 dias;${aging.de31a60}`)
-  csvBlocks.push(`61 a 90 dias;${aging.de61a90}`)
-  csvBlocks.push(`Acima de 90 dias;${aging.acima90}`)
-  csvBlocks.push("")
+  const percRecebido = kpis.totalCarteira > 0 ? (kpis.totalRecebido / kpis.totalCarteira * 100) : 0
 
-  csvBlocks.push("RENTABILIDADE POR SETOR")
-  csvBlocks.push("Setor;Qtd Projetos;Carteira (R$);Lucro Est. (R$);Margem Média (%)")
-  setores.forEach(s => csvBlocks.push(`${s.setor};${s.qtd};${s.carteira};${s.lucro};${s.margemMedia}`))
-  csvBlocks.push("")
+  const agingRows = [
+    { label: 'Até 30 dias',      valor: aging.ate30,   cor: '#F59E0B' },
+    { label: '31 a 60 dias',     valor: aging.de31a60, cor: '#EF4444' },
+    { label: '61 a 90 dias',     valor: aging.de61a90, cor: '#DC2626' },
+    { label: 'Acima de 90 dias', valor: aging.acima90, cor: '#7F1D1D' },
+  ].map(a =>
+    '<div style="margin-bottom:10px">'+
+    '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">'+
+    '<span style="color:#475569">'+a.label+'</span>'+
+    '<strong style="color:'+(a.valor>0?a.cor:'#94A3B8')+'">'+fV(a.valor)+'</strong></div>'+
+    pBar((a.valor/(aging.total||1))*100, a.cor)+'</div>'
+  ).join('')
 
-  csvBlocks.push("RENTABILIDADE POR PROJETO")
-  csvBlocks.push("Projeto;Setor;Contrato (R$);Lucro Est. (R$);Margem (%);Recebido (R$);% Recebido")
-  rentabilidade.forEach(r => csvBlocks.push(`${r.nome};${r.setor};${r.valorContrato};${r.lucroEstimado};${r.margemPerc};${r.recebido};${r.percRecebido}`))
+  const setoresHtml = setores.map(s => {
+    const ok = s.margemMedia >= 23
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#F8FAFC;border-radius:8px;border:1px solid #E2E8F0;margin-bottom:8px">'+
+      '<div><div style="font-weight:800;font-size:12px;color:#0F172A">'+s.setor+'</div>'+
+      '<div style="font-size:10px;color:#64748B;margin-top:2px">'+s.qtd+' projeto(s) · '+fV(s.carteira)+'</div></div>'+
+      '<div style="text-align:right"><div style="font-size:18px;font-weight:900;color:'+(ok?'#15803D':'#DC2626')+'">'+fN(s.margemMedia)+'%</div>'+
+      '<div style="font-size:9px;color:#64748B">margem média</div></div></div>'
+  }).join('')
 
-  const csv = "﻿" + csvBlocks.join("\n")
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url; a.download = `Dashboard_Financeiro_${new Date().toISOString().slice(0,10)}.csv`; a.click()
-  URL.revokeObjectURL(url)
+  const fluxoCards = fluxoCaixa90.map(f =>
+    '<div style="flex:1;min-width:90px;background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:10px;padding:12px;text-align:center">'+
+    '<div style="font-size:10px;font-weight:700;color:#1D4ED8;margin-bottom:4px">'+mL(f.mes)+'</div>'+
+    '<div style="font-size:15px;font-weight:900;color:#1E40AF">'+fV(f.valor)+'</div>'+
+    '<div style="font-size:9px;color:#3B82F6;margin-top:2px">'+f.qtd+' medição(ões)</div></div>'
+  ).join('')
+
+  const tabelaRows = rentabilidade.map((r, i) => {
+    const ok = r.margemPerc >= 23
+    return '<tr style="background:'+(i%2===0?'#fff':'#F8FAFC')+'">'+
+      '<td style="padding:7px 10px;font-weight:600;font-size:10px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.nome+'</td>'+
+      '<td style="padding:7px 10px"><span style="background:#EDE9FE;color:#7C3AED;padding:2px 8px;border-radius:20px;font-weight:700;font-size:9px">'+r.setor+'</span></td>'+
+      '<td style="padding:7px 10px;font-size:10px;font-weight:600">'+fV(r.valorContrato)+'</td>'+
+      '<td style="padding:7px 10px;font-size:10px">'+fV(r.lucroEstimado)+'</td>'+
+      '<td style="padding:7px 10px;font-size:10px;font-weight:700;color:'+(ok?'#15803D':'#DC2626')+'">'+fN(r.margemPerc)+'%</td>'+
+      '<td style="padding:7px 10px;font-size:10px">'+fV(r.recebido)+'</td>'+
+      '<td style="padding:7px 10px;font-size:10px;color:#64748B">'+fN(r.percRecebido)+'%</td></tr>'
+  }).join('')
+
+  const html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">'+
+    '<title>Relatório Financeiro — Jota Barros Projetos</title>'+
+    '<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:11px;color:#0F172A;background:#F8FAFC}.page{max-width:900px;margin:0 auto;padding:32px 28px}table{width:100%;border-collapse:collapse}th{background:#1E293B;color:#fff;padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.06em}td{border-bottom:1px solid #F1F5F9}@page{size:A4;margin:10mm}@media print{body{background:#fff}}</style></head>'+
+    '<body><div class="page">'+
+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;padding-bottom:20px;border-bottom:3px solid #7C3AED">'+
+    '<div><div style="font-size:9px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px">Jota Barros Projetos</div>'+
+    '<div style="font-size:22px;font-weight:900;color:#0F172A">Relatório Financeiro Gerencial</div>'+
+    '<div style="font-size:11px;color:#64748B;margin-top:4px">Emitido em '+emissao+'</div></div>'+
+    '<div style="width:60px;height:60px;background:linear-gradient(135deg,#7C3AED,#3B82F6);border-radius:14px;display:flex;align-items:center;justify-content:center">'+
+    '<span style="font-size:24px;font-weight:900;color:#fff">JB</span></div></div>'+
+
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px">'+
+    kpiCard('Carteira Aprovada', fV(kpis.totalCarteira), '#7C3AED', kpis.qtdAprovados+' projeto(s) aprovado(s)')+
+    kpiCard('Total Recebido', fV(kpis.totalRecebido), '#16A34A', fN(percRecebido)+'% da carteira')+
+    kpiCard('A Receber', fV(kpis.totalAReceber), '#2563EB', '')+
+    kpiCard('Em Atraso', fV(kpis.totalAtrasado), kpis.totalAtrasado>0?'#DC2626':'#16A34A', kpis.totalAtrasado>0?'Medições vencidas':'Sem inadimplência')+
+    '</div>'+
+
+    '<div style="margin-bottom:24px;padding:14px 18px;background:#fff;border-radius:10px;border:1px solid #E2E8F0">'+
+    '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:8px">'+
+    '<span style="color:#64748B;font-weight:600">Progresso de Recebimento da Carteira</span>'+
+    '<strong style="color:#7C3AED">'+fN(percRecebido)+'% recebido</strong></div>'+
+    pBar(percRecebido, 'linear-gradient(90deg,#7C3AED,#3B82F6)')+'</div>'+
+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'+
+    section('Projeção de Caixa — Próximos 90 Dias', '#1D4ED8',
+      fluxoCaixa90.length===0
+        ? '<div style="color:#94A3B8;font-size:12px;padding:8px 0">Nenhuma medição prevista nos próximos 90 dias</div>'
+        : '<div style="margin-bottom:12px">'+barSVG(fluxoCaixa90,'valor','mes','#3B82F6')+'</div><div style="display:flex;gap:8px;flex-wrap:wrap">'+fluxoCards+'</div>'
+    )+
+    section('Rentabilidade por Setor', '#15803D', setoresHtml || '<div style="color:#94A3B8">Nenhum planejamento aprovado</div>')+
+    '</div>'+
+
+    (aging.total>0
+      ? section('Inadimplência — Valores em Atraso', '#DC2626',
+          agingRows+'<div style="margin-top:12px;padding:10px 14px;background:#FEF2F2;border-radius:8px;border:1px solid #FECACA;display:flex;justify-content:space-between">'+
+          '<span style="font-weight:700;color:#DC2626">Total em atraso</span>'+
+          '<strong style="font-size:14px;color:#DC2626">'+fV(aging.total)+'</strong></div>')
+      : '<div style="margin-bottom:24px;padding:14px 18px;background:#F0FDF4;border-radius:10px;border:1px solid #86EFAC;display:flex;align-items:center;gap:10px">'+
+        '<span style="font-size:18px">✅</span><span style="font-weight:700;color:#15803D">Nenhum valor em atraso — carteira em dia!</span></div>'
+    )+
+
+    section('Rentabilidade por Projeto ('+rentabilidade.length+' projetos)', '#7C3AED',
+      '<table><thead><tr><th>Projeto</th><th>Setor</th><th>Contrato</th><th>Lucro Est.</th><th>Margem</th><th>Recebido</th><th>% Rec.</th></tr></thead>'+
+      '<tbody>'+tabelaRows+'</tbody></table>'
+    )+
+
+    '<div style="height:1px;background:linear-gradient(90deg,#7C3AED,#3B82F6,transparent);margin:20px 0"></div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:9px;color:#94A3B8">'+
+    '<span>Sistema PAR · Jota Barros Projetos · Confidencial</span><span>Emitido em '+emissao+'</span></div>'+
+    '</div></body></html>'
+
+  const janela = window.open('', '_blank')
+  janela.document.write(html)
+  janela.document.close()
+  janela.focus()
+  setTimeout(() => janela.print(), 700)
 }
+
 
 export default function DashboardFinanceiro() {
   const { isDark } = useTheme()
@@ -139,9 +234,9 @@ export default function DashboardFinanceiro() {
         <span style={{ fontWeight: 900, fontSize: 18, color: T.text1, textTransform: "uppercase", letterSpacing: "0.06em", flex: 1 }}>
           Dashboard Financeiro
         </span>
-        <button onClick={() => exportarExcel(dados)}
-          style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1.5px solid #BBF7D0", background: "#F0FDF4", color: "#15803D", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-          <Download size={14} /> Exportar CSV
+        <button onClick={() => gerarRelatorio(dados)}
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1.5px solid #C4B5FD", background: "#F5F3FF", color: "#7C3AED", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+          <Download size={14} /> Gerar Relatório PDF
         </button>
         <button onClick={carregar}
           style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: `1.5px solid ${T.border}`, background: T.card, color: T.text2, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
