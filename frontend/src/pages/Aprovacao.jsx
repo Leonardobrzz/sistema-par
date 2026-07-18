@@ -173,6 +173,12 @@ export default function Aprovacao() {
     finally { setBaselineLoading(false) }
   }
 
+    function diasPendente(p) {
+    const dt = p.Atualizado_Em || p.Criado_Em
+    if (!dt) return null
+    return Math.floor((Date.now() - new Date(dt)) / 86400000)
+  }
+
   const SETORES_PAR = ['Arquitetura', 'Saneamento', 'Infraestrutura', 'Administrativo']
   const [filtroSetor, setFiltroSetor] = useState("")
   const [filtroBusca, setFiltroBusca] = useState("")
@@ -255,7 +261,20 @@ export default function Aprovacao() {
                       transition: "all 0.18s" }}>
                     <div style={{ fontWeight: 700, fontSize: 13, color: T.text1 }}>{p.Nome_Projeto || p.ID_Projeto}</div>
                     <div style={{ fontSize: 11, color: T.text2, marginTop: 2 }}>{p.Resp_Planejamento} · {p.Setor}</div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#7C3AED", marginTop: 4 }}>{fmt(p.Valor_Contrato)}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "#7C3AED" }}>{fmt(p.Valor_Contrato)}</span>
+                      {(() => {
+                        const dias = diasPendente(p)
+                        if (dias === null) return null
+                        const cor = dias <= 3 ? '#16A34A' : dias <= 7 ? '#D97706' : '#DC2626'
+                        const bg  = dias <= 3 ? (isDark ? '#052e16' : '#F0FDF4') : dias <= 7 ? (isDark ? '#1c1008' : '#FFFBEB') : (isDark ? '#1f0707' : '#FEF2F2')
+                        return (
+                          <span style={{ fontSize: 10, fontWeight: 700, color: cor, background: bg, padding: '2px 8px', borderRadius: 20, border: `1px solid ${cor}30` }}>
+                            há {dias}d
+                          </span>
+                        )
+                      })()}
+                    </div>
                   </div>
                 ))}
               </div>

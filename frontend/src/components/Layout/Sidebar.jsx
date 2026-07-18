@@ -4,7 +4,7 @@ import {
   HomeIcon, FolderIcon, CalculatorIcon, UsersIcon,
   ChartBarIcon, DocumentTextIcon, Cog6ToothIcon,
   ArrowUpTrayIcon, BellAlertIcon, ShieldCheckIcon, BuildingOffice2Icon,
-  BanknotesIcon, KeyIcon, ClipboardDocumentListIcon, ClockIcon, PresentationChartLineIcon,
+  BanknotesIcon, KeyIcon, ClipboardDocumentListIcon, ClockIcon, PresentationChartLineIcon, ScaleIcon,
 } from '@heroicons/react/24/outline'
 import { useAuth } from '../../contexts/AuthContext'
 import { useAlerts } from '../../contexts/AlertContext'
@@ -27,6 +27,7 @@ const NAV_GROUPS = [
       { to: '/medicoes',     label: 'Medições & Faturamento',   icon: ChartBarIcon,             perfis: ['PO','Financeiro','Comercial','Coordenador','Admin','Diretoria'] },
       { to: '/extrato',               label: 'Extrato por Projeto',      icon: BanknotesIcon,               perfis: ['Financeiro','Coordenador','Admin','Diretoria'] },
       { to: '/dashboard-financeiro',  label: 'Dashboard Financeiro',     icon: PresentationChartLineIcon,   perfis: ['Financeiro','Coordenador','Admin','Diretoria'] },
+      { to: '/baseline-real',         label: 'Baseline x Real',          icon: ScaleIcon,                   perfis: ['Financeiro','Coordenador','Admin','Diretoria'] },
     ],
   },
   {

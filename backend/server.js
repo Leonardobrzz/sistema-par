@@ -27,6 +27,7 @@ const checklistRoutes = require('./src/routes/checklist');
 const extratoRoutes = require('./src/routes/extrato');
 const auditoriaRoutes = require('./src/routes/auditoria');
 const dashboardFinanceiroRoutes = require('./src/routes/dashboard-financeiro');
+const baselineRealRoutes = require('./src/routes/baseline-real');
 
 const app = express();
 const server = http.createServer(app);
@@ -59,6 +60,7 @@ app.use('/api/checklist', checklistRoutes);
 app.use('/api/extrato', extratoRoutes);
 app.use('/api/auditoria', auditoriaRoutes);
 app.use('/api/dashboard-financeiro', dashboardFinanceiroRoutes);
+app.use('/api/baseline-real', baselineRealRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
