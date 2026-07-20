@@ -168,48 +168,73 @@ function rel1Setores(df, filtroSetor = 'Todos') {
   abrirPDF(htmlBase('Resumo Financeiro por Setor', subtitulo, body))
 }
 
-// ─── Relatório 2: Planejamento x Real ─────────────────────────────────────
+// ─── Relatório 2: Planejamento x Real (resumo executivo por setor) ──────────
 
 function rel2PlanejaXReal(projetos, filtroSetor = 'Todos') {
   if (filtroSetor !== 'Todos') projetos = projetos.filter(p => (p.setor||'') === filtroSetor)
-  const total = {
+
+  const totalGeral = {
     plan: projetos.reduce((s,p)=>s+p.valorContrato,0),
     real: projetos.reduce((s,p)=>s+p.totalRecebido,0),
-    pend: projetos.reduce((s,p)=>s+p.totalPendente,0),
   }
-  const perc = total.plan > 0 ? total.real/total.plan*100 : 0
+  const percGeral = totalGeral.plan > 0 ? totalGeral.real/totalGeral.plan*100 : 0
+  const saldoGeral = totalGeral.plan - totalGeral.real
 
   const kpiCards = `<div class="kpi-g">
-    <div class="kpi"><div class="kpi-l">Carteira Aprovada</div><div class="kpi-v">${fV(total.plan)}</div><div class="kpi-s">${projetos.length} projetos</div></div>
-    <div class="kpi"><div class="kpi-l">Total Recebido</div><div class="kpi-v" style="color:#15803d">${fV(total.real)}</div><div class="kpi-s">${fN(perc)}% executado</div></div>
-    <div class="kpi"><div class="kpi-l">A Receber</div><div class="kpi-v">${fV(total.pend)}</div></div>
-    <div class="kpi"><div class="kpi-l">Execução Geral</div><div class="kpi-v">${fN(perc)}%</div></div>
+    <div class="kpi"><div class="kpi-l">Total Planejado</div><div class="kpi-v">${fV(totalGeral.plan)}</div><div class="kpi-s">${projetos.length} projeto(s)</div></div>
+    <div class="kpi"><div class="kpi-l">Total Realizado</div><div class="kpi-v" style="color:#15803d">${fV(totalGeral.real)}</div></div>
+    <div class="kpi"><div class="kpi-l">Saldo a Receber</div><div class="kpi-v" style="color:#1e4d8c">${fV(saldoGeral)}</div></div>
+    <div class="kpi"><div class="kpi-l">% Executado</div><div class="kpi-v">${fN(percGeral)}%</div></div>
   </div>`
 
-  const top12 = [...projetos].slice(0,12)
-  const chart = barSVG(top12.map((p,i)=>({ v: p.valorContrato, l: `#${i+1}` })))
+  // Agrupa por setor
+  const setores = [...new Set(projetos.map(p=>p.setor||'Outros'))].sort()
+  const corpo = setores.map(setor => {
+    const projs = projetos.filter(p=>(p.setor||'Outros')===setor)
+    const tPlan = projs.reduce((s,p)=>s+p.valorContrato,0)
+    const tReal = projs.reduce((s,p)=>s+p.totalRecebido,0)
+    const tSald = tPlan - tReal
+    const tPerc = tPlan > 0 ? tReal/tPlan*100 : 0
 
-  const rows = projetos.map(p => {
-    const ok = p.percRecebido >= 50
-    const icon = p.percRecebido===100?'✅':p.percRecebido>0?'🔄':'⏳'
-    return `<tr>
-      <td style="font-weight:600">${p.nome}</td>
-      <td><span class="chip" style="background:#ede9fe;color:#7c3aed">${p.setor||'—'}</span></td>
-      <td>${fV(p.valorContrato)}</td>
-      <td style="color:#15803d;font-weight:700">${fV(p.totalRecebido)}</td>
-      <td><span class="chip" style="background:${ok?'#dcfce7':'#fef3c7'};color:${ok?'#15803d':'#b45309'}">${fN(p.percRecebido)}%</span></td>
-      <td>${icon}</td>
-    </tr>`
+    const rows = projs.map(p => {
+      const saldo = p.valorContrato - p.totalRecebido
+      const ok = p.percRecebido >= 50
+      return `<tr>
+        <td>${p.nome}</td>
+        <td style="text-align:right;font-weight:600">${fV(p.valorContrato)}</td>
+        <td style="text-align:right;color:#15803d;font-weight:700">${fV(p.totalRecebido)}</td>
+        <td style="text-align:right;color:#1e4d8c;font-weight:700">${fV(saldo)}</td>
+        <td style="text-align:center"><span class="chip" style="background:${ok?'#dcfce7':'#fef3c7'};color:${ok?'#15803d':'#b45309'}">${fN(p.percRecebido)}%</span></td>
+      </tr>`
+    }).join('')
+
+    return `<div class="sec">${setor}</div>
+    <table>
+      <thead><tr><th>Projeto</th><th style="text-align:right">Planejado</th><th style="text-align:right">Realizado</th><th style="text-align:right">Saldo</th><th style="text-align:center">%</th></tr></thead>
+      <tbody>${rows}
+      <tr style="font-weight:800;background:#f0f6ff">
+        <td>Subtotal ${setor}</td>
+        <td style="text-align:right">${fV(tPlan)}</td>
+        <td style="text-align:right;color:#15803d">${fV(tReal)}</td>
+        <td style="text-align:right;color:#1e4d8c">${fV(tSald)}</td>
+        <td style="text-align:center"><span class="chip" style="background:#dbeafe;color:#1e4d8c">${fN(tPerc)}%</span></td>
+      </tr></tbody>
+    </table>`
   }).join('')
 
-  const body = kpiCards +
-    `<div class="sec">Carteira por Projeto (top 12)</div>` + chart +
-    `<div class="sec">Todos os Projetos — Planejado x Real</div>
-    <table><thead><tr><th>Projeto</th><th>Setor</th><th>Planejado (R$)</th><th>Recebido (R$)</th><th>% Exec.</th><th></th></tr></thead>
-    <tbody>${rows}</tbody></table>`
+  const totalRow = `<table style="margin-top:8px">
+    <tbody><tr style="font-weight:900;background:#1e4d8c;color:#fff">
+      <td>TOTAL GERAL</td>
+      <td style="text-align:right">${fV(totalGeral.plan)}</td>
+      <td style="text-align:right">${fV(totalGeral.real)}</td>
+      <td style="text-align:right">${fV(saldoGeral)}</td>
+      <td style="text-align:center">${fN(percGeral)}%</td>
+    </tr></tbody>
+  </table>`
 
-  const subtitulo2 = filtroSetor === 'Todos' ? 'Comparativo de execução — projetos aprovados' : `${filtroSetor} — Comparativo de execução`
-  abrirPDF(htmlBase('Planejamento Financeiro x Real', subtitulo2, body))
+  const body = kpiCards + corpo + totalRow
+  const subtitulo2 = filtroSetor === 'Todos' ? 'Todos os setores — projetos aprovados' : `${filtroSetor} — projetos aprovados`
+  abrirPDF(htmlBase('Planejamento x Realizado', subtitulo2, body))
 }
 
 // ─── Relatório 3: Recebimentos mês a mês ──────────────────────────────────
