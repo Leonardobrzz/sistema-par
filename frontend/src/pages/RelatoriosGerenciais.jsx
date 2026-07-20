@@ -249,45 +249,78 @@ function rel3Mensal(df) {
   const { receitaMensal, fluxoCaixa90 } = df
   const ult6 = receitaMensal.slice(-6)
   const tot = {
-    rec: ult6.reduce((s,m)=>s+m.recebido,0),
-    prev: ult6.reduce((s,m)=>s+m.previsto,0),
+    rec:   ult6.reduce((s,m)=>s+m.recebido,0),
+    prev:  ult6.reduce((s,m)=>s+m.previsto,0),
     fluxo: fluxoCaixa90.reduce((s,f)=>s+f.valor,0),
   }
+  const SETORES = ['Arquitetura','Infraestrutura','Saneamento']
 
   const kpiCards = `<div class="kpi-g">
     <div class="kpi"><div class="kpi-l">Recebido (6 meses)</div><div class="kpi-v" style="color:#15803d">${fV(tot.rec)}</div></div>
     <div class="kpi"><div class="kpi-l">Previsto (6 meses)</div><div class="kpi-v">${fV(tot.prev)}</div></div>
-    <div class="kpi"><div class="kpi-l">Projeção 90 dias</div><div class="kpi-v">${fV(tot.fluxo)}</div></div>
+    <div class="kpi"><div class="kpi-l">Projeção 6 meses</div><div class="kpi-v">${fV(tot.fluxo)}</div></div>
     <div class="kpi"><div class="kpi-l">Total período</div><div class="kpi-v">${fV(tot.rec+tot.prev)}</div></div>
   </div>`
 
   const chart = barSVG(ult6.map(m=>({ v: m.recebido+m.previsto, l: mL(m.mes) })))
 
+  // Tabela geral por mês
   const rowsMes = ult6.map(m => {
+    const detSetor = SETORES
+      .filter(s => m.porSetor?.[s] && (m.porSetor[s].recebido + m.porSetor[s].previsto) > 0)
+      .map(s => {
+        const v = m.porSetor[s]
+        return `<span style="font-size:8px;color:#64748b">${s.slice(0,3).toUpperCase()}: ${fV(v.recebido+v.previsto)}</span>`
+      }).join(' &nbsp;·&nbsp; ')
     return `<tr>
-      <td><strong>${mL(m.mes)}</strong></td>
+      <td><strong>${mL(m.mes)}</strong>${detSetor ? `<br/>${detSetor}` : ''}</td>
       <td style="color:#15803d;font-weight:700">${fV(m.recebido)}</td>
       <td style="color:#d97706;font-weight:700">${fV(m.previsto)}</td>
       <td style="font-weight:700">${fV(m.recebido+m.previsto)}</td>
     </tr>`
   }).join('')
 
-  const fluxoRows = fluxoCaixa90.length ? fluxoCaixa90.map(f=>
-    `<tr><td><strong>${mL(f.mes)}</strong></td><td style="color:#1e4d8c;font-weight:700">${fV(f.valor)}</td><td>${f.qtd}</td></tr>`
-  ).join('') : '<tr><td colspan="3" style="color:#94a3b8;font-style:italic">Nenhuma medição prevista nos próximos 90 dias</td></tr>'
+  // Tabela por setor (últimos 6 meses)
+  const setorRows = SETORES.map(s => {
+    const recS = ult6.reduce((acc,m)=>acc+(m.porSetor?.[s]?.recebido||0),0)
+    const prevS = ult6.reduce((acc,m)=>acc+(m.porSetor?.[s]?.previsto||0),0)
+    if (recS + prevS === 0) return ''
+    return `<tr>
+      <td><strong>${s}</strong></td>
+      <td style="color:#15803d;font-weight:700">${fV(recS)}</td>
+      <td style="color:#d97706;font-weight:700">${fV(prevS)}</td>
+      <td style="font-weight:700">${fV(recS+prevS)}</td>
+    </tr>`
+  }).join('')
+
+  // Projeção 6 meses por mês + setor
+  const fluxoRows = fluxoCaixa90.length ? fluxoCaixa90.map(f => {
+    const detSetor = Object.entries(f.porSetor||{})
+      .filter(([,v])=>v>0)
+      .map(([s,v])=>`<span style="font-size:8px;color:#64748b">${s.slice(0,3).toUpperCase()}: ${fV(v)}</span>`)
+      .join(' &nbsp;·&nbsp; ')
+    return `<tr>
+      <td><strong>${mL(f.mes)}</strong>${detSetor ? `<br/>${detSetor}` : ''}</td>
+      <td style="color:#1e4d8c;font-weight:700">${fV(f.valor)}</td>
+      <td>${f.qtd}</td>
+    </tr>`
+  }).join('') : '<tr><td colspan="3" style="color:#94a3b8;font-style:italic">Nenhuma medição prevista nos próximos 6 meses</td></tr>'
 
   const body = kpiCards +
     `<div class="sec">Recebimentos Mensais — Últimos 6 Meses</div>` + chart +
     `<table><thead><tr><th>Mês</th><th>Recebido (R$)</th><th>Previsto/A Faturar (R$)</th><th>Total (R$)</th></tr></thead>
     <tbody>${rowsMes}
     <tr style="font-weight:800;background:#f0f6ff">
-      <td>TOTAL 6 MESES</td><td>${fV(tot.rec)}</td><td>${fV(tot.prev)}</td><td>${fV(tot.rec+tot.prev)}</td>
+      <td>TOTAL 6 MESES</td><td style="color:#15803d">${fV(tot.rec)}</td><td style="color:#d97706">${fV(tot.prev)}</td><td>${fV(tot.rec+tot.prev)}</td>
     </tr></tbody></table>` +
-    `<div class="sec">Projeção de Caixa — Próximos 90 Dias</div>
+    `<div class="sec">Recebimentos por Setor — Últimos 6 Meses</div>
+    <table><thead><tr><th>Setor</th><th>Recebido (R$)</th><th>Previsto/A Faturar (R$)</th><th>Total (R$)</th></tr></thead>
+    <tbody>${setorRows || '<tr><td colspan="4" style="color:#94a3b8;font-style:italic">Nenhum recebimento no período</td></tr>'}</tbody></table>` +
+    `<div class="sec">Projeção de Caixa — Próximos 6 Meses</div>
     <table><thead><tr><th>Mês</th><th>Valor Previsto (R$)</th><th>Qtd. Medições</th></tr></thead>
     <tbody>${fluxoRows}</tbody></table>`
 
-  abrirPDF(htmlBase('Recebimentos Mês a Mês', 'Histórico dos últimos 6 meses + projeção de caixa 90 dias', body))
+  abrirPDF(htmlBase('Recebimentos Mês a Mês', 'Histórico dos últimos 6 meses + projeção de caixa 6 meses · por setor', body))
 }
 
 // ─── Relatório 4: Comparativo Planejado x Executado por Setor ─────────────

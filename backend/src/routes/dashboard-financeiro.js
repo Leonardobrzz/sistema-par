@@ -59,6 +59,14 @@ router.get('/', async (req, res, next) => {
       });
     });
 
+    // ── Mapa idProjeto → setor ────────────────────────────────────────────
+    const setorPorProjeto = {};
+    aprovados.forEach(p => { setorPorProjeto[p.ID_Projeto] = p.Setor || 'Outros'; });
+    // inclui projetos sem planejamento aprovado (medições avulsas)
+    medicoesTabela.forEach(m => {
+      if (!setorPorProjeto[m.ID_Projeto]) setorPorProjeto[m.ID_Projeto] = m.Setor || 'Outros';
+    });
+
     // ── Receita mensal — últimos 18 meses ─────────────────────────────────
     const hoje = new Date();
     const meses = [];
@@ -66,16 +74,26 @@ router.get('/', async (req, res, next) => {
       const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
       meses.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
     }
+    const SETORES_LIST = ['Arquitetura','Infraestrutura','Saneamento'];
     const recebidoPorMes = Object.fromEntries(meses.map(m => [m, 0]));
     const previsaoPorMes = Object.fromEntries(meses.map(m => [m, 0]));
+    const recebidoPorMesSetor = Object.fromEntries(meses.map(m => [m, {}]));
+    const previsaoPorMesSetor = Object.fromEntries(meses.map(m => [m, {}]));
 
     todasMedicoes.forEach(m => {
+      const setor = setorPorProjeto[m.idProjeto] || 'Outros';
       if (m.statusFinanceiro === 'Recebido' && m.dataRecebimento) {
         const mes = m.dataRecebimento.slice(0, 7);
-        if (recebidoPorMes[mes] !== undefined) recebidoPorMes[mes] += m.valor;
+        if (recebidoPorMes[mes] !== undefined) {
+          recebidoPorMes[mes] += m.valor;
+          recebidoPorMesSetor[mes][setor] = (recebidoPorMesSetor[mes][setor] || 0) + m.valor;
+        }
       } else if (m.statusFinanceiro !== 'Recebido' && m.dataPrevisao) {
         const mes = m.dataPrevisao.slice(0, 7);
-        if (previsaoPorMes[mes] !== undefined) previsaoPorMes[mes] += m.valor;
+        if (previsaoPorMes[mes] !== undefined) {
+          previsaoPorMes[mes] += m.valor;
+          previsaoPorMesSetor[mes][setor] = (previsaoPorMesSetor[mes][setor] || 0) + m.valor;
+        }
       }
     });
 
@@ -83,25 +101,38 @@ router.get('/', async (req, res, next) => {
       mes,
       recebido: Math.round(recebidoPorMes[mes]),
       previsto:  Math.round(previsaoPorMes[mes]),
+      porSetor: SETORES_LIST.reduce((acc, s) => {
+        acc[s] = {
+          recebido: Math.round(recebidoPorMesSetor[mes][s] || 0),
+          previsto:  Math.round(previsaoPorMesSetor[mes][s] || 0),
+        };
+        return acc;
+      }, {}),
     }));
 
-    // ── Fluxo de caixa: próximos 90 dias ──────────────────────────────────
-    const d90 = new Date(); d90.setDate(d90.getDate() + 90);
+    // ── Fluxo de caixa: próximos 6 meses ─────────────────────────────────
+    const d6m = new Date(hoje.getFullYear(), hoje.getMonth() + 6, hoje.getDate());
     const fluxo90 = {};
     todasMedicoes
       .filter(m => m.statusFinanceiro !== 'Recebido' && m.dataPrevisao)
       .forEach(m => {
         const dt = new Date(m.dataPrevisao);
-        if (dt >= hoje && dt <= d90) {
+        if (dt >= hoje && dt <= d6m) {
           const mes = m.dataPrevisao.slice(0, 7);
-          if (!fluxo90[mes]) fluxo90[mes] = { mes, valor: 0, qtd: 0 };
+          const setor = setorPorProjeto[m.idProjeto] || 'Outros';
+          if (!fluxo90[mes]) fluxo90[mes] = { mes, valor: 0, qtd: 0, porSetor: {} };
           fluxo90[mes].valor += m.valor;
           fluxo90[mes].qtd++;
+          fluxo90[mes].porSetor[setor] = (fluxo90[mes].porSetor[setor] || 0) + m.valor;
         }
       });
     const fluxoCaixa90 = Object.values(fluxo90)
       .sort((a, b) => a.mes.localeCompare(b.mes))
-      .map(f => ({ ...f, valor: Math.round(f.valor) }));
+      .map(f => ({
+        ...f,
+        valor: Math.round(f.valor),
+        porSetor: Object.fromEntries(Object.entries(f.porSetor).map(([k,v]) => [k, Math.round(v)])),
+      }));
 
     // ── Aging de recebíveis (só medições vencidas não recebidas) ──────────
     const aging = { ate30: 0, de31a60: 0, de61a90: 0, acima90: 0, total: 0 };
