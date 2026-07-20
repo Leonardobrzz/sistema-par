@@ -1068,7 +1068,10 @@ export default function PlanejamentoFinanceiro() {
                   </div>
                   {!planTravado && form.nrContratoOS && (() => {
                     const nomeUpper = (form.nrContratoOS || '').toUpperCase().trim()
-                    const existeNoOPP = centrosCusto.some(c => c.toUpperCase() === nomeUpper)
+                    const existeNoOPP = centrosCusto.some(c => {
+                      const cu = c.toUpperCase()
+                      return cu === nomeUpper || cu.includes(nomeUpper) || nomeUpper.includes(cu)
+                    })
                     return (
                       <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", borderRadius: 8, background: existeNoOPP ? "#F0FDF4" : "#FFFBEB", border: `1px solid ${existeNoOPP ? "#86EFAC" : "#FDE68A"}` }}>
                         <span style={{ fontSize: 14, lineHeight: 1 }}>{existeNoOPP ? "✅" : "⏳"}</span>
