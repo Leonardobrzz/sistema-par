@@ -7,6 +7,17 @@ router.use(authMiddleware);
 
 const pBR = (v) => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0;
 
+// Normaliza qualquer formato de data para YYYY-MM (para agrupamento mensal)
+// Suporta: YYYY-MM-DD, DD/MM/YYYY, MM/YYYY, YYYY-MM
+function mesYM(dateStr) {
+  if (!dateStr) return null;
+  const s = String(dateStr).trim();
+  if (/^\d{4}-\d{2}/.test(s)) return s.slice(0, 7);           // YYYY-MM-DD ou YYYY-MM
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) return `${s.slice(6,10)}-${s.slice(3,5)}`; // DD/MM/YYYY
+  if (/^\d{2}\/\d{4}/.test(s)) return `${s.slice(3,7)}-${s.slice(0,2)}`;         // MM/YYYY
+  return null;
+}
+
 router.get('/', async (req, res, next) => {
   try {
     const [planejamentos, medicoesTabela] = await Promise.all([
@@ -82,15 +93,16 @@ router.get('/', async (req, res, next) => {
 
     todasMedicoes.forEach(m => {
       const setor = setorPorProjeto[m.idProjeto] || 'Outros';
-      if (m.statusFinanceiro === 'Recebido' && m.dataRecebimento) {
-        const mes = m.dataRecebimento.slice(0, 7);
-        if (recebidoPorMes[mes] !== undefined) {
+      if (m.statusFinanceiro === 'Recebido') {
+        // usa Data_Recebimento se disponível, senão Data_Previsao como fallback
+        const mes = mesYM(m.dataRecebimento) || mesYM(m.dataPrevisao);
+        if (mes && recebidoPorMes[mes] !== undefined) {
           recebidoPorMes[mes] += m.valor;
           recebidoPorMesSetor[mes][setor] = (recebidoPorMesSetor[mes][setor] || 0) + m.valor;
         }
       } else if (m.statusFinanceiro !== 'Recebido' && m.dataPrevisao) {
-        const mes = m.dataPrevisao.slice(0, 7);
-        if (previsaoPorMes[mes] !== undefined) {
+        const mes = mesYM(m.dataPrevisao);
+        if (mes && previsaoPorMes[mes] !== undefined) {
           previsaoPorMes[mes] += m.valor;
           previsaoPorMesSetor[mes][setor] = (previsaoPorMesSetor[mes][setor] || 0) + m.valor;
         }
@@ -118,7 +130,7 @@ router.get('/', async (req, res, next) => {
       .forEach(m => {
         const dt = new Date(m.dataPrevisao);
         if (dt >= hoje && dt <= d6m) {
-          const mes = m.dataPrevisao.slice(0, 7);
+          const mes = mesYM(m.dataPrevisao);
           const setor = setorPorProjeto[m.idProjeto] || 'Outros';
           if (!fluxo90[mes]) fluxo90[mes] = { mes, valor: 0, qtd: 0, porSetor: {} };
           fluxo90[mes].valor += m.valor;
