@@ -76,17 +76,33 @@ function abrirPDF(html) {
 function barSVG(items, corBarra = '#1e4d8c') {
   if (!items.length) return ''
   const max = Math.max(...items.map(i => i.v), 1)
-  const W = 520, H = 85
-  const bw = Math.max(10, Math.floor((W - 40) / items.length) - 6)
+  const n = items.length
+  const W = 520
+  const LABEL_H = 14   // espaço para label do valor acima da barra
+  const AXIS_H  = 16   // espaço para label do eixo X abaixo
+  const BAR_MAX = 90   // altura máxima da barra
+  const H = LABEL_H + BAR_MAX + AXIS_H  // total
+  const colW = (W - 40) / n
+  const bw = Math.min(50, colW * 0.55)
   const bars = items.map((item, i) => {
-    const x = 20 + i * ((W - 40) / items.length) + 2
-    const h = Math.max(2, (item.v / max) * (H - 18))
-    const y = H - h - 14
-    return `<rect x="${x}" y="${y}" width="${bw}" height="${h}" rx="3" fill="${corBarra}"/>
-<text x="${x+bw/2}" y="${H}" text-anchor="middle" font-size="8" fill="#64748b">${item.l}</text>
-<text x="${x+bw/2}" y="${y-3}" text-anchor="middle" font-size="7" fill="${corBarra}" font-weight="700">${fV(item.v).replace('R$','').trim()}</text>`
+    const cx = 20 + i * colW + colW / 2
+    const barH = item.v > 0 ? Math.max(4, (item.v / max) * BAR_MAX) : 0
+    const barY = LABEL_H + BAR_MAX - barH
+    const valLabel = item.v > 0 ? fV(item.v).replace('R$','').trim() : '—'
+    return [
+      item.v > 0
+        ? `<rect x="${cx - bw/2}" y="${barY}" width="${bw}" height="${barH}" rx="4" fill="${corBarra}"/>`
+        : `<line x1="${cx}" y1="${LABEL_H + BAR_MAX - 2}" x2="${cx}" y2="${LABEL_H + BAR_MAX}" stroke="#cbd5e1" stroke-width="1"/>`,
+      `<text x="${cx}" y="${barY - 3}" text-anchor="middle" font-size="8" fill="${item.v > 0 ? corBarra : '#94a3b8'}" font-weight="600">${valLabel}</text>`,
+      `<text x="${cx}" y="${H}" text-anchor="middle" font-size="9" fill="#475569">${item.l}</text>`,
+    ].join('')
   }).join('')
-  return `<svg viewBox="0 0 ${W} ${H+4}" style="width:100%;margin-bottom:10px">${bars}</svg>`
+  // linha de base
+  const baseY = LABEL_H + BAR_MAX
+  return `<svg viewBox="0 0 ${W} ${H + 2}" style="width:100%;margin-bottom:12px">
+  <line x1="16" y1="${baseY}" x2="${W-16}" y2="${baseY}" stroke="#e2e8f0" stroke-width="1"/>
+  ${bars}
+</svg>`
 }
 
 // ─── Relatório 1: Resumo por Setor ────────────────────────────────────────
