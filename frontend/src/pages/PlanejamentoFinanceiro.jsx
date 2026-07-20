@@ -429,8 +429,8 @@ export default function PlanejamentoFinanceiro() {
     } finally { setSaving(false) }
   }
 
-  async function carregarCentrosCusto() {
-    if (centrosCusto.length > 0) return
+  async function carregarCentrosCusto(forcar = false) {
+    if (centrosCusto.length > 0 && !forcar) return
     try {
       const r = await api.get('/opp/centros-custo')
       const lista = Array.isArray(r.data) ? r.data : []
@@ -1082,10 +1082,17 @@ export default function PlanejamentoFinanceiro() {
                             </div>
                           )}
                         </div>
-                        <button onClick={() => { navigator.clipboard.writeText(form.nrContratoOS); toast.success("Nome copiado!") }}
-                          style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #E2E8F0", background: "#fff", fontSize: 11, fontWeight: 700, color: "#475569", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
-                          📋 Copiar
-                        </button>
+                        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                          <button onClick={() => { navigator.clipboard.writeText(form.nrContratoOS); toast.success("Nome copiado!") }}
+                            style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #E2E8F0", background: "#fff", fontSize: 11, fontWeight: 700, color: "#475569", cursor: "pointer", whiteSpace: "nowrap" }}>
+                            📋 Copiar
+                          </button>
+                          <button onClick={() => carregarCentrosCusto(true)}
+                            title="Recarregar lista do OPP"
+                            style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #E2E8F0", background: "#fff", fontSize: 11, fontWeight: 700, color: "#475569", cursor: "pointer", whiteSpace: "nowrap" }}>
+                            🔄
+                          </button>
+                        </div>
                       </div>
                     )
                   })()}
