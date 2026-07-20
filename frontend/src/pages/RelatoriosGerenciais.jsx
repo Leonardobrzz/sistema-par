@@ -108,9 +108,10 @@ function barSVG(items, corBarra = '#1e4d8c') {
 
 // ─── Relatório 1: Resumo por Setor ────────────────────────────────────────
 
-function rel1Setores(df) {
+function rel1Setores(df, filtroSetor = 'Todos') {
   const { setores, kpis, rentabilidade } = df
-  const SETORES = ['Arquitetura','Infraestrutura','Saneamento']
+  const TODOS = ['Arquitetura','Infraestrutura','Saneamento']
+  const SETORES = filtroSetor === 'Todos' ? TODOS : [filtroSetor]
 
   const linhasTabela = SETORES.map(nome => {
     const s = setores.find(x => (x.setor||'').toLowerCase().includes(nome.toLowerCase().slice(0,4))) || {}
@@ -163,12 +164,14 @@ function rel1Setores(df) {
     <tbody>${linhasTabela}</tbody></table>` +
     `<div class="sec">Detalhamento por Setor</div>` + projetosPorSetor
 
-  abrirPDF(htmlBase('Resumo Financeiro por Setor', 'ARQ · INFRA · SAN — Todos os projetos aprovados', body))
+  const subtitulo = filtroSetor === 'Todos' ? 'ARQ · INFRA · SAN — Todos os projetos aprovados' : `${filtroSetor} — Projetos aprovados`
+  abrirPDF(htmlBase('Resumo Financeiro por Setor', subtitulo, body))
 }
 
 // ─── Relatório 2: Planejamento x Real ─────────────────────────────────────
 
-function rel2PlanejaXReal(projetos) {
+function rel2PlanejaXReal(projetos, filtroSetor = 'Todos') {
+  if (filtroSetor !== 'Todos') projetos = projetos.filter(p => (p.setor||'') === filtroSetor)
   const total = {
     plan: projetos.reduce((s,p)=>s+p.valorContrato,0),
     real: projetos.reduce((s,p)=>s+p.totalRecebido,0),
@@ -205,7 +208,8 @@ function rel2PlanejaXReal(projetos) {
     <table><thead><tr><th>Projeto</th><th>Setor</th><th>Planejado (R$)</th><th>Recebido (R$)</th><th>% Exec.</th><th></th></tr></thead>
     <tbody>${rows}</tbody></table>`
 
-  abrirPDF(htmlBase('Planejamento Financeiro x Real', 'Comparativo de execução — projetos aprovados', body))
+  const subtitulo2 = filtroSetor === 'Todos' ? 'Comparativo de execução — projetos aprovados' : `${filtroSetor} — Comparativo de execução`
+  abrirPDF(htmlBase('Planejamento Financeiro x Real', subtitulo2, body))
 }
 
 // ─── Relatório 3: Recebimentos mês a mês ──────────────────────────────────
@@ -257,7 +261,8 @@ function rel3Mensal(df) {
 
 // ─── Relatório 4: Comparativo Planejado x Executado por Setor ─────────────
 
-function rel4Comparativo(projetos) {
+function rel4Comparativo(projetos, filtroSetor = 'Todos') {
+  if (filtroSetor !== 'Todos') projetos = projetos.filter(p => (p.setor||'') === filtroSetor)
   const setores = [...new Set(projetos.map(p=>p.setor||'Outros'))].sort()
 
   const totalGeral = {
@@ -312,7 +317,8 @@ function rel4Comparativo(projetos) {
   const body = kpiCards +
     `<div class="sec">Carteira por Setor</div>` + chartSetores + corpo
 
-  abrirPDF(htmlBase('Comparativo Planejado x Executado por Setor', 'Análise de execução financeira agrupada por setor e projeto', body))
+  const subtitulo4 = filtroSetor === 'Todos' ? 'Análise de execução financeira agrupada por setor e projeto' : `${filtroSetor} — Análise de execução financeira`
+  abrirPDF(htmlBase('Comparativo Planejado x Executado por Setor', subtitulo4, body))
 }
 
 // ─── Componente principal ──────────────────────────────────────────────────
@@ -332,6 +338,10 @@ export default function RelatoriosGerenciais() {
   const [df, setDf]   = useState(null)
   const [br, setBr]   = useState(null)
   const [loading, setLoading] = useState(true)
+  const SETORES_OPCOES = ['Todos','Arquitetura','Infraestrutura','Saneamento']
+  const [setor1, setSetor1] = useState('Todos')
+  const [setor2, setSetor2] = useState('Todos')
+  const [setor4, setSetor4] = useState('Todos')
 
   const carregar = useCallback(async () => {
     setLoading(true)
@@ -348,48 +358,22 @@ export default function RelatoriosGerenciais() {
 
   useEffect(() => { carregar() }, [carregar])
 
-  const relatorios = [
-    {
-      id: 1,
-      titulo: 'Resumo por Setor',
-      desc: 'Carteira, lucro estimado e margem média de cada setor (ARQ · INFRA · SAN), com tabela detalhada de todos os projetos agrupados.',
-      icon: '📊',
-      cor: '#1e4d8c',
-      bg: isDark ? 'rgba(30,77,140,.15)' : '#EFF6FF',
-      borda: isDark ? 'rgba(30,77,140,.4)' : '#BFDBFE',
-      acao: () => df ? rel1Setores(df) : toast.error('Dados ainda carregando'),
-    },
-    {
-      id: 2,
-      titulo: 'Planejamento x Real',
-      desc: 'Comparativo entre o valor do contrato planejado e o valor efetivamente recebido em cada projeto, com percentual de execução.',
-      icon: '📈',
-      cor: '#7C3AED',
-      bg: isDark ? 'rgba(124,58,237,.15)' : '#F5F3FF',
-      borda: isDark ? 'rgba(124,58,237,.4)' : '#DDD6FE',
-      acao: () => br?.length ? rel2PlanejaXReal(br) : toast.error('Dados ainda carregando'),
-    },
-    {
-      id: 3,
-      titulo: 'Recebimentos Mês a Mês',
-      desc: 'Histórico dos últimos 6 meses de recebimentos com valores realizados e previstos, mais projeção de caixa para os próximos 90 dias.',
-      icon: '📅',
-      cor: '#0891B2',
-      bg: isDark ? 'rgba(8,145,178,.15)' : '#ECFEFF',
-      borda: isDark ? 'rgba(8,145,178,.4)' : '#A5F3FC',
-      acao: () => df ? rel3Mensal(df) : toast.error('Dados ainda carregando'),
-    },
-    {
-      id: 4,
-      titulo: 'Comparativo por Setor',
-      desc: 'Planejado vs. executado de cada projeto organizado por setor, com margem planejada, % de execução e desvio em reais.',
-      icon: '⚖️',
-      cor: '#15803D',
-      bg: isDark ? 'rgba(21,128,61,.15)' : '#F0FDF4',
-      borda: isDark ? 'rgba(21,128,61,.4)' : '#86EFAC',
-      acao: () => br?.length ? rel4Comparativo(br) : toast.error('Dados ainda carregando'),
-    },
-  ]
+  function SetorSelector({ value, onChange, cor }) {
+    return (
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {SETORES_OPCOES.map(s => {
+          const ativo = value === s
+          return (
+            <button key={s} onClick={() => onChange(s)} style={{
+              padding: '4px 12px', borderRadius: 20, border: `1.5px solid ${ativo ? cor : T.border}`,
+              background: ativo ? cor : 'transparent', color: ativo ? '#fff' : T.text2,
+              fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all .15s',
+            }}>{s === 'Todos' ? 'Todos' : s.slice(0,3).toUpperCase()}</button>
+          )
+        })}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-5 fade-in">
@@ -410,29 +394,70 @@ export default function RelatoriosGerenciais() {
         <div style={{ padding: 60, textAlign: 'center', color: T.text3 }}>Carregando dados...</div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-          {relatorios.map(r => (
-            <div key={r.id} style={{ background: r.bg, border: `1.5px solid ${r.borda}`, borderRadius: 14, padding: '24px 26px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                <div style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>{r.icon}</div>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 900, color: r.cor, marginBottom: 6 }}>{r.titulo}</div>
-                  <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.6 }}>{r.desc}</div>
-                </div>
+
+          {/* Card 1 — Resumo por Setor */}
+          <div style={{ background: isDark?'rgba(30,77,140,.15)':'#EFF6FF', border: `1.5px solid ${isDark?'rgba(30,77,140,.4)':'#BFDBFE'}`, borderRadius: 14, padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <span style={{ fontSize: 28, lineHeight: 1 }}>📊</span>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 900, color: '#1e4d8c', marginBottom: 4 }}>Resumo por Setor</div>
+                <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.6 }}>Carteira, lucro estimado e margem média, com tabela detalhada de todos os projetos do setor.</div>
               </div>
-              <button
-                onClick={r.acao}
-                style={{
-                  alignSelf: 'flex-start', padding: '9px 20px', borderRadius: 9, border: 'none',
-                  background: r.cor, color: '#fff', fontWeight: 700, fontSize: 13,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-                  boxShadow: `0 2px 10px ${r.cor}40`,
-                }}
-              >
-                <DocumentChartBarIcon style={{ width: 15, height: 15 }} />
-                Gerar PDF
-              </button>
             </div>
-          ))}
+            <SetorSelector value={setor1} onChange={setSetor1} cor="#1e4d8c" />
+            <button onClick={() => df ? rel1Setores(df, setor1) : toast.error('Dados ainda carregando')}
+              style={{ alignSelf:'flex-start', padding:'9px 20px', borderRadius:9, border:'none', background:'#1e4d8c', color:'#fff', fontWeight:700, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:8, boxShadow:'0 2px 10px rgba(30,77,140,.35)' }}>
+              <DocumentChartBarIcon style={{ width:15, height:15 }} /> Gerar PDF
+            </button>
+          </div>
+
+          {/* Card 2 — Planejamento x Real */}
+          <div style={{ background: isDark?'rgba(124,58,237,.15)':'#F5F3FF', border: `1.5px solid ${isDark?'rgba(124,58,237,.4)':'#DDD6FE'}`, borderRadius: 14, padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <span style={{ fontSize: 28, lineHeight: 1 }}>📈</span>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 900, color: '#7C3AED', marginBottom: 4 }}>Planejamento x Real</div>
+                <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.6 }}>Comparativo entre contrato planejado e valor efetivamente recebido, com percentual de execução.</div>
+              </div>
+            </div>
+            <SetorSelector value={setor2} onChange={setSetor2} cor="#7C3AED" />
+            <button onClick={() => br?.length ? rel2PlanejaXReal(br, setor2) : toast.error('Dados ainda carregando')}
+              style={{ alignSelf:'flex-start', padding:'9px 20px', borderRadius:9, border:'none', background:'#7C3AED', color:'#fff', fontWeight:700, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:8, boxShadow:'0 2px 10px rgba(124,58,237,.35)' }}>
+              <DocumentChartBarIcon style={{ width:15, height:15 }} /> Gerar PDF
+            </button>
+          </div>
+
+          {/* Card 3 — Recebimentos Mês a Mês (sem filtro de setor) */}
+          <div style={{ background: isDark?'rgba(8,145,178,.15)':'#ECFEFF', border: `1.5px solid ${isDark?'rgba(8,145,178,.4)':'#A5F3FC'}`, borderRadius: 14, padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <span style={{ fontSize: 28, lineHeight: 1 }}>📅</span>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 900, color: '#0891B2', marginBottom: 4 }}>Recebimentos Mês a Mês</div>
+                <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.6 }}>Histórico dos últimos 6 meses de recebimentos realizados e previstos, mais projeção de caixa 90 dias.</div>
+              </div>
+            </div>
+            <button onClick={() => df ? rel3Mensal(df) : toast.error('Dados ainda carregando')}
+              style={{ alignSelf:'flex-start', padding:'9px 20px', borderRadius:9, border:'none', background:'#0891B2', color:'#fff', fontWeight:700, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:8, boxShadow:'0 2px 10px rgba(8,145,178,.35)' }}>
+              <DocumentChartBarIcon style={{ width:15, height:15 }} /> Gerar PDF
+            </button>
+          </div>
+
+          {/* Card 4 — Comparativo por Setor */}
+          <div style={{ background: isDark?'rgba(21,128,61,.15)':'#F0FDF4', border: `1.5px solid ${isDark?'rgba(21,128,61,.4)':'#86EFAC'}`, borderRadius: 14, padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <span style={{ fontSize: 28, lineHeight: 1 }}>⚖️</span>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 900, color: '#15803D', marginBottom: 4 }}>Comparativo por Setor</div>
+                <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.6 }}>Planejado vs. executado por projeto com margem planejada, % de execução e desvio em reais.</div>
+              </div>
+            </div>
+            <SetorSelector value={setor4} onChange={setSetor4} cor="#15803D" />
+            <button onClick={() => br?.length ? rel4Comparativo(br, setor4) : toast.error('Dados ainda carregando')}
+              style={{ alignSelf:'flex-start', padding:'9px 20px', borderRadius:9, border:'none', background:'#15803D', color:'#fff', fontWeight:700, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:8, boxShadow:'0 2px 10px rgba(21,128,61,.35)' }}>
+              <DocumentChartBarIcon style={{ width:15, height:15 }} /> Gerar PDF
+            </button>
+          </div>
+
         </div>
       )}
 
