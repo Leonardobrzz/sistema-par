@@ -168,54 +168,60 @@ function rel1Setores(df, filtroSetor = 'Todos') {
   abrirPDF(htmlBase('Resumo Financeiro por Setor', subtitulo, body))
 }
 
-// ─── Relatório 2: Planejamento x Real (resumo executivo por setor) ──────────
+// ─── Relatório 2: Planejamento x Real (custos PAR vs. real OPP + equipe) ────
 
 function rel2PlanejaXReal(projetos, filtroSetor = 'Todos') {
   if (filtroSetor !== 'Todos') projetos = projetos.filter(p => (p.setor||'') === filtroSetor)
 
-  const totalGeral = {
-    plan: projetos.reduce((s,p)=>s+p.valorContrato,0),
-    real: projetos.reduce((s,p)=>s+p.totalRecebido,0),
-  }
-  const percGeral = totalGeral.plan > 0 ? totalGeral.real/totalGeral.plan*100 : 0
-  const saldoGeral = totalGeral.plan - totalGeral.real
+  const tCustoPlan = projetos.reduce((s,p)=>s+p.totalCustos,0)
+  const tCustoReal = projetos.reduce((s,p)=>s+p.custoRealTotal,0)
+  const tSaldoGeral = tCustoPlan - tCustoReal
+  const percGeral = tCustoPlan > 0 ? tCustoReal/tCustoPlan*100 : 0
+  const tOPP      = projetos.reduce((s,p)=>s+p.custoRealOPP,0)
+  const tEq       = projetos.reduce((s,p)=>s+p.custoRealEquipe,0)
 
   const kpiCards = `<div class="kpi-g">
-    <div class="kpi"><div class="kpi-l">Total Planejado</div><div class="kpi-v">${fV(totalGeral.plan)}</div><div class="kpi-s">${projetos.length} projeto(s)</div></div>
-    <div class="kpi"><div class="kpi-l">Total Realizado</div><div class="kpi-v" style="color:#15803d">${fV(totalGeral.real)}</div></div>
-    <div class="kpi"><div class="kpi-l">Saldo a Receber</div><div class="kpi-v" style="color:#1e4d8c">${fV(saldoGeral)}</div></div>
-    <div class="kpi"><div class="kpi-l">% Executado</div><div class="kpi-v">${fN(percGeral)}%</div></div>
+    <div class="kpi"><div class="kpi-l">Custo Total Planejado</div><div class="kpi-v">${fV(tCustoPlan)}</div><div class="kpi-s">${projetos.length} projeto(s)</div></div>
+    <div class="kpi"><div class="kpi-l">Custo Real (OPP + EQ)</div><div class="kpi-v" style="color:${tCustoReal>tCustoPlan?'#dc2626':'#15803d'}">${fV(tCustoReal)}</div><div class="kpi-s">OPP ${fV(tOPP)} · Equipe ${fV(tEq)}</div></div>
+    <div class="kpi"><div class="kpi-l">Saldo de Custo</div><div class="kpi-v" style="color:${tSaldoGeral<0?'#dc2626':'#1e4d8c'}">${fV(tSaldoGeral)}</div></div>
+    <div class="kpi"><div class="kpi-l">% Custo Realizado</div><div class="kpi-v">${fN(percGeral)}%</div></div>
   </div>`
 
-  // Agrupa por setor
   const setores = [...new Set(projetos.map(p=>p.setor||'Outros'))].sort()
   const corpo = setores.map(setor => {
     const projs = projetos.filter(p=>(p.setor||'Outros')===setor)
-    const tPlan = projs.reduce((s,p)=>s+p.valorContrato,0)
-    const tReal = projs.reduce((s,p)=>s+p.totalRecebido,0)
+    const tPlan = projs.reduce((s,p)=>s+p.totalCustos,0)
+    const tReal = projs.reduce((s,p)=>s+p.custoRealTotal,0)
     const tSald = tPlan - tReal
     const tPerc = tPlan > 0 ? tReal/tPlan*100 : 0
 
     const rows = projs.map(p => {
-      const saldo = p.valorContrato - p.totalRecebido
-      const ok = p.percRecebido >= 50
+      const saldo = p.totalCustos - p.custoRealTotal
+      const perc  = p.totalCustos > 0 ? p.custoRealTotal/p.totalCustos*100 : 0
+      const ok    = perc <= 100
+      const detEq  = p.horasPlan > 0
+        ? `<br/><span style="font-size:8px;color:#64748b">Equipe: ${p.horasPlan}h plan. / ${p.horasRastreadas}h rastr. — ${fV(p.totalEq)} plan. / ${fV(p.custoRealEquipe)} real</span>`
+        : ''
+      const detOPP = p.totalTercs > 0 || p.custoRealOPP > 0
+        ? `<br/><span style="font-size:8px;color:#64748b">Terc./OPP: ${fV(p.totalTercs)} plan. / ${fV(p.custoRealOPP)} pago</span>`
+        : ''
       return `<tr>
-        <td>${p.nome}</td>
-        <td style="text-align:right;font-weight:600">${fV(p.valorContrato)}</td>
-        <td style="text-align:right;color:#15803d;font-weight:700">${fV(p.totalRecebido)}</td>
+        <td><strong>${p.nome}</strong>${detOPP}${detEq}</td>
+        <td style="text-align:right;font-weight:700">${fV(p.totalCustos)}</td>
+        <td style="text-align:right;color:${p.custoRealTotal>p.totalCustos?'#dc2626':'#15803d'};font-weight:700">${fV(p.custoRealTotal)}</td>
         <td style="text-align:right;color:#1e4d8c;font-weight:700">${fV(saldo)}</td>
-        <td style="text-align:center"><span class="chip" style="background:${ok?'#dcfce7':'#fef3c7'};color:${ok?'#15803d':'#b45309'}">${fN(p.percRecebido)}%</span></td>
+        <td style="text-align:center"><span class="chip" style="background:${ok?'#dcfce7':'#fee2e2'};color:${ok?'#15803d':'#dc2626'}">${fN(perc)}%</span></td>
       </tr>`
     }).join('')
 
     return `<div class="sec">${setor}</div>
     <table>
-      <thead><tr><th>Projeto</th><th style="text-align:right">Planejado</th><th style="text-align:right">Realizado</th><th style="text-align:right">Saldo</th><th style="text-align:center">%</th></tr></thead>
+      <thead><tr><th>Projeto</th><th style="text-align:right">Custo Planejado</th><th style="text-align:right">Custo Real</th><th style="text-align:right">Saldo</th><th style="text-align:center">%</th></tr></thead>
       <tbody>${rows}
       <tr style="font-weight:800;background:#f0f6ff">
         <td>Subtotal ${setor}</td>
         <td style="text-align:right">${fV(tPlan)}</td>
-        <td style="text-align:right;color:#15803d">${fV(tReal)}</td>
+        <td style="text-align:right;color:${tReal>tPlan?'#dc2626':'#15803d'}">${fV(tReal)}</td>
         <td style="text-align:right;color:#1e4d8c">${fV(tSald)}</td>
         <td style="text-align:center"><span class="chip" style="background:#dbeafe;color:#1e4d8c">${fN(tPerc)}%</span></td>
       </tr></tbody>
@@ -225,9 +231,9 @@ function rel2PlanejaXReal(projetos, filtroSetor = 'Todos') {
   const totalRow = `<table style="margin-top:8px">
     <tbody><tr style="font-weight:900;background:#1e4d8c;color:#fff">
       <td>TOTAL GERAL</td>
-      <td style="text-align:right">${fV(totalGeral.plan)}</td>
-      <td style="text-align:right">${fV(totalGeral.real)}</td>
-      <td style="text-align:right">${fV(saldoGeral)}</td>
+      <td style="text-align:right">${fV(tCustoPlan)}</td>
+      <td style="text-align:right">${fV(tCustoReal)}</td>
+      <td style="text-align:right">${fV(tSaldoGeral)}</td>
       <td style="text-align:center">${fN(percGeral)}%</td>
     </tr></tbody>
   </table>`
@@ -442,7 +448,7 @@ export default function RelatoriosGerenciais() {
               <span style={{ fontSize: 28, lineHeight: 1 }}>📈</span>
               <div>
                 <div style={{ fontSize: 15, fontWeight: 900, color: '#7C3AED', marginBottom: 4 }}>Planejamento x Real</div>
-                <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.6 }}>Comparativo entre contrato planejado e valor efetivamente recebido, com percentual de execução.</div>
+                <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.6 }}>Custo planejado (PAR) vs. custo real — OPP (despesas pagas) + equipe interna (horas rastreadas). Saldo e % por projeto.</div>
               </div>
             </div>
             <SetorSelector value={setor2} onChange={setSetor2} cor="#7C3AED" />
