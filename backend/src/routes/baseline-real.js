@@ -63,7 +63,7 @@ router.get('/', async (req, res, next) => {
       const id = h.ID_Projeto
       if (!id) return
       if (!horasPorProjeto[id]) horasPorProjeto[id] = 0
-      horasPorProjeto[id] += parseFloat(h.Horas || h.horas || 0)
+      horasPorProjeto[id] += parseFloat(h.Horas_Logadas || h.Horas || h.horas || 0)
     })
 
     const { listaCC, porCC } = oppData
