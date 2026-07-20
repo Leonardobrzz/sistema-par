@@ -21,7 +21,7 @@ function htmlBase(titulo, subtitulo, body) {
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
 body{font-size:11px;color:#1e293b;background:#fff}
-.page{padding:16px 20px 110px;min-height:100vh}
+.page{padding:16px 20px 20px;min-height:100vh}
 .header{display:flex;justify-content:space-between;align-items:center;border-bottom:2.5px solid #1e4d8c;padding-bottom:10px;margin-bottom:14px}
 .header img{height:68px;object-fit:contain}
 .hinfo{text-align:right;font-size:9px;color:#1e4d8c;line-height:1.6}
@@ -38,9 +38,9 @@ tr:nth-child(even) td{background:#f8fafc}
 .kpi-v{font-size:15px;font-weight:900;color:#1e4d8c}
 .kpi-s{font-size:9px;color:#64748b;margin-top:2px}
 .chip{display:inline-block;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px}
-.wave{position:fixed;bottom:0;left:0;right:0;line-height:0}
+.wave{margin-top:32px;line-height:0;page-break-inside:avoid}
 @page{size:A4;margin:8mm}
-@media print{.wave{position:fixed;bottom:0}}
+@media print{.wave{margin-top:24px}}
 </style></head><body><div class="page">
 <div class="header">
   <img src="${origem}/image.png" alt="Jota Barros" onerror="this.style.display='none'"/>
