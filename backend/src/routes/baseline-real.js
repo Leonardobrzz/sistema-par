@@ -28,8 +28,8 @@ router.get('/', async (req, res, next) => {
       const d = dados._baseline || dados
 
       const V  = pBR(d.valorContrato  || plan.Valor_Contrato)
-      const ip = pBR(d.impostosPerc) || 20
-      const ta = pBR(d.taxaAdmPerc)  || 12
+      const ip = Math.max(pBR(d.impostosPerc) || 20, 16.33)
+      const ta = Math.max(pBR(d.taxaAdmPerc)  || 12, 5)
       const co = pBR(d.comissaoPerc) || 7.5
       const recLiq       = V * (1 - (ip + ta + co) / 100)
       const totalTercs   = (d.terceirizados    || []).reduce((s, t) => s + pBR(t.custo), 0)

@@ -78,14 +78,15 @@ function barSVG(items, corBarra = '#1e4d8c') {
   const max = Math.max(...items.map(i => i.v), 1)
   const n = items.length
   const W = 520
-  const LABEL_H = 14   // espaço para label do valor acima da barra
-  const AXIS_H  = 16   // espaço para label do eixo X abaixo
-  const BAR_MAX = 90   // altura máxima da barra
-  const H = LABEL_H + BAR_MAX + AXIS_H  // total
-  const colW = (W - 40) / n
-  const bw = Math.min(50, colW * 0.55)
+  const LABEL_H = 14
+  const AXIS_H  = 16
+  const BAR_MAX = 90
+  const H = LABEL_H + BAR_MAX + AXIS_H
+  const cols = Math.max(n, 5)          // mínimo 5 colunas para evitar barras enormes
+  const colW = (W - 40) / cols
+  const bw = Math.min(44, colW * 0.6)
   const bars = items.map((item, i) => {
-    const cx = 20 + i * colW + colW / 2
+    const cx = 20 + i * ((W - 40) / cols) + ((W - 40) / cols) / 2
     const barH = item.v > 0 ? Math.max(4, (item.v / max) * BAR_MAX) : 0
     const barY = LABEL_H + BAR_MAX - barH
     const valLabel = item.v > 0 ? fV(item.v).replace('R$','').trim() : '—'
@@ -183,7 +184,7 @@ function rel2PlanejaXReal(projetos) {
   </div>`
 
   const top12 = [...projetos].slice(0,12)
-  const chart = barSVG(top12.map(p=>({ v: p.valorContrato, l: (p.nome||'').slice(0,7) })))
+  const chart = barSVG(top12.map((p,i)=>({ v: p.valorContrato, l: `#${i+1}` })))
 
   const rows = projetos.map(p => {
     const ok = p.percRecebido >= 50
