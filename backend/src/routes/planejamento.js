@@ -848,11 +848,18 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
     }
     const ccId = String(cc.id_centro_custos);
     console.log(`[OPP] Total buscado: ${todos.length}, filtrando por CC ID=${ccId}`);
+    if (todos.length > 0) {
+      const sample = todos[0];
+      const ccKeys = Object.keys(sample).filter(k => k.toLowerCase().includes('centro') || k.toLowerCase().includes('cc'));
+      console.log(`[OPP] Campos CC no lançamento:`, ccKeys.map(k => `${k}=${sample[k]}`));
+      console.log(`[OPP] Exemplo id_centro_custos:`, sample.id_centro_custos, '| centro_custos:', sample.centro_custos);
+    }
     const lancamentos = todos
       .filter(d => {
         if (d.lixeira === 'Sim') return false;
         if ((d.situacao || '').toLowerCase().includes('estornada')) return false;
-        return String(d.id_centro_custos || '') === ccId;
+        const idCC = String(d.id_centro_custos || d.centro_custos?.id || d.id_cc || '');
+        return idCC === ccId;
       })
       .map(d => ({
         id: d.id_conta_pag,
