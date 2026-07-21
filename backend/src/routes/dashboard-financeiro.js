@@ -18,11 +18,29 @@ function mesYM(dateStr) {
   return null;
 }
 
+// Busca contas-receber do OPP (receitas liquidadas e pendentes)
+async function fetchOppReceitas() {
+  try {
+    const { oppRequest } = require('../services/oppService');
+    let offset = 0, todos = [];
+    while (true) {
+      const r = await oppRequest('GET', `/contas-receber?limit=250&offset=${offset}`);
+      const lista = Array.isArray(r) ? r : (r?.data || []);
+      if (lista.length === 0) break;
+      todos.push(...lista);
+      if (lista.length < 250) break;
+      offset += 250;
+    }
+    return todos;
+  } catch { return []; }
+}
+
 router.get('/', async (req, res, next) => {
   try {
-    const [planejamentos, medicoesTabela] = await Promise.all([
+    const [planejamentos, medicoesTabela, oppReceitas] = await Promise.all([
       db.readSheet('Planejamentos'),
       db.readSheet('Medicoes'),
+      fetchOppReceitas(),
     ]);
 
     const aprovados = planejamentos.filter(p => p.Status === 'Aprovado');
@@ -70,13 +88,28 @@ router.get('/', async (req, res, next) => {
       });
     });
 
-    // ── Mapa idProjeto → setor ────────────────────────────────────────────
+    // ── Mapa CC (Nr_Contrato_OS) → setor ─────────────────────────────────
     const setorPorProjeto = {};
     aprovados.forEach(p => { setorPorProjeto[p.ID_Projeto] = p.Setor || 'Outros'; });
-    // inclui projetos sem planejamento aprovado (medições avulsas)
     medicoesTabela.forEach(m => {
       if (!setorPorProjeto[m.ID_Projeto]) setorPorProjeto[m.ID_Projeto] = m.Setor || 'Outros';
     });
+    // mapa ccNome (Nr_Contrato_OS normalizado) → setor para receitas OPP
+    const setorPorCC = {};
+    aprovados.forEach(p => {
+      if (p.Nr_Contrato_OS) setorPorCC[p.Nr_Contrato_OS.toLowerCase().trim()] = p.Setor || 'Outros';
+    });
+    function setorDaReceita(rec) {
+      const cc = (rec.centro_custos_rec || rec.centro_custo || '').toLowerCase().trim();
+      if (!cc) return 'Outros';
+      // tentativa exata
+      if (setorPorCC[cc]) return setorPorCC[cc];
+      // tentativa fuzzy
+      for (const [k, v] of Object.entries(setorPorCC)) {
+        if (cc.includes(k) || k.includes(cc)) return v;
+      }
+      return 'Outros';
+    }
 
     // ── Receita mensal — últimos 18 meses ─────────────────────────────────
     const hoje = new Date();
@@ -91,16 +124,25 @@ router.get('/', async (req, res, next) => {
     const recebidoPorMesSetor = Object.fromEntries(meses.map(m => [m, {}]));
     const previsaoPorMesSetor = Object.fromEntries(meses.map(m => [m, {}]));
 
+    // Recebidos vêm do OPP (contas-receber liquidadas)
+    oppReceitas
+      .filter(r => r.liquidado_rec === 'Sim')
+      .forEach(r => {
+        const valor = parseFloat(r.valor_rec || 0);
+        if (!valor) return;
+        const setor = setorDaReceita(r);
+        // data do recebimento: vencimento_rec ou data_emissao
+        const mes = mesYM(r.vencimento_rec) || mesYM(r.data_emissao);
+        if (mes && recebidoPorMes[mes] !== undefined) {
+          recebidoPorMes[mes] += valor;
+          recebidoPorMesSetor[mes][setor] = (recebidoPorMesSetor[mes][setor] || 0) + valor;
+        }
+      });
+
+    // Previsto vem das medições não recebidas (tabela + JSON)
     todasMedicoes.forEach(m => {
       const setor = setorPorProjeto[m.idProjeto] || 'Outros';
-      if (m.statusFinanceiro === 'Recebido') {
-        // usa Data_Recebimento se disponível, senão Data_Previsao como fallback
-        const mes = mesYM(m.dataRecebimento) || mesYM(m.dataPrevisao);
-        if (mes && recebidoPorMes[mes] !== undefined) {
-          recebidoPorMes[mes] += m.valor;
-          recebidoPorMesSetor[mes][setor] = (recebidoPorMesSetor[mes][setor] || 0) + m.valor;
-        }
-      } else if (m.statusFinanceiro !== 'Recebido' && m.dataPrevisao) {
+      if (m.statusFinanceiro !== 'Recebido' && m.dataPrevisao) {
         const mes = mesYM(m.dataPrevisao);
         if (mes && previsaoPorMes[mes] !== undefined) {
           previsaoPorMes[mes] += m.valor;
@@ -162,7 +204,7 @@ router.get('/', async (req, res, next) => {
 
     // ── KPIs ──────────────────────────────────────────────────────────────
     const totalCarteira  = aprovados.reduce((s, p) => s + pBR(p.Valor_Contrato), 0);
-    const totalRecebido  = todasMedicoes.filter(m => m.statusFinanceiro === 'Recebido').reduce((s, m) => s + m.valor, 0);
+    const totalRecebido  = oppReceitas.filter(r => r.liquidado_rec === 'Sim').reduce((s, r) => s + parseFloat(r.valor_rec || 0), 0);
     const totalAReceber  = todasMedicoes.filter(m => m.statusFinanceiro !== 'Recebido').reduce((s, m) => s + m.valor, 0);
     const totalAtrasado  = aging.total;
 
