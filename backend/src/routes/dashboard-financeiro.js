@@ -88,27 +88,41 @@ router.get('/', async (req, res, next) => {
       });
     });
 
-    // ── Mapa CC (Nr_Contrato_OS) → setor ─────────────────────────────────
+    // ── Mapas de projeto: por idProjeto e por CC ─────────────────────────
     const setorPorProjeto = {};
     aprovados.forEach(p => { setorPorProjeto[p.ID_Projeto] = p.Setor || 'Outros'; });
     medicoesTabela.forEach(m => {
       if (!setorPorProjeto[m.ID_Projeto]) setorPorProjeto[m.ID_Projeto] = m.Setor || 'Outros';
     });
-    // mapa ccNome (Nr_Contrato_OS normalizado) → setor para receitas OPP
-    const setorPorCC = {};
+
+    // mapa ccNome → { setor, idProjeto } para receitas OPP
+    const infoPorCC = {};
     aprovados.forEach(p => {
-      if (p.Nr_Contrato_OS) setorPorCC[p.Nr_Contrato_OS.toLowerCase().trim()] = p.Setor || 'Outros';
+      if (p.Nr_Contrato_OS) infoPorCC[p.Nr_Contrato_OS.toLowerCase().trim()] = { setor: p.Setor || 'Outros', idProjeto: p.ID_Projeto };
     });
-    function setorDaReceita(rec) {
+    function infoProjetoDeReceita(rec) {
       const cc = (rec.centro_custos_rec || rec.centro_custo || '').toLowerCase().trim();
-      if (!cc) return 'Outros';
-      // tentativa exata
-      if (setorPorCC[cc]) return setorPorCC[cc];
-      // tentativa fuzzy
-      for (const [k, v] of Object.entries(setorPorCC)) {
+      if (!cc) return null;
+      if (infoPorCC[cc]) return infoPorCC[cc];
+      for (const [k, v] of Object.entries(infoPorCC)) {
         if (cc.includes(k) || k.includes(cc)) return v;
       }
-      return 'Outros';
+      return null;
+    }
+
+    // mapa idProjeto → totalRecebidoOPP (apenas liquidadas)
+    const recebidoOPPPorProjeto = {};
+    oppReceitas
+      .filter(r => r.liquidado_rec === 'Sim')
+      .forEach(r => {
+        const info = infoProjetoDeReceita(r);
+        if (!info) return;
+        recebidoOPPPorProjeto[info.idProjeto] = (recebidoOPPPorProjeto[info.idProjeto] || 0) + parseFloat(r.valor_rec || 0);
+      });
+
+    function setorDaReceita(rec) {
+      const info = infoProjetoDeReceita(rec);
+      return info ? info.setor : 'Outros';
     }
 
     // ── Receita mensal — últimos 18 meses ─────────────────────────────────
@@ -224,9 +238,7 @@ router.get('/', async (req, res, next) => {
       const totalDespInt = (d.despesasInternas|| []).reduce((s, x) => s + pBR(x.custo), 0);
       const lucro   = recLiq - totalTercs - totalEq - totalDesp - totalDespInt;
       const margem  = V > 0 ? (lucro / V) * 100 : 0;
-      const recebido = todasMedicoes
-        .filter(m => m.idProjeto === plan.ID_Projeto && m.statusFinanceiro === 'Recebido')
-        .reduce((s, m) => s + m.valor, 0);
+      const recebido = recebidoOPPPorProjeto[plan.ID_Projeto] || 0;
 
       return {
         id: plan.ID_Projeto,

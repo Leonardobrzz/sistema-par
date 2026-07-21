@@ -339,6 +339,7 @@ export default function Dashboard() {
   const [medicoes, setMedicoes] = useState([])
   const [alertas, setAlertas] = useState([])
   const [oppStatus, setOppStatus] = useState(null)
+  const [totalRecebidoOPP, setTotalRecebidoOPP] = useState(null)
   const [loading, setLoading] = useState(true)
   const [mostrarTodosSaude, setMostrarTodosSaude] = useState(false)
   const [filtroSetor, setFiltroSetor] = useState('')
@@ -359,6 +360,7 @@ export default function Dashboard() {
       if (rA.status === 'fulfilled') setAlertas(rA.value.data?.alertas || rA.value.data || [])
       if (rM.status === 'fulfilled') setMedicoes(rM.value.data?.medicoes || rM.value.data || [])
       api.get('/opp/status').then(r => setOppStatus(r.data)).catch(() => setOppStatus({ ok: false }))
+      api.get('/dashboard-financeiro').then(r => setTotalRecebidoOPP(r.data?.kpis?.totalRecebido ?? null)).catch(() => {})
       setLoading(false)
     }
     load()
@@ -654,7 +656,7 @@ export default function Dashboard() {
           <StatCard label="Projetos em Andamento" value={emAndamento.length} sub={`${projetosFiltrados.length} total · ${concluidos.length} concluídos`} icon={<FolderOpen size={20} />} bg="#22C55E" onClick={() => navigate('/projetos')} />
           <StatCard label="Carteira Aprovada" value={fmt(totalContrato)} sub={`${aprovados.length} planejamento(s) aprovado(s)`} icon={<Briefcase size={20} />} bg="#EF4444" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <StatCard label="Total Recebido" value={fmt(totalRecebido)} sub={periodoRecebido.inicio || periodoRecebido.fim ? 'filtrado por período' : 'medições com status Recebido'} icon={<CheckCircle2 size={20} />} bg="#0EA5E9" />
+            <StatCard label="Total Recebido" value={fmt(totalRecebidoOPP ?? totalRecebido)} sub={periodoRecebido.inicio || periodoRecebido.fim ? 'filtrado por período' : 'contas recebidas (OPP)'} icon={<CheckCircle2 size={20} />} bg="#0EA5E9" />
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <input type="date" value={periodoRecebido.inicio} onChange={e => setPeriodoRecebido(p => ({ ...p, inicio: e.target.value }))}
                 style={{ flex: 1, padding: '5px 8px', borderRadius: 6, border: '1.5px solid #E2E8F0', fontSize: 11, color: '#475569', fontFamily: 'inherit', outline: 'none' }} />

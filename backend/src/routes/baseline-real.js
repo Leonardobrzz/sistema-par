@@ -13,31 +13,49 @@ async function fetchOppBatch() {
     const todosCC = await oppRequest('GET', '/centros-custo?limit=500')
     const listaCC = Array.isArray(todosCC) ? todosCC : (todosCC?.data || [])
 
-    let offset = 0, todos = []
-    while (true) {
-      const r = await oppRequest('GET', `/contas-pagar?limit=250&offset=${offset}&lixeira=Nao`)
-      const lista = Array.isArray(r) ? r : (r?.data || [])
-      if (lista.length === 0) break
-      todos.push(...lista)
-      if (lista.length < 250) break
-      offset += 250
+    // contas-pagar (despesas) e contas-receber em paralelo
+    async function paginar(endpoint) {
+      let offset = 0, todos = []
+      while (true) {
+        const r = await oppRequest('GET', `${endpoint}?limit=250&offset=${offset}&lixeira=Nao`)
+        const lista = Array.isArray(r) ? r : (r?.data || [])
+        if (lista.length === 0) break
+        todos.push(...lista)
+        if (lista.length < 250) break
+        offset += 250
+      }
+      return todos
     }
 
-    // Mapa ccId → { total, totalPago }
+    const [despesas, receitas] = await Promise.all([
+      paginar('/contas-pagar'),
+      paginar('/contas-receber'),
+    ])
+
+    // Mapa ccId → { total, totalPago } (despesas por CC id)
     const porCC = {}
-    for (const d of todos) {
+    for (const d of despesas) {
       if (d.lixeira === 'Sim') continue
       if ((d.situacao || '').toLowerCase().includes('estornada')) continue
       const ccId = String(d.id_centro_custos || '')
       if (!ccId) continue
       if (!porCC[ccId]) porCC[ccId] = { total: 0, totalPago: 0 }
-      porCC[ccId].total    += parseFloat(d.valor_pag  || 0)
+      porCC[ccId].total     += parseFloat(d.valor_pag  || 0)
       porCC[ccId].totalPago += parseFloat(d.valor_pago || 0)
     }
 
-    return { listaCC, porCC }
+    // Mapa ccNome → totalRecebido (receitas liquidadas por CC nome)
+    const recebidoPorCC = {}
+    for (const r of receitas) {
+      if (r.liquidado_rec !== 'Sim') continue
+      const cc = (r.centro_custos_rec || r.centro_custo || '').toLowerCase().trim()
+      if (!cc) continue
+      recebidoPorCC[cc] = (recebidoPorCC[cc] || 0) + parseFloat(r.valor_rec || 0)
+    }
+
+    return { listaCC, porCC, recebidoPorCC }
   } catch {
-    return { listaCC: [], porCC: {} }
+    return { listaCC: [], porCC: {}, recebidoPorCC: {} }
   }
 }
 
@@ -66,7 +84,7 @@ router.get('/', async (req, res, next) => {
       horasPorProjeto[id] += parseFloat(h.Horas_Logadas || h.Horas || h.horas || 0)
     })
 
-    const { listaCC, porCC } = oppData
+    const { listaCC, porCC, recebidoPorCC } = oppData
 
     function findCC(nome) {
       if (!nome) return null
@@ -114,7 +132,19 @@ router.get('/', async (req, res, next) => {
       const medsPlan  = d.medicoesCronograma || d.medicoes || []
       const medsReais = medPorProjeto[plan.ID_Projeto] || []
 
-      const totalRecebido  = medsReais.filter(m => m.Status_Financeiro === 'Recebido').reduce((s, m) => s + pBR(m.Valor), 0)
+      // totalRecebido vem do OPP (contas-receber liquidadas, por CC nome)
+      const ccNome = (plan.Nr_Contrato_OS || '').toLowerCase().trim()
+      let totalRecebido = 0
+      if (ccNome) {
+        if (recebidoPorCC[ccNome] !== undefined) {
+          totalRecebido = recebidoPorCC[ccNome]
+        } else {
+          // fuzzy match
+          for (const [k, v] of Object.entries(recebidoPorCC)) {
+            if (ccNome.includes(k) || k.includes(ccNome)) { totalRecebido = v; break }
+          }
+        }
+      }
       const totalPendente  = medsReais.filter(m => m.Status_Financeiro !== 'Recebido').reduce((s, m) => s + pBR(m.Valor), 0)
       const percRecebido   = V > 0 ? totalRecebido / V * 100 : 0
 
