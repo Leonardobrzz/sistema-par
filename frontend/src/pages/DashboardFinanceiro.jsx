@@ -123,17 +123,24 @@ function gerarRelatorio(dados) {
       '<td style="padding:7px 10px;font-size:10px;color:#64748B">'+fN(r.percRecebido)+'%</td></tr>'
   }).join('')
 
+  const origem = window.location.origin
   const html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">'+
     '<title>Relatório Financeiro — Jota Barros Projetos</title>'+
-    '<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:11px;color:#0F172A;background:#F8FAFC}.page{max-width:900px;margin:0 auto;padding:32px 28px}table{width:100%;border-collapse:collapse}th{background:#1E293B;color:#fff;padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.06em}td{border-bottom:1px solid #F1F5F9}@page{size:A4;margin:10mm}@media print{body{background:#fff}}</style></head>'+
+    '<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:11px;color:#0F172A;background:#fff}.page{max-width:900px;margin:0 auto;padding:28px}table{width:100%;border-collapse:collapse}th{background:#1E293B;color:#fff;padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.06em}td{border-bottom:1px solid #F1F5F9}@page{size:A4;margin:10mm}@media print{body{background:#fff}}</style></head>'+
     '<body><div class="page">'+
 
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;padding-bottom:20px;border-bottom:3px solid #7C3AED">'+
-    '<div><div style="font-size:9px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px">Jota Barros Projetos</div>'+
-    '<div style="font-size:22px;font-weight:900;color:#0F172A">Relatório Financeiro Gerencial</div>'+
-    '<div style="font-size:11px;color:#64748B;margin-top:4px">Emitido em '+emissao+'</div></div>'+
-    '<div style="width:60px;height:60px;background:linear-gradient(135deg,#7C3AED,#3B82F6);border-radius:14px;display:flex;align-items:center;justify-content:center">'+
-    '<span style="font-size:24px;font-weight:900;color:#fff">JB</span></div></div>'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2.5px solid #1e4d8c;padding-bottom:10px;margin-bottom:18px">'+
+    '<img src="'+origem+'/image.png" alt="Jota Barros" style="height:68px;object-fit:contain" onerror="this.style.display=\'none\'"/>'+
+    '<div style="text-align:right;font-size:9px;color:#1e4d8c;line-height:1.6">'+
+    '<strong style="font-size:10.5px">Jota Barros Projetos e Assessoria Técnica LTDA - EPP</strong><br/>'+
+    'CNPJ: 07.279.410/0001-62 – Insc. Estadual: 06.179.720-0<br/>'+
+    'Matriz: Rua João Barbosa, 281, Bairro Centro, Maranguape, Ceará – CEP: 61.940-025<br/>'+
+    '(Escritório: Rua Tabelião Joaquim Coelho, 622, Sapiranga, Fortaleza, Ceará – CEP: 60.833-261)<br/>'+
+    '</div></div>'+
+
+    '<div style="margin-bottom:18px">'+
+    '<div style="font-size:17px;font-weight:900;color:#1e4d8c">Relatório Financeiro Gerencial</div>'+
+    '<div style="font-size:10px;color:#64748B;margin-top:3px">Emitido em '+emissao+'</div></div>'+
 
     '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px">'+
     kpiCard('Carteira Aprovada', fV(kpis.totalCarteira), '#7C3AED', kpis.qtdAprovados+' projeto(s) aprovado(s)')+
