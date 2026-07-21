@@ -462,7 +462,10 @@ export default function RelatoriosGerenciais() {
           {/* Card 1 — Resumo por Setor */}
           <div style={{ background: isDark?'rgba(30,77,140,.15)':'#EFF6FF', border: `1.5px solid ${isDark?'rgba(30,77,140,.4)':'#BFDBFE'}`, borderRadius: 14, padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <span style={{ fontSize: 28, lineHeight: 1 }}>📊</span>
+              {/* graph-outline */}
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1e4d8c" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                <rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/>
+              </svg>
               <div>
                 <div style={{ fontSize: 15, fontWeight: 900, color: '#1e4d8c', marginBottom: 4 }}>Resumo por Setor</div>
                 <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.6 }}>Carteira, lucro estimado e margem média, com tabela detalhada de todos os projetos do setor.</div>
@@ -478,7 +481,10 @@ export default function RelatoriosGerenciais() {
           {/* Card 2 — Planejamento x Real */}
           <div style={{ background: isDark?'rgba(124,58,237,.15)':'#F5F3FF', border: `1.5px solid ${isDark?'rgba(124,58,237,.4)':'#DDD6FE'}`, borderRadius: 14, padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <span style={{ fontSize: 28, lineHeight: 1 }}>📈</span>
+              {/* leaderboard */}
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="#7C3AED" style={{ flexShrink: 0, marginTop: 1 }}>
+                <path d="M7.5 21H2V9h5.5v12zm7.25-18h-5.5v18h5.5V3zM22 11h-5.5v10H22V11z"/>
+              </svg>
               <div>
                 <div style={{ fontSize: 15, fontWeight: 900, color: '#7C3AED', marginBottom: 4 }}>Planejamento x Real</div>
                 <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.6 }}>Valor do contrato vs. total gasto (OPP + equipe). Saldo e % de gasto por projeto, agrupado por setor.</div>
@@ -494,7 +500,11 @@ export default function RelatoriosGerenciais() {
           {/* Card 3 — Recebimentos Mês a Mês (sem filtro de setor) */}
           <div style={{ background: isDark?'rgba(8,145,178,.15)':'#ECFEFF', border: `1.5px solid ${isDark?'rgba(8,145,178,.4)':'#A5F3FC'}`, borderRadius: 14, padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <span style={{ fontSize: 28, lineHeight: 1 }}>📅</span>
+              {/* finance */}
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="#0891B2" style={{ flexShrink: 0, marginTop: 1 }}>
+                <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
+                <path d="M20 3H4v2l8 5 8-5V3z" opacity=".6"/>
+              </svg>
               <div>
                 <div style={{ fontSize: 15, fontWeight: 900, color: '#0891B2', marginBottom: 4 }}>Recebimentos Mês a Mês</div>
                 <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.6 }}>Histórico dos últimos 6 meses de recebimentos realizados e previstos, mais projeção de caixa 90 dias.</div>
@@ -509,7 +519,10 @@ export default function RelatoriosGerenciais() {
           {/* Card 4 — Comparativo por Setor */}
           <div style={{ background: isDark?'rgba(21,128,61,.15)':'#F0FDF4', border: `1.5px solid ${isDark?'rgba(21,128,61,.4)':'#86EFAC'}`, borderRadius: 14, padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <span style={{ fontSize: 28, lineHeight: 1 }}>⚖️</span>
+              {/* data-exploration / manage_search */}
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="#15803D" style={{ flexShrink: 0, marginTop: 1 }}>
+                <path d="M7 9H2V7h5v2zm0 3H2v-2h5v2zm13.59 7-3.83-3.83c-.8.52-1.74.83-2.76.83-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5c0 1.02-.31 1.96-.83 2.75L22 17.59 20.59 19zM17 11c0-1.65-1.35-3-3-3s-3 1.35-3 3 1.35 3 3 3 3-1.35 3-3z"/>
+              </svg>
               <div>
                 <div style={{ fontSize: 15, fontWeight: 900, color: '#15803D', marginBottom: 4 }}>Comparativo por Setor</div>
                 <div style={{ fontSize: 12, color: T.text2, lineHeight: 1.6 }}>Planejado vs. executado por projeto com margem planejada, % de execução e desvio em reais.</div>
