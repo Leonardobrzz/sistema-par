@@ -253,16 +253,24 @@ export default function Aprovacao() {
               <div style={{ padding: 32, textAlign: "center", color: "#64748B", fontSize: 13 }}>Nenhum planejamento pendente</div>
             ) : (
               <div style={{ padding: "8px 12px" }}>
-                {pendentes.map(p => (
+                {pendentes.map(p => {
+                  let temRessalva = false
+                  try { const dj = JSON.parse(p.Dados_JSON || '{}'); temRessalva = !!dj.temRessalva } catch {}
+                  return (
                   <div key={p.ID} onClick={() => { setSelected(p); setSuccessMsg(""); setJustificativa("") }}
                     style={{ padding: "12px 14px", borderRadius: 10, marginBottom: 6, cursor: "pointer",
                       background: selected?.ID === p.ID ? (isDark ? "rgba(99,102,241,0.2)" : "rgba(99,102,241,0.08)") : T.cardAlt,
-                      border: `1px solid ${selected?.ID === p.ID ? "rgba(99,102,241,0.5)" : T.border}`,
+                      border: `1px solid ${selected?.ID === p.ID ? "rgba(99,102,241,0.5)" : temRessalva ? "#FECACA" : T.border}`,
                       transition: "all 0.18s" }}>
                     <div style={{ fontWeight: 700, fontSize: 13, color: T.text1 }}>{p.Nome_Projeto || p.ID_Projeto}</div>
                     <div style={{ fontSize: 11, color: T.text2, marginTop: 2 }}>{p.Resp_Planejamento} · {p.Setor}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 12, fontWeight: 700, color: "#7C3AED" }}>{fmt(p.Valor_Contrato)}</span>
+                      {temRessalva && (
+                        <span style={{ fontSize: 10, fontWeight: 700, color: "#DC2626", background: isDark ? "#2a0f0f" : "#FEF2F2", padding: "2px 8px", borderRadius: 20, border: "1px solid #FECACA" }}>
+                          ⚠ Ressalva PAR
+                        </span>
+                      )}
                       {(() => {
                         const dias = diasPendente(p)
                         if (dias === null) return null
@@ -276,7 +284,8 @@ export default function Aprovacao() {
                       })()}
                     </div>
                   </div>
-                ))}
+                )})}
+
               </div>
             )}
           </div>
@@ -311,6 +320,9 @@ export default function Aprovacao() {
               const tercPerc2 = V > 0 ? (totalTerc / V) * 100 : 0
               const margemOk = lucroPerc >= 23
               const tercOk = tercPerc2 <= 25
+              const prodOk = (V > 0 ? ((totalTerc + totalEq + totalDespInt) / V * 100) : 0) <= 30
+              const custoProducao = totalTerc + totalEq + totalDespInt
+              const custoProducaoPerc = V > 0 ? custoProducao / V * 100 : 0
               const medicoes = d.medicoesCronograma || d.medicoes || []
 
               return (
@@ -333,17 +345,35 @@ export default function Aprovacao() {
                       <div style={{ padding: "10px 14px", borderRadius: 8, background: "#F0FDF4", border: "1px solid #86EFAC", color: "#15803D", fontWeight: 600, fontSize: 13 }}>{successMsg}</div>
                     )}
 
-                    {/* ── KPIs PAR ── */}
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+                    {/* ── Alerta de Ressalva PAR ── */}
+                    {d.temRessalva && (
+                      <div style={{ padding: "12px 16px", borderRadius: 10, background: isDark ? "#2a1500" : "#FFFBEB", border: "1.5px solid #FCD34D" }}>
+                        <div style={{ fontWeight: 800, color: "#D97706", fontSize: 13, marginBottom: 6 }}>⚠ Planejamento enviado com ressalva</div>
+                        <div style={{ fontSize: 12, color: isDark ? "#FCD34D" : "#92400E", marginBottom: 6 }}>Este planejamento foi encaminhado com requisitos PAR não cumpridos:</div>
+                        {(d.ressalvasPAR || []).map((r, i) => (
+                          <div key={i} style={{ fontSize: 12, color: isDark ? "#FCA5A5" : "#B91C1C" }}>• {r}</div>
+                        ))}
+                        {d.justificativaRessalva && (
+                          <div style={{ marginTop: 8, padding: "8px 12px", borderRadius: 8, background: isDark ? "#1c1008" : "#FEF3C7", fontSize: 12, color: isDark ? "#FDE68A" : "#78350F" }}>
+                            <strong>Justificativa do Gerente:</strong> {d.justificativaRessalva}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── KPIs PAR (mesmo padrão do Planejamento Financeiro) ── */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
                       {[
-                        { label: "Valor Contrato",   val: fmt(V),     color: T.text1, bg: T.cardAlt },
-                        { label: "Receita Líquida",  val: fmt(recLiq), color: "#7C3AED", bg: isDark ? "#1a1040" : "#F5F3FF" },
-                        { label: `Lucro (${lucroPerc.toFixed(1)}%)`,  val: fmt(lucro), color: margemOk ? "#15803D" : "#DC2626", bg: margemOk ? (isDark ? "#0f2820" : "#F0FDF4") : (isDark ? "#2a0f0f" : "#FEF2F2") },
-                        { label: `Terceirizados (${tercPerc2.toFixed(1)}%)`, val: fmt(totalTerc), color: tercOk ? T.text2 : "#DC2626", bg: T.cardAlt },
+                        { label: "Valor do Contrato", val: fmt(V), color: T.text1, bg: T.cardAlt, border: T.border, sub: null },
+                        { label: "Custo Total", val: fmt(totalCustos), color: T.text1, bg: T.cardAlt, border: T.border, sub: null },
+                        { label: "Lucro Estimado", val: fmt(lucro), color: margemOk ? "#15803D" : "#DC2626", bg: margemOk ? (isDark ? "#0f2820" : "#F0FDF4") : (isDark ? "#2a0f0f" : "#FEF2F2"), border: margemOk ? "#86EFAC" : "#FECACA", sub: `${lucroPerc.toFixed(1)}% · mín 23%` },
+                        { label: "Custo de Produção", val: fmt(custoProducao), color: prodOk ? "#92400E" : "#DC2626", bg: prodOk ? (isDark ? "#1c1008" : "#FFFBEB") : (isDark ? "#2a0f0f" : "#FEF2F2"), border: prodOk ? "#FDE68A" : "#FECACA", sub: `${custoProducaoPerc.toFixed(1)}% · máx 30%` },
+                        { label: "Total Terceirizados", val: fmt(totalTerc), color: tercOk ? "#1E40AF" : "#DC2626", bg: tercOk ? (isDark ? "#0a1628" : "#EFF6FF") : (isDark ? "#2a0f0f" : "#FEF2F2"), border: tercOk ? "#BFDBFE" : "#FECACA", sub: tercOk ? null : `${tercPerc2.toFixed(1)}% · máx 25%` },
                       ].map(k => (
-                        <div key={k.label} style={{ background: k.bg, borderRadius: 10, padding: "12px 14px", border: `1px solid ${T.border}` }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: T.text3, textTransform: "uppercase", marginBottom: 4, lineHeight: 1.3 }}>{k.label}</div>
-                          <div style={{ fontSize: 14, fontWeight: 800, color: k.color }}>{k.val}</div>
+                        <div key={k.label} style={{ background: k.bg, borderRadius: 12, padding: "14px 16px", border: `1.5px solid ${k.border}`, minWidth: 0 }}>
+                          <div style={{ fontSize: 10, fontWeight: 800, color: T.text3, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{k.label}</div>
+                          <div style={{ fontSize: 15, fontWeight: 900, color: k.color, lineHeight: 1.2, wordBreak: "break-word" }}>{k.val}</div>
+                          {k.sub && <div style={{ fontSize: 10, color: k.color, marginTop: 5, fontWeight: 700, opacity: 0.85 }}>{k.sub}</div>}
                         </div>
                       ))}
                     </div>

@@ -237,6 +237,7 @@ export default function PlanejamentoFinanceiro() {
   const [loadingComp, setLoadingComp] = useState(false)
   const [despesasOPP, setDespesasOPP] = useState(null)
   const [loadingDespesas, setLoadingDespesas] = useState(false)
+  const [modalRessalva, setModalRessalva] = useState({ open: false, lista: [], justificativa: "" })
   const [form, setForm] = useState(FORM0)
   const [editingMedicao, setEditingMedicao] = useState(null)
   const [sections, setSections] = useState({ geral: true, financeiro: true, medicoes: false, terceirizados: false, equipe: false, despesas: false })
@@ -407,13 +408,14 @@ export default function PlanejamentoFinanceiro() {
     })
   }, [projetos, filtroSetor, filtroCliente, filtroStatus, filtroBusca])
 
-  async function salvar(status = "Rascunho") {
+  async function salvar(status = "Rascunho", extras = {}) {
     if (!projetoId) return toast.error("Selecione um projeto")
     const proj = projetoSelecionado || {}
     setSaving(true)
     try {
       const payload = {
         ...form,
+        ...extras,
         idProjeto: projetoId,
         status,
         nomeProjeto: form.nomeProjeto || proj.Nome     || "",
@@ -1465,17 +1467,17 @@ export default function PlanejamentoFinanceiro() {
               <Save size={16} /> {saving ? "Salvando..." : "Salvar Rascunho"}
             </button>
             <button onClick={() => {
-              const ressalvas = [
-                !margemOk && `• Margem (${fmtN(par.lucroPerc)}%) abaixo de 23%`,
-                !tercOk && `• Terceirizados (${fmtN(par.percTerceiros)}%) acima de 25%`,
-                !prodOk && `• Custo de produção (${fmtN(par.custoProducaoPerc)}%) acima de 30%`,
-                !despGeraisOk && `• Despesas Gerais (${fmtN(par.percDespesasGerais)}%) acima de 7,5%`,
+              const lista = [
+                !margemOk && `Margem (${fmtN(par.lucroPerc)}%) abaixo de 23%`,
+                !tercOk && `Terceirizados (${fmtN(par.percTerceiros)}%) acima de 25%`,
+                !prodOk && `Custo de produção (${fmtN(par.custoProducaoPerc)}%) acima de 30%`,
+                !despGeraisOk && `Despesas Gerais (${fmtN(par.percDespesasGerais)}%) acima de 7,5%`,
               ].filter(Boolean)
-              if (ressalvas.length > 0) {
-                const msg = `Este planejamento possui pendências fora da Metodologia PAR:\n\n${ressalvas.join('\n')}\n\nDeseja encaminhar para aprovação mesmo assim?`
-                if (!window.confirm(msg)) return
+              if (lista.length > 0) {
+                setModalRessalva({ open: true, lista, justificativa: "" })
+              } else {
+                salvar("Pendente Aprovação")
               }
-              salvar("Pendente Aprovação")
             }} disabled={saving}
               className="btn-primary" style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <CheckCircle size={16} /> Encaminhar para Aprovação
@@ -2036,6 +2038,49 @@ export default function PlanejamentoFinanceiro() {
           <button onClick={carregarDespesasOPP} disabled={loadingDespesas} style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 8, border: `1.5px solid ${T.border}`, background: T.card, color: T.text2, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
             <RefreshCw size={13} style={{ animation: loadingDespesas ? "spin 1s linear infinite" : "none" }} /> Atualizar
           </button>
+        </div>
+      )}
+
+      {/* ── Modal Enviar com Ressalva ── */}
+      {modalRessalva.open && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: T.card, borderRadius: 16, padding: "28px 32px", maxWidth: 480, width: "90%", boxShadow: "0 24px 64px rgba(0,0,0,0.35)", border: `1.5px solid #FECACA` }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+              <AlertTriangle size={22} color="#DC2626" />
+              <span style={{ fontWeight: 800, fontSize: 16, color: "#DC2626" }}>Enviar com Ressalva</span>
+            </div>
+            <div style={{ marginBottom: 14, padding: "12px 14px", background: isDark ? "#2a0f0f" : "#FEF2F2", borderRadius: 10, border: "1px solid #FECACA" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#991B1B", marginBottom: 6 }}>Requisitos PAR não cumpridos:</div>
+              {modalRessalva.lista.map((r, i) => (
+                <div key={i} style={{ fontSize: 12, color: "#B91C1C", marginTop: 3 }}>• {r}</div>
+              ))}
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: T.text3, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6, display: "block" }}>Justificativa obrigatória *</label>
+              <textarea
+                value={modalRessalva.justificativa}
+                onChange={e => setModalRessalva(m => ({ ...m, justificativa: e.target.value }))}
+                rows={4} placeholder="Descreva a justificativa para o não cumprimento do requisito PAR..."
+                style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1.5px solid ${T.border}`, background: T.inputBg || T.cardAlt, color: T.text1, fontSize: 12, fontFamily: "inherit", resize: "vertical", outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <button onClick={() => setModalRessalva({ open: false, lista: [], justificativa: "" })}
+                style={{ padding: "9px 20px", borderRadius: 9, border: `1.5px solid ${T.border}`, background: T.cardAlt, color: T.text2, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                Cancelar
+              </button>
+              <button
+                disabled={!modalRessalva.justificativa.trim() || saving}
+                onClick={() => {
+                  const extras = { temRessalva: true, justificativaRessalva: modalRessalva.justificativa.trim(), ressalvasPAR: modalRessalva.lista }
+                  setModalRessalva({ open: false, lista: [], justificativa: "" })
+                  salvar("Pendente Aprovação", extras)
+                }}
+                style={{ padding: "9px 20px", borderRadius: 9, border: "none", background: !modalRessalva.justificativa.trim() ? "#94A3B8" : "#DC2626", color: "#fff", fontWeight: 700, fontSize: 13, cursor: !modalRessalva.justificativa.trim() ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                <CheckCircle size={15} /> Enviar com ressalva
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
