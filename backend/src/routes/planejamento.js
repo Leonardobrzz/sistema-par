@@ -176,6 +176,9 @@ router.post('/', audit, async (req, res, next) => {
     const status = dados.status || 'Rascunho';
 
     // ── Validações que só bloqueiam ao submeter para aprovação ───────────────
+    // temRessalva=true indica que o Gerente reconheceu os desvios PAR e forneceu justificativa
+    const enviadoComRessalva = dados.temRessalva === true && dados.justificativaRessalva && dados.justificativaRessalva.trim().length > 0;
+
     if (status !== 'Rascunho') {
       if (Math.abs(somaMedicoes - 100) > 0.01 && medicoes.length > 0) {
         return res.status(400).json({
@@ -184,7 +187,7 @@ router.post('/', audit, async (req, res, next) => {
         });
       }
 
-      if (totais.margemAbaixoMinimo) {
+      if (totais.margemAbaixoMinimo && !enviadoComRessalva) {
         return res.status(400).json({
           error: `Margem de lucro (${totais.lucroPerc.toFixed(1)}%) está abaixo do mínimo obrigatório de ${MARGEM_MINIMA_PERC}%. Ajuste os custos antes de enviar para aprovação.`,
           codigo: 'MARGEM_ABAIXO_MINIMO',
@@ -193,7 +196,7 @@ router.post('/', audit, async (req, res, next) => {
         });
       }
 
-      if (totais.custoProducaoUltrapassou) {
+      if (totais.custoProducaoUltrapassou && !enviadoComRessalva) {
         return res.status(400).json({
           error: `Custo de produção (${totais.custoProducaoPerc.toFixed(1)}%) ultrapassa o teto de ${TETO_CUSTO_PRODUCAO}%. Revise equipe e terceirizados.`,
           codigo: 'CUSTO_PRODUCAO_ULTRAPASSOU',
@@ -202,7 +205,7 @@ router.post('/', audit, async (req, res, next) => {
         });
       }
 
-      if (totais.terceirosUltrapassouTeto) {
+      if (totais.terceirosUltrapassouTeto && !enviadoComRessalva) {
         const bypasAutorizado = dados.bypassDiretoria === true;
         const ehDiretoria = ['Admin', 'Diretoria'].includes(req.user.perfil);
         if (!bypasAutorizado || !ehDiretoria) {
