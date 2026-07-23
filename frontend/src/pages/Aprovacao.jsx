@@ -319,7 +319,12 @@ export default function Aprovacao() {
               const lucroPerc = V > 0 ? (lucro / V) * 100 : 0
               const tercPerc2 = V > 0 ? (totalTerc / V) * 100 : 0
               const margemOk = lucroPerc >= 23
-              const tercOk = tercPerc2 <= 25
+              // tercOk: nenhum item individual com custo > 25% do seu valorRef
+              const itensTerc25 = (d.terceirizados || []).filter(t => {
+                const ref = parseBR(t.valorRef); const custo = parseBR(t.custo)
+                return ref > 0 && (custo / ref * 100) > 25
+              })
+              const tercOk = itensTerc25.length === 0
               const prodOk = (V > 0 ? ((totalTerc + totalEq + totalDespInt) / V * 100) : 0) <= 30
               const custoProducao = totalTerc + totalEq + totalDespInt
               const custoProducaoPerc = V > 0 ? custoProducao / V * 100 : 0
@@ -383,7 +388,10 @@ export default function Aprovacao() {
                       <div style={{ padding: "12px 16px", borderRadius: 10, background: isDark ? "#2a0f0f" : "#FEF2F2", border: "1.5px solid #FECACA" }}>
                         <div style={{ fontWeight: 700, color: "#DC2626", fontSize: 13, marginBottom: 4 }}>⚠ Fora da Metodologia PAR</div>
                         {!margemOk && <div style={{ fontSize: 12, color: "#B91C1C" }}>• Margem ({lucroPerc.toFixed(1)}%) abaixo do mínimo de 23%</div>}
-                        {!tercOk && <div style={{ fontSize: 12, color: "#B91C1C", marginTop: 3 }}>• Terceirizados ({tercPerc2.toFixed(1)}%) acima do máximo de 25%</div>}
+                        {itensTerc25.map((t, i) => {
+                          const ref = parseBR(t.valorRef); const custo = parseBR(t.custo)
+                          return <div key={i} style={{ fontSize: 12, color: "#B91C1C", marginTop: 3 }}>• Terceirizado "{t.servico || 'sem nome'}": custo {(custo/ref*100).toFixed(1)}% do valor de referência (máx 25%)</div>
+                        })}
                         {!tercOk && (
                           <textarea value={justBypass} onChange={e => setJustBypass(e.target.value)}
                             placeholder="Justificativa obrigatória para aprovar com bypass..." rows={2}

@@ -367,7 +367,12 @@ export default function PlanejamentoFinanceiro() {
 
   const par = calcPAR(form)
   const margemOk = par.lucroPerc >= 23
-  const tercOk = par.percTerceiros <= 25
+  // tercOk: nenhum item individual pode ter custo > 25% do seu valorRef
+  const itensTerc25 = (form.terceirizados || []).filter(t => {
+    const ref = parseBR(t.valorRef); const custo = parseBR(t.custo)
+    return ref > 0 && (custo / ref * 100) > 25
+  })
+  const tercOk = itensTerc25.length === 0
   const prodOk = par.custoProducaoPerc <= 30
   const despGeraisOk = par.percDespesasGerais <= 7.5
   const somaMedicoes = (form.medicoes || []).reduce((s, m) => s + parseBR(m.percentual), 0)
@@ -1010,7 +1015,10 @@ export default function PlanejamentoFinanceiro() {
                 <div style={{ fontWeight: 700, color: "#DC2626", fontSize: 13 }}>Projeto fora da Metodologia PAR</div>
                 <div style={{ fontSize: 12, color: "#991B1B", marginTop: 4, lineHeight: 1.6 }}>
                   {!margemOk && <div>• Margem ({fmtN(par.lucroPerc)}%) abaixo de 23%.</div>}
-                  {!tercOk && <div>• Terceirizados ({fmtN(par.percTerceiros)}%) acima de 25%.</div>}
+                  {itensTerc25.map((t, i) => {
+                    const ref = parseBR(t.valorRef); const custo = parseBR(t.custo)
+                    return <div key={i}>• Terceirizado "{t.servico || 'sem nome'}": custo {fmtN(custo/ref*100)}% do valor de referência (máx 25%).</div>
+                  })}
                   {!prodOk && <div>• Custo de produção ({fmtN(par.custoProducaoPerc)}%) acima de 30%.</div>}
                   {!despGeraisOk && <div>• Despesas Gerais ({fmtN(par.percDespesasGerais)}%) acima de 7,5%.</div>}
                 </div>
@@ -1469,7 +1477,10 @@ export default function PlanejamentoFinanceiro() {
             <button onClick={() => {
               const lista = [
                 !margemOk && `Margem (${fmtN(par.lucroPerc)}%) abaixo de 23%`,
-                !tercOk && `Terceirizados (${fmtN(par.percTerceiros)}%) acima de 25%`,
+                ...itensTerc25.map(t => {
+                  const ref = parseBR(t.valorRef); const custo = parseBR(t.custo)
+                  return `Terceirizado "${t.servico || 'sem nome'}": custo ${fmtN(custo/ref*100)}% do valor de referência (máx 25%)`
+                }),
                 !prodOk && `Custo de produção (${fmtN(par.custoProducaoPerc)}%) acima de 30%`,
                 !despGeraisOk && `Despesas Gerais (${fmtN(par.percDespesasGerais)}%) acima de 7,5%`,
               ].filter(Boolean)
