@@ -998,7 +998,7 @@ export default function PlanejamentoFinanceiro() {
               { label: "Custo Total",         val: fmt(par.custoTotalDisplay), color: T.text1, bg: T.cardAlt, border: T.border, sub: null },
               { label: "Lucro Estimado",      val: fmt(par.lucro), color: margemOk ? "#15803D" : "#DC2626", bg: margemOk ? "#F0FDF4" : "#FEF2F2", border: margemOk ? "#86EFAC" : "#FECACA", sub: `${fmtN(par.lucroPerc)}% · mín 23%` },
               { label: "Custo de Produção",   val: fmt(par.totalEquipe + par.totalDespesasInternas + par.totalTerceiros), color: prodOk ? "#92400E" : "#DC2626", bg: prodOk ? "#FFFBEB" : "#FEF2F2", border: prodOk ? "#FDE68A" : "#FECACA", sub: `${fmtN(par.custoProducaoPerc)}% · máx 30%` },
-              { label: "Total Terceirizados", val: fmt(par.totalTerceiros), color: tercOk ? "#1E40AF" : "#DC2626", bg: tercOk ? "#EFF6FF" : "#FEF2F2", border: tercOk ? "#BFDBFE" : "#FECACA", sub: tercOk ? null : `${fmtN(par.percTerceiros)}% · máx 25%` },
+              { label: "Total Terceirizados", val: fmt(par.totalTerceiros), color: tercOk ? "#1E40AF" : "#DC2626", bg: tercOk ? "#EFF6FF" : "#FEF2F2", border: tercOk ? "#BFDBFE" : "#FECACA", sub: tercOk ? null : `${itensTerc25.length} item(s) acima de 25% do ref.` },
             ].map(k => (
               <div key={k.label} style={{ background: k.bg, borderRadius: 12, padding: "14px 16px", border: `1.5px solid ${k.border}`, minWidth: 0 }}>
                 <div style={{ fontSize: 10, fontWeight: 800, color: T.text3, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{k.label}</div>

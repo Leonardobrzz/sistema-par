@@ -512,7 +512,10 @@ export default function Aprovacao() {
                           {d.terceirizados.map((t, i) => (
                             <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderRadius: 8, background: T.cardAlt, border: `1px solid ${T.border}`, fontSize: 12 }}>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ color: T.text1, fontWeight: 600 }}>{t.descricao || "—"}</div>
+                                <div style={{ color: T.text1, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                                  {t.servico || t.descricao || "—"}
+                                  {(() => { const ref = parseBR(t.valorRef); const custo = parseBR(t.custo); return ref > 0 && (custo/ref*100) > 25 ? <span style={{ fontSize: 10, fontWeight: 700, color: "#DC2626", background: "#FEF2F2", padding: "1px 6px", borderRadius: 10, border: "1px solid #FECACA", whiteSpace: "nowrap" }}>⚠ {(custo/ref*100).toFixed(1)}% do ref</span> : null })()}
+                                </div>
                                 {t.fornecedor && <div style={{ color: T.text3, fontSize: 11 }}>{t.fornecedor}</div>}
                               </div>
                               <span style={{ color: "#7C3AED", fontWeight: 700, flexShrink: 0, marginLeft: 12 }}>{fmt(parseBR(t.custo))}</span>
