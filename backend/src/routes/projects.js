@@ -71,10 +71,11 @@ router.get('/', async (req, res, next) => {
       const totalAlertas = alertasProj.length;
 
       const setorNorm = (() => {
-        const s = (p.Setor || p.Nome || '').toUpperCase()
-        if (/SAN/.test(p.Nome || '') || /SANEAMENTO/.test(s)) return 'Saneamento'
-        if (/ARQ/.test(p.Nome || '') || /ARQUITETURA/.test(s)) return 'Arquitetura'
-        if (/INF/.test(p.Nome || '') || /INFRAESTRUTURA/.test(s)) return 'Infraestrutura'
+        const nome = (p.Nome || '').toUpperCase()
+        const setor = (p.Setor || '').toUpperCase()
+        if (/^SAN-/.test(nome) || setor === 'SANEAMENTO') return 'Saneamento'
+        if (/^ARQ-/.test(nome) || setor === 'ARQUITETURA') return 'Arquitetura'
+        if (/^INF-/.test(nome) || setor === 'INFRAESTRUTURA') return 'Infraestrutura'
         return p.Setor || ''
       })()
 
