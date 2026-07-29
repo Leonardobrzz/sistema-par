@@ -413,8 +413,37 @@ export default function PlanejamentoFinanceiro() {
     })
   }, [projetos, filtroSetor, filtroCliente, filtroStatus, filtroBusca])
 
+  function validarCampos() {
+    const v = form
+    const faltando = []
+    if (!v.nomeProjeto?.trim())          faltando.push("Nome do Projeto")
+    if (!v.cliente?.trim())              faltando.push("Cliente")
+    if (!v.setor?.trim())                faltando.push("Setor")
+    if (!v.empresa?.trim())              faltando.push("Empresa")
+    if (!v.tipologia?.trim())            faltando.push("Tipologia")
+    if (!v.respPlanejamento?.trim())     faltando.push("Resp. Planejamento")
+    if (!v.respAprovacao?.trim())        faltando.push("Resp. Aprovação")
+    if (!v.nrContratoOS?.trim())         faltando.push("Nome do Centro de Custo")
+    if (!parseBR(v.valorContrato))       faltando.push("Valor Total do Contrato")
+    if (!v.dataEntregaContrato?.trim())  faltando.push("Data Entrega Contrato")
+    if (!v.dataEntregaPlanejada?.trim()) faltando.push("Data Entrega Planejada")
+    if (!(v.medicoes?.length > 0))       faltando.push("Pelo menos 1 Medição")
+    return faltando
+  }
+
   async function salvar(status = "Rascunho", extras = {}) {
     if (!projetoId) return toast.error("Selecione um projeto")
+    const faltando = validarCampos()
+    if (faltando.length > 0) {
+      toast.error(
+        <div>
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>Campos obrigatórios não preenchidos:</div>
+          {faltando.map((c, i) => <div key={i}>• {c}</div>)}
+        </div>,
+        { duration: 6000 }
+      )
+      return
+    }
     const proj = projetoSelecionado || {}
     setSaving(true)
     try {
