@@ -150,12 +150,28 @@ function rel1Setores(df, filtroSetor = 'Todos') {
     <tbody>${rows}</tbody></table>`
   }).join('')
 
-  const percRec = kpis.totalCarteira > 0 ? kpis.totalRecebido/kpis.totalCarteira*100 : 0
+  // KPIs filtrados por setor quando há filtro ativo
+  let kpiCarteira, kpiRecebido, kpiAReceber, kpiAtrasado, kpiQtd
+  if (filtroSetor === 'Todos') {
+    kpiCarteira  = kpis.totalCarteira
+    kpiRecebido  = kpis.totalRecebido
+    kpiAReceber  = kpis.totalAReceber
+    kpiAtrasado  = kpis.totalAtrasado
+    kpiQtd       = kpis.qtdAprovados
+  } else {
+    const sd = setores.find(x => (x.setor||'').toLowerCase().includes(filtroSetor.toLowerCase().slice(0,4))) || {}
+    kpiCarteira  = sd.carteira  || 0
+    kpiRecebido  = sd.totalRecebido || 0
+    kpiAReceber  = sd.totalAReceber || 0
+    kpiAtrasado  = sd.totalAtrasado || 0
+    kpiQtd       = sd.qtd || 0
+  }
+  const percRec = kpiCarteira > 0 ? kpiRecebido/kpiCarteira*100 : 0
   const kpiCards = `<div class="kpi-g">
-    <div class="kpi"><div class="kpi-l">Carteira Total</div><div class="kpi-v">${fV(kpis.totalCarteira)}</div><div class="kpi-s">${kpis.qtdAprovados} projetos aprovados</div></div>
-    <div class="kpi"><div class="kpi-l">Total Recebido</div><div class="kpi-v" style="color:#15803d">${fV(kpis.totalRecebido)}</div><div class="kpi-s">${fN(percRec)}% da carteira</div></div>
-    <div class="kpi"><div class="kpi-l">A Receber</div><div class="kpi-v">${fV(kpis.totalAReceber)}</div></div>
-    <div class="kpi"><div class="kpi-l">Em Atraso</div><div class="kpi-v" style="color:${kpis.totalAtrasado>0?'#dc2626':'#15803d'}">${fV(kpis.totalAtrasado)}</div></div>
+    <div class="kpi"><div class="kpi-l">Carteira Total</div><div class="kpi-v">${fV(kpiCarteira)}</div><div class="kpi-s">${kpiQtd} projetos aprovados</div></div>
+    <div class="kpi"><div class="kpi-l">Total Recebido</div><div class="kpi-v" style="color:#15803d">${fV(kpiRecebido)}</div><div class="kpi-s">${fN(percRec)}% da carteira</div></div>
+    <div class="kpi"><div class="kpi-l">A Receber</div><div class="kpi-v">${fV(kpiAReceber)}</div></div>
+    <div class="kpi"><div class="kpi-l">Em Atraso</div><div class="kpi-v" style="color:${kpiAtrasado>0?'#dc2626':'#15803d'}">${fV(kpiAtrasado)}</div></div>
   </div>`
 
   const body = kpiCards +

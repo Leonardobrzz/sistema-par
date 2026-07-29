@@ -218,7 +218,7 @@ router.get('/', async (req, res, next) => {
 
     // ── KPIs ──────────────────────────────────────────────────────────────
     const totalCarteira  = aprovados.reduce((s, p) => s + pBR(p.Valor_Contrato), 0);
-    const totalRecebido  = oppReceitas.filter(r => r.liquidado_rec === 'Sim').reduce((s, r) => s + parseFloat(r.valor_rec || 0), 0);
+    const totalRecebido  = Object.values(recebidoOPPPorProjeto).reduce((s, v) => s + v, 0);
     const totalAReceber  = todasMedicoes.filter(m => m.statusFinanceiro !== 'Recebido').reduce((s, m) => s + m.valor, 0);
     const totalAtrasado  = aging.total;
 
@@ -252,6 +252,24 @@ router.get('/', async (req, res, next) => {
       };
     }).sort((a, b) => b.valorContrato - a.valorContrato);
 
+    // ── Recebido/aReceber/atrasado por setor ──────────────────────────────
+    const recebidoPorSetor = {};
+    rentabilidade.forEach(r => {
+      const s = r.setor || 'Outros';
+      recebidoPorSetor[s] = (recebidoPorSetor[s] || 0) + r.recebido;
+    });
+    const aReceberPorSetor = {};
+    const atrasadoPorSetor = {};
+    todasMedicoes.forEach(m => {
+      const s = setorPorProjeto[m.idProjeto] || 'Outros';
+      if (m.statusFinanceiro !== 'Recebido') {
+        aReceberPorSetor[s] = (aReceberPorSetor[s] || 0) + m.valor;
+        if (m.dataPrevisao && new Date(m.dataPrevisao) < hoje) {
+          atrasadoPorSetor[s] = (atrasadoPorSetor[s] || 0) + m.valor;
+        }
+      }
+    });
+
     // ── Rentabilidade por setor ────────────────────────────────────────────
     const porSetor = {};
     rentabilidade.forEach(r => {
@@ -263,9 +281,12 @@ router.get('/', async (req, res, next) => {
     });
     const setores = Object.values(porSetor).map(s => ({
       ...s,
-      carteira: Math.round(s.carteira),
-      lucro:    Math.round(s.lucro),
+      carteira:    Math.round(s.carteira),
+      lucro:       Math.round(s.lucro),
       margemMedia: s.carteira > 0 ? parseFloat((s.lucro / s.carteira * 100).toFixed(1)) : 0,
+      totalRecebido:  Math.round(recebidoPorSetor[s.setor] || 0),
+      totalAReceber:  Math.round(aReceberPorSetor[s.setor] || 0),
+      totalAtrasado:  Math.round(atrasadoPorSetor[s.setor] || 0),
     }));
 
     res.json({
