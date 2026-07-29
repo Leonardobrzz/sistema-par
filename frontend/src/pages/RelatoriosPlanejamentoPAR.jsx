@@ -453,7 +453,7 @@ function DetalheRelatorio({ plano }) {
   )
 }
 
-function imprimirConsolidado(lista, detalhes) {
+function imprimirConsolidado(lista, detalhes, recebidoMap = {}) {
   const fD = (s) => {
     if (!s) return "—"
     const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/)
@@ -465,6 +465,8 @@ function imprimirConsolidado(lista, detalhes) {
     const d = detalhes[p.ID_Projeto]?.dadosCompletos || detalhes[p.ID_Projeto] || {}
     const medicoes = d.medicoes || d._baseline?.medicoes || []
     const valorContrato = pBR(d.valorContrato || p.Valor_Contrato)
+    const totalRecebido = recebidoMap[p.ID_Projeto] || 0
+    const percRecebido = valorContrato > 0 ? (totalRecebido / valorContrato * 100) : 0
 
     const linhasMedicoes = medicoes.length > 0
       ? `<table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:12px">
@@ -495,8 +497,13 @@ function imprimirConsolidado(lista, detalhes) {
           <div style="font-size:12px;color:#64748B;margin-top:3px">${p.Cliente || "—"}</div>
         </div>
         <div style="padding:12px 18px">
-          <div style="display:inline-block;background:#EDE9FE;color:#7C3AED;font-weight:700;font-size:12px;padding:4px 12px;border-radius:6px;margin-bottom:10px">
-            Valor do Contrato: ${fV(valorContrato)}
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+            <div style="background:#EDE9FE;color:#7C3AED;font-weight:700;font-size:12px;padding:6px 14px;border-radius:6px">
+              Contrato: ${fV(valorContrato)}
+            </div>
+            <div style="background:${totalRecebido > 0 ? '#DCFCE7' : '#F1F5F9'};color:${totalRecebido > 0 ? '#15803D' : '#64748B'};font-weight:700;font-size:12px;padding:6px 14px;border-radius:6px">
+              Recebido OPP: ${fV(totalRecebido)} ${totalRecebido > 0 ? `(${percRecebido.toFixed(1)}%)` : ''}
+            </div>
           </div>
           <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Cronograma de Medições</div>
           ${linhasMedicoes}
@@ -504,6 +511,7 @@ function imprimirConsolidado(lista, detalhes) {
       </div>`
   }).join("")
 
+  const origem = typeof window !== "undefined" ? window.location.origin : ""
   const html = `<!DOCTYPE html>
   <html><head>
     <meta charset="utf-8"/>
@@ -514,7 +522,16 @@ function imprimirConsolidado(lista, detalhes) {
       @media print { body { padding: 16px; } }
     </style>
   </head><body>
-    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px;border-bottom:2.5px solid #7C3AED;padding-bottom:16px">
+    <div style="display:flex;align-items:center;gap:18px;margin-bottom:8px">
+      <img src="${origem}/image.png" style="height:54px;object-fit:contain" onerror="this.style.display='none'" />
+      <div>
+        <div style="font-size:15px;font-weight:900;color:#1E293B;letter-spacing:0.02em">JB Barros Consultoria e Projetos</div>
+        <div style="font-size:11px;color:#64748B;margin-top:2px">CNPJ: 12.345.678/0001-99</div>
+        <div style="font-size:10px;color:#94A3B8">Rua Exemplo, 123 — Cidade/UF</div>
+      </div>
+    </div>
+    <div style="border-bottom:3px solid #1746A2;margin-bottom:20px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px">
       <div>
         <div style="font-size:20px;font-weight:900;color:#0F172A;text-transform:uppercase;letter-spacing:0.04em">Relatório Consolidado</div>
         <div style="font-size:13px;color:#64748B;margin-top:4px">Planejamentos Aprovados — ${new Date().toLocaleDateString("pt-BR")}</div>
@@ -551,6 +568,7 @@ export default function RelatoriosPlanejamentoPAR() {
   const [aberto, setAberto] = useState(null)
   const [detalhes, setDetalhes] = useState({})
   const [carregandoDetalhe, setCarregandoDetalhe] = useState(null)
+  const [gerandoPDF, setGerandoPDF] = useState(false)
 
   useEffect(() => {
     async function carregar() {
@@ -602,9 +620,25 @@ export default function RelatoriosPlanejamentoPAR() {
         <span style={{ fontSize: 12, fontWeight: 700, color: "#15803D", background: "#DCFCE7", padding: "4px 12px", borderRadius: 20 }}>
           {filtrados.length} projeto(s) aprovado(s)
         </span>
-        <button onClick={() => imprimirConsolidado(filtrados, detalhes)}
-          style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "none", background: "#7C3AED", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-          <Printer size={15} /> PDF Consolidado
+        <button onClick={async () => {
+            setGerandoPDF(true)
+            try {
+              let recebidoMap = {}
+              try {
+                const br = await api.get("/baseline-real")
+                const lista = Array.isArray(br.data) ? br.data : (br.data?.projetos || [])
+                for (const item of lista) {
+                  if (item.idProjeto) recebidoMap[item.idProjeto] = item.totalRecebido || 0
+                }
+              } catch {}
+              imprimirConsolidado(planejamentos, detalhes, recebidoMap)
+            } finally {
+              setGerandoPDF(false)
+            }
+          }}
+          disabled={gerandoPDF}
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "none", background: gerandoPDF ? "#A78BFA" : "#7C3AED", color: "#fff", fontWeight: 700, fontSize: 13, cursor: gerandoPDF ? "wait" : "pointer" }}>
+          <Printer size={15} /> {gerandoPDF ? "Preparando..." : "PDF Consolidado"}
         </button>
       </div>
 
