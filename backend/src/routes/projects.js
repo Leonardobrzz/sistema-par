@@ -157,6 +157,37 @@ router.get('/stats/dashboard', async (req, res, next) => {
   }
 });
 
+// GET /api/projetos/:id/tarefas — tarefas do projeto via ClickUp
+router.get('/:id/tarefas', async (req, res, next) => {
+  try {
+    const project = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === req.params.id)
+    if (!project) return res.status(404).json({ error: 'Projeto não encontrado.' })
+    if (!project.ID_ClickUp) return res.json([])
+    const { getTasks } = require('../services/clickupService')
+    const tasks = await getTasks(project.ID_ClickUp)
+    const hoje = new Date(); hoje.setHours(0,0,0,0)
+    const resultado = tasks.map(t => {
+      const due = t.due_date ? new Date(parseInt(t.due_date)) : null
+      return {
+        id: t.id,
+        nome: t.name,
+        status: (t.status?.status || '').toUpperCase(),
+        responsaveis: (t.assignees || []).map(a => a.username || a.email || '').filter(Boolean),
+        etiquetas: (t.tags || []).map(tag => tag.name).filter(Boolean),
+        vencimento: due ? due.toISOString().slice(0,10) : null,
+        vencido: due ? due < hoje : false,
+        url: t.url,
+      }
+    }).sort((a, b) => {
+      const order = { 'EM ANDAMENTO': 0, 'BACKLOG': 1, 'CONCLUÍDO': 2, 'ARQUIVADO': 3 }
+      return (order[a.status] ?? 2) - (order[b.status] ?? 2)
+    })
+    res.json(resultado)
+  } catch (err) {
+    next(err)
+  }
+})
+
 // GET /api/projetos/:id — detalhe de um projeto
 router.get('/:id', async (req, res, next) => {
   try {

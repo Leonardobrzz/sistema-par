@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { MagnifyingGlassIcon, PlusIcon, FunnelIcon, ArrowTopRightOnSquareIcon, SparklesIcon, FolderIcon } from '@heroicons/react/24/outline'
+import { MagnifyingGlassIcon, PlusIcon, FunnelIcon, ArrowTopRightOnSquareIcon, SparklesIcon, FolderIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 import { toast } from 'react-hot-toast'
 import { useForm } from 'react-hook-form'
 import api from '../utils/api'
@@ -76,6 +76,9 @@ export default function GestaoProjetos() {
   const topScrollRef  = useRef(null)
   const bodyScrollRef = useRef(null)
   const [showNewModal, setShowNewModal] = useState(false)
+  const [expandedId, setExpandedId] = useState(null)
+  const [tarefasMap, setTarefasMap] = useState({})
+  const [loadingTarefas, setLoadingTarefas] = useState({})
   const DEFAULT_STATUS = ['Em Andamento', 'Em Andamento (Atrasado)']
   const [filters, setFilters] = useState({
     busca: searchParams.get('busca') || '',
@@ -148,6 +151,28 @@ export default function GestaoProjetos() {
       return true
     })
   }, [allProjects, filters])
+
+  async function toggleExpand(p) {
+    const id = p.ID_Projeto
+    if (expandedId === id) { setExpandedId(null); return }
+    setExpandedId(id)
+    if (tarefasMap[id]) return
+    setLoadingTarefas(prev => ({ ...prev, [id]: true }))
+    try {
+      const r = await api.get(`/projetos/${id}/tarefas`)
+      setTarefasMap(prev => ({ ...prev, [id]: r.data }))
+    } catch {
+      setTarefasMap(prev => ({ ...prev, [id]: [] }))
+    } finally {
+      setLoadingTarefas(prev => ({ ...prev, [id]: false }))
+    }
+  }
+
+  const fmtData = (s) => {
+    if (!s) return '—'
+    const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/)
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : s
+  }
 
   return (
     <div className="space-y-5 fade-in">
@@ -363,18 +388,23 @@ export default function GestaoProjetos() {
                   </tr>
                 ) : (
                   projects.map((p) => {
-                    const perc = parseFloat(p.percTerceiros || 0)
                     const accentColor = statusAccentColor(p.Status)
+                    const isExpanded = expandedId === p.ID_Projeto
+                    const tarefas = tarefasMap[p.ID_Projeto] || []
+                    const loadingT = loadingTarefas[p.ID_Projeto]
                     return (
+                      <React.Fragment key={p.ID_Projeto}>
                       <tr
-                        key={p.ID_Projeto}
-                        style={{ borderBottom: `1px solid ${T.border}`, background: T.card, transition: 'background 0.12s', cursor: 'pointer' }}
-                        onClick={() => navigate(`/planejamento/${p.ID_Projeto}`)}
-                        onMouseEnter={e => e.currentTarget.style.background = T.hover}
-                        onMouseLeave={e => e.currentTarget.style.background = T.card}
+                        style={{ borderBottom: isExpanded ? 'none' : `1px solid ${T.border}`, background: isExpanded ? (isDark ? '#1A2540' : '#F0F4FF') : T.card, transition: 'background 0.12s', cursor: 'pointer' }}
+                        onClick={() => toggleExpand(p)}
+                        onMouseEnter={e => { if (!isExpanded) e.currentTarget.style.background = T.hover }}
+                        onMouseLeave={e => { if (!isExpanded) e.currentTarget.style.background = T.card }}
                       >
                         <td style={{ paddingLeft: 16, paddingRight: 12, paddingTop: 11, paddingBottom: 11 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {isExpanded
+                              ? <ChevronDownIcon style={{ width: 13, height: 13, color: '#7C3AED', flexShrink: 0 }} />
+                              : <ChevronRightIcon style={{ width: 13, height: 13, color: T.text3, flexShrink: 0 }} />}
                             <div style={{ width: 3, height: 28, borderRadius: 4, background: accentColor, flexShrink: 0 }} />
                             <div style={{ minWidth: 0 }}>
                               <p style={{ fontWeight: 700, fontSize: 12.5, color: T.text1, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -435,17 +465,78 @@ export default function GestaoProjetos() {
                             )}
                             <button
                               onClick={(e) => { e.stopPropagation(); navigate(`/planejamento/${p.ID_Projeto}`) }}
+                              title="Ir para Planejamento Financeiro"
                               style={{
-                                background: T.card, border: `1px solid ${T.border}`, color: T.text2,
-                                padding: '4px 10px', borderRadius: 7, fontSize: 11.5, fontWeight: 600,
+                                background: '#EDE9FE', border: '1px solid #DDD6FE', color: '#7C3AED',
+                                padding: '4px 10px', borderRadius: 7, fontSize: 11, fontWeight: 700,
                                 cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', whiteSpace: 'nowrap',
                               }}
                             >
-                              Abrir
+                              Planej.
                             </button>
                           </div>
                         </td>
                       </tr>
+                      {isExpanded && (
+                        <tr style={{ borderBottom: `1px solid ${T.border}` }}>
+                          <td colSpan={9} style={{ padding: 0, background: isDark ? '#111827' : '#F8FAFC' }}>
+                            {loadingT ? (
+                              <div style={{ padding: '16px 20px', color: T.text2, fontSize: 12 }}>Carregando tarefas...</div>
+                            ) : tarefas.length === 0 ? (
+                              <div style={{ padding: '16px 20px', color: T.text3, fontSize: 12 }}>Nenhuma tarefa encontrada no ClickUp.</div>
+                            ) : (
+                              <div style={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                                  <thead>
+                                    <tr style={{ background: isDark ? '#1E293B' : '#EEF2FF' }}>
+                                      {['Tarefa', 'Resp.', 'Status', 'Etiquetas', 'Vencimento', 'Link'].map(h => (
+                                        <th key={h} style={{ padding: '7px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{h}</th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {tarefas.map((t, i) => {
+                                      const stColor = t.status === 'EM ANDAMENTO' ? { bg: '#FEF3C7', color: '#92400E' }
+                                        : t.status === 'CONCLUÍDO' ? { bg: '#DCFCE7', color: '#15803D' }
+                                        : t.status === 'ARQUIVADO' ? { bg: '#E2E8F0', color: '#475569' }
+                                        : { bg: '#EDE9FE', color: '#7C3AED' }
+                                      return (
+                                        <tr key={t.id} style={{ borderTop: `1px solid ${T.border}`, background: i % 2 === 0 ? 'transparent' : (isDark ? '#0F172A22' : '#F1F5F933') }}>
+                                          <td style={{ padding: '8px 14px', fontWeight: 600, color: T.text1, maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.nome}</td>
+                                          <td style={{ padding: '8px 14px', color: T.text2, whiteSpace: 'nowrap' }}>{t.responsaveis.join(', ') || '—'}</td>
+                                          <td style={{ padding: '8px 14px', whiteSpace: 'nowrap' }}>
+                                            <span style={{ background: stColor.bg, color: stColor.color, fontWeight: 700, fontSize: 10, padding: '2px 8px', borderRadius: 12 }}>{t.status || '—'}</span>
+                                          </td>
+                                          <td style={{ padding: '8px 14px', maxWidth: 200 }}>
+                                            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                                              {t.etiquetas.length > 0 ? t.etiquetas.map(e => (
+                                                <span key={e} style={{ background: '#CFFAFE', color: '#0E7490', fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 10 }}>{e}</span>
+                                              )) : <span style={{ color: T.text3 }}>—</span>}
+                                            </div>
+                                          </td>
+                                          <td style={{ padding: '8px 14px', whiteSpace: 'nowrap', color: t.vencido ? '#DC2626' : T.text2, fontWeight: t.vencido ? 700 : 400 }}>{fmtData(t.vencimento)}</td>
+                                          <td style={{ padding: '8px 14px' }}>
+                                            {t.url ? <a href={t.url} target="_blank" rel="noreferrer" style={{ color: '#7C3AED', fontWeight: 600, fontSize: 11 }}>Abrir</a> : '—'}
+                                          </td>
+                                        </tr>
+                                      )
+                                    })}
+                                  </tbody>
+                                </table>
+                                <div style={{ padding: '8px 14px', display: 'flex', justifyContent: 'flex-end' }}>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); navigate(`/planejamento/${p.ID_Projeto}`) }}
+                                    style={{ background: '#7C3AED', color: '#fff', border: 'none', padding: '6px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                                  >
+                                    Ir para Planejamento Financeiro →
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                      </React.Fragment>
                     )
                   })
                 )}
