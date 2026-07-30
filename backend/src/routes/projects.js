@@ -70,6 +70,21 @@ router.get('/', async (req, res, next) => {
       const temVenceAmanha = alertasProj.some((a) => a.Tipo_Alerta === 'VENCE_AMANHA');
       const totalAlertas = alertasProj.length;
 
+      // Auditoria resumida
+      const hoje2 = new Date(); hoje2.setHours(0, 0, 0, 0);
+      const vencData = p.Data_Entrega_Contrato ? new Date(p.Data_Entrega_Contrato) : null;
+      const projetoVencido = vencData && vencData < hoje2 && p.Status !== 'Concluído';
+      const statusAtrasado = (p.Status || '').toLowerCase().includes('atrasado');
+      const tercPendentes = tercs.filter(t => !['Pago', 'Concluído'].includes(t.Status)).length;
+      const errosAuditoria = [
+        projetoVencido,
+        statusAtrasado && !projetoVencido,
+        tercPendentes > 0 && tercPendentes > tercs.length / 2,
+        temSemResponsavel,
+        temAtrasada,
+      ].filter(Boolean).length;
+      const statusAuditoria = errosAuditoria > 0 ? 'ERRO' : 'OK';
+
       const setorNorm = (() => {
         const nome = (p.Nome || '').toUpperCase()
         const setor = (p.Setor || '').toUpperCase()
@@ -97,6 +112,8 @@ router.get('/', async (req, res, next) => {
         temAtrasada,
         temVenceAmanha,
         totalAlertas,
+        statusAuditoria,
+        errosAuditoria,
       };
     });
 

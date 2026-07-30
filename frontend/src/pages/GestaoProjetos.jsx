@@ -342,15 +342,15 @@ export default function GestaoProjetos() {
             <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', minWidth: 700 }}>
               <thead>
                 <tr>
-                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}` }} style={{ paddingLeft: 20, width: '28%' }}>Projeto</th>
-                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}` }} style={{ width: '18%' }}>Cliente</th>
-                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}` }} style={{ width: '11%' }}>Setor</th>
-                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}` }} style={{ width: '13%' }}>Status</th>
-                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}` }} style={{ width: '11%', textAlign: 'right' }}>Valor</th>
-                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}` }} style={{ width: '10%' }}>Entrega</th>
-                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}` }} style={{ width: '10%' }}>Progresso</th>
-                  {filters.verTarefas && <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}` }} style={{ width: '5%', textAlign: 'center' }}>ClickUp</th>}
-                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}` }} style={{ width: '7%' }} />
+                  <th style={{ paddingLeft: 20, paddingRight: 12, paddingTop: 10, paddingBottom: 10, fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}`, width: '28%' }}>Projeto</th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}`, width: '16%' }}>Cliente</th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}`, width: '9%' }}>Setor</th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}`, width: '10%', textAlign: 'right' }}>Valor</th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}`, width: '9%' }}>Entrega</th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}`, width: '10%' }}>Progresso</th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}`, width: '7%', textAlign: 'center' }}>Alertas</th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}`, width: '7%', textAlign: 'center' }}>Auditoria</th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.06em', background: T.cardAlt, borderBottom: `1px solid ${T.border}`, width: '4%', textAlign: 'center' }} />
                 </tr>
               </thead>
               <tbody>
@@ -394,9 +394,6 @@ export default function GestaoProjetos() {
                         <td style={{ padding: '11px 12px', fontSize: 11.5, color: T.text3, fontWeight: 500, whiteSpace: 'nowrap' }}>
                           {p.Setor || '—'}
                         </td>
-                        <td style={{ padding: '11px 12px', whiteSpace: 'nowrap' }}>
-                          <span className={statusBadgeClass(p.Status)}>{p.Status || 'A Planejar'}</span>
-                        </td>
                         <td style={{ padding: '11px 12px', fontSize: 12.5, fontWeight: 700, color: T.text1, textAlign: 'right', whiteSpace: 'nowrap' }}>
                           {formatBRL(p.Valor_Global)}
                         </td>
@@ -417,28 +414,36 @@ export default function GestaoProjetos() {
                             )
                           })()}
                         </td>
-                        {filters.verTarefas && (
-                          <td style={{ padding: '11px 12px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-                            {p.Link_ClickUp ? (
-                              <a href={p.Link_ClickUp} target="_blank" rel="noreferrer"
-                                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 7, color: T.text3, transition: 'all 0.15s' }}
+                        <td style={{ padding: '11px 12px', textAlign: 'center' }}>
+                          {p.totalAlertas > 0
+                            ? <span style={{ display: 'inline-block', background: '#FEF3C7', color: '#92400E', fontWeight: 800, fontSize: 11.5, padding: '2px 9px', borderRadius: 20, border: '1.5px solid #FDE68A' }}>{p.totalAlertas}</span>
+                            : <span style={{ color: T.text3, fontSize: 12 }}>—</span>}
+                        </td>
+                        <td style={{ padding: '11px 12px', textAlign: 'center' }}>
+                          {p.statusAuditoria === 'ERRO'
+                            ? <span style={{ display: 'inline-block', background: '#FEE2E2', color: '#DC2626', fontWeight: 800, fontSize: 11, padding: '2px 9px', borderRadius: 20, border: '1.5px solid #FECACA' }}>ERRO</span>
+                            : <span style={{ display: 'inline-block', background: '#DCFCE7', color: '#15803D', fontWeight: 800, fontSize: 11, padding: '2px 9px', borderRadius: 20, border: '1.5px solid #86EFAC' }}>OK</span>}
+                        </td>
+                        <td style={{ padding: '11px 8px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                          <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                            {p.Link_ClickUp && (
+                              <a href={p.Link_ClickUp} target="_blank" rel="noreferrer" title="Abrir no ClickUp"
+                                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 7, background: '#EDE9FE', color: '#7C3AED', border: '1px solid #DDD6FE', transition: 'all 0.15s' }}
                               >
                                 <ArrowTopRightOnSquareIcon style={{ width: 13, height: 13 }} />
                               </a>
-                            ) : <span style={{ color: T.border }}>—</span>}
-                          </td>
-                        )}
-                        <td style={{ padding: '11px 12px', textAlign: 'right' }}>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); navigate(`/planejamento/${p.ID_Projeto}`) }}
-                            style={{
-                              background: T.card, border: `1px solid ${T.border}`, color: T.text2,
-                              padding: '4px 12px', borderRadius: 7, fontSize: 11.5, fontWeight: 600,
-                              cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', whiteSpace: 'nowrap',
-                            }}
-                          >
-                            Abrir
-                          </button>
+                            )}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); navigate(`/planejamento/${p.ID_Projeto}`) }}
+                              style={{
+                                background: T.card, border: `1px solid ${T.border}`, color: T.text2,
+                                padding: '4px 10px', borderRadius: 7, fontSize: 11.5, fontWeight: 600,
+                                cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', whiteSpace: 'nowrap',
+                              }}
+                            >
+                              Abrir
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     )
