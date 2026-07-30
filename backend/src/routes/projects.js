@@ -76,14 +76,23 @@ router.get('/', async (req, res, next) => {
       const projetoVencido = vencData && vencData < hoje2 && p.Status !== 'Concluído';
       const statusAtrasado = (p.Status || '').toLowerCase().includes('atrasado');
       const tercPendentes = tercs.filter(t => !['Pago', 'Concluído'].includes(t.Status)).length;
-      const errosAuditoria = [
-        projetoVencido,
-        statusAtrasado && !projetoVencido,
-        tercPendentes > 0 && tercPendentes > tercs.length / 2,
-        temSemResponsavel,
-        temAtrasada,
-      ].filter(Boolean).length;
+      const errosAuditoriaLista = [
+        projetoVencido && 'Data de entrega ultrapassada',
+        statusAtrasado && !projetoVencido && 'Projeto com status Atrasado',
+        tercPendentes > 0 && tercPendentes > tercs.length / 2 && `${tercPendentes} terceirizado(s) com pagamento pendente`,
+        temSemResponsavel && 'Há tarefas sem responsável atribuído',
+        temAtrasada && 'Há tarefas atrasadas no ClickUp',
+      ].filter(Boolean);
+      const errosAuditoria = errosAuditoriaLista.length;
       const statusAuditoria = errosAuditoria > 0 ? 'ERRO' : 'OK';
+
+      // Detalhes dos alertas ativos
+      const alertasDetalhes = alertasProj.map(a => ({
+        tipo: a.Tipo_Alerta || '',
+        mensagem: a.Mensagem || a.Tipo_Alerta || '',
+        nivel: a.Nivel || 'warning',
+        link: a.Link_ClickUp || '',
+      }));
 
       const setorNorm = (() => {
         const nome = (p.Nome || '').toUpperCase()
@@ -114,6 +123,8 @@ router.get('/', async (req, res, next) => {
         totalAlertas,
         statusAuditoria,
         errosAuditoria,
+        errosAuditoriaLista,
+        alertasDetalhes,
       };
     });
 

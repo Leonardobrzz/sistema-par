@@ -79,6 +79,7 @@ export default function GestaoProjetos() {
   const [expandedId, setExpandedId] = useState(null)
   const [tarefasMap, setTarefasMap] = useState({})
   const [loadingTarefas, setLoadingTarefas] = useState({})
+  const [popup, setPopup] = useState(null) // { tipo: 'alertas'|'auditoria', projeto: p, rect: DOMRect }
   const DEFAULT_STATUS = ['Em Andamento', 'Em Andamento (Atrasado)']
   const [filters, setFilters] = useState({
     busca: searchParams.get('busca') || '',
@@ -174,8 +175,14 @@ export default function GestaoProjetos() {
     return m ? `${m[3]}/${m[2]}/${m[1]}` : s
   }
 
+  function abrirPopup(e, tipo, projeto) {
+    e.stopPropagation()
+    const rect = e.currentTarget.getBoundingClientRect()
+    setPopup(prev => prev?.tipo === tipo && prev?.projeto?.ID_Projeto === projeto.ID_Projeto ? null : { tipo, projeto, rect })
+  }
+
   return (
-    <div className="space-y-5 fade-in">
+    <div className="space-y-5 fade-in" onClick={() => setPopup(null)}>
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -444,14 +451,14 @@ export default function GestaoProjetos() {
                             )
                           })()}
                         </td>
-                        <td style={{ padding: '11px 12px', textAlign: 'center' }}>
+                        <td style={{ padding: '11px 12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
                           {p.totalAlertas > 0
-                            ? <span style={{ display: 'inline-block', background: '#FEF3C7', color: '#92400E', fontWeight: 800, fontSize: 11.5, padding: '2px 9px', borderRadius: 20, border: '1.5px solid #FDE68A' }}>{p.totalAlertas}</span>
+                            ? <span onClick={e => abrirPopup(e, 'alertas', p)} style={{ display: 'inline-block', background: '#FEF3C7', color: '#92400E', fontWeight: 800, fontSize: 11.5, padding: '2px 9px', borderRadius: 20, border: '1.5px solid #FDE68A', cursor: 'pointer' }}>{p.totalAlertas}</span>
                             : <span style={{ color: T.text3, fontSize: 12 }}>—</span>}
                         </td>
-                        <td style={{ padding: '11px 12px', textAlign: 'center' }}>
+                        <td style={{ padding: '11px 12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
                           {p.statusAuditoria === 'ERRO'
-                            ? <span style={{ display: 'inline-block', background: '#FEE2E2', color: '#DC2626', fontWeight: 800, fontSize: 11, padding: '2px 9px', borderRadius: 20, border: '1.5px solid #FECACA' }}>ERRO</span>
+                            ? <span onClick={e => abrirPopup(e, 'auditoria', p)} style={{ display: 'inline-block', background: '#FEE2E2', color: '#DC2626', fontWeight: 800, fontSize: 11, padding: '2px 9px', borderRadius: 20, border: '1.5px solid #FECACA', cursor: 'pointer' }}>ERRO</span>
                             : <span style={{ display: 'inline-block', background: '#DCFCE7', color: '#15803D', fontWeight: 800, fontSize: 11, padding: '2px 9px', borderRadius: 20, border: '1.5px solid #86EFAC' }}>OK</span>}
                         </td>
                         <td style={{ padding: '11px 8px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
@@ -545,6 +552,44 @@ export default function GestaoProjetos() {
           </div>
         </div>
       )}
+
+      {/* ── Popup Alertas / Auditoria ── */}
+      {popup && (() => {
+        const { tipo, projeto, rect } = popup
+        const itens = tipo === 'auditoria'
+          ? (projeto.errosAuditoriaLista || []).map(msg => ({ mensagem: msg, nivel: 'error', link: '' }))
+          : (projeto.alertasDetalhes || [])
+        const top = rect.bottom + window.scrollY + 6
+        const left = Math.min(rect.left + window.scrollX, window.innerWidth - 320)
+        return (
+          <div onClick={e => e.stopPropagation()} style={{
+            position: 'absolute', top, left, zIndex: 9999, width: 300,
+            background: isDark ? '#1E293B' : '#fff',
+            border: `1.5px solid ${isDark ? '#334155' : '#E2E8F0'}`,
+            borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', overflow: 'hidden'
+          }}>
+            <div style={{ padding: '10px 14px', borderBottom: `1px solid ${isDark ? '#334155' : '#E2E8F0'}`, fontWeight: 700, fontSize: 12, color: tipo === 'auditoria' ? '#DC2626' : '#92400E', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>{tipo === 'auditoria' ? 'Erros de Auditoria' : 'Alertas Ativos'}</span>
+              <button onClick={() => setPopup(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: isDark ? '#94A3B8' : '#64748B', fontSize: 16, lineHeight: 1 }}>×</button>
+            </div>
+            {itens.length === 0 ? (
+              <div style={{ padding: '12px 14px', fontSize: 12, color: isDark ? '#94A3B8' : '#64748B' }}>Nenhum item encontrado.</div>
+            ) : (
+              <ul style={{ margin: 0, padding: '8px 0', listStyle: 'none' }}>
+                {itens.map((it, i) => (
+                  <li key={i} style={{ padding: '7px 14px', display: 'flex', gap: 8, alignItems: 'flex-start', borderTop: i > 0 ? `1px solid ${isDark ? '#1E293B' : '#F1F5F9'}` : 'none' }}>
+                    <span style={{ fontSize: 13, marginTop: 1 }}>{it.nivel === 'error' ? '🔴' : '🟡'}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12, color: isDark ? '#E2E8F0' : '#1E293B', fontWeight: 500 }}>{it.mensagem}</div>
+                      {it.link && <a href={it.link} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#7C3AED', textDecoration: 'underline' }}>Ver no ClickUp</a>}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )
+      })()}
 
       {/* ── Modal novo projeto ── */}
       {showNewModal && (
