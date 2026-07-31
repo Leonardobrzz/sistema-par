@@ -37,7 +37,6 @@ const NAV_GROUPS = [
       { to: '/terceirizados',  label: 'Terceirizados',          icon: UsersIcon,                perfis: ['PO','Comercial','Coordenador','Admin','Diretoria'] },
       { to: '/comercial',      label: 'Comercial / OPP',        icon: BuildingOffice2Icon,      perfis: ['Comercial','Financeiro','Admin','Diretoria'] },
       { to: '/importacao-opp', label: 'Importar Opportune',     icon: ArrowUpTrayIcon,          perfis: ['Financeiro','Admin','Coordenador','Diretoria'] },
-      { to: '/checklist',      label: 'Checklist',              icon: ClipboardDocumentListIcon,perfis: ['PO','Coordenador','Admin','Diretoria'] },
     ],
   },
   {
