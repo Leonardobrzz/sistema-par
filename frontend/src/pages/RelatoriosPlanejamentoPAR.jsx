@@ -70,7 +70,7 @@ function Tabela({ headers, rows, emptyText }) {
   )
 }
 
-function DetalheRelatorio({ plano }) {
+function DetalheRelatorio({ plano, totalRecebidoOPP = 0 }) {
   const { isDark } = useTheme()
   const T = {
     bg:      isDark ? '#0F172A' : '#F8FAFC',
@@ -200,28 +200,30 @@ function DetalheRelatorio({ plano }) {
 
   <h2>Cronograma de Medições (${medicoes.length} etapa${medicoes.length !== 1 ? "s" : ""})</h2>
   ${rowsHtml(["Etapa / Descrição", "Valor (R$)", "%", "Data Prevista", "Status"],
-    medicoes.map((m, i) => {
-      const real = medicoesR[i]
-      const status = real?.Status_Financeiro || ''
-      const dataPrev = m.dataPrevisao || real?.Data_Previsao || ''
-      const dataRec = real?.Data_Recebimento || ''
-      const vencida = dataPrev && new Date(dataPrev) < new Date()
-      const badgeStyle = status === 'Recebido'
-        ? 'background:#DCFCE7;color:#15803D;padding:2px 8px;border-radius:8px;font-weight:700;font-size:10px'
-        : vencida
-          ? 'background:#FEE2E2;color:#DC2626;padding:2px 8px;border-radius:8px;font-weight:700;font-size:10px'
-          : 'background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:8px;font-weight:700;font-size:10px'
-      const badgeLabel = status === 'Recebido'
-        ? `✓ Recebido${dataRec ? ' · ' + fD(dataRec) : ''}`
-        : vencida ? '⚠ Atrasada' : dataPrev ? 'Pendente' : '—'
-      return [
-        m.etapa || "—",
-        m.valor ? fV(pBR(m.valor)) : "—",
-        m.percentual ? `${m.percentual}%` : "—",
-        fD(dataPrev),
-        `<span style="${badgeStyle}">${badgeLabel}</span>`,
-      ]
-    })
+    (() => {
+      let acum = 0
+      const recOPP = totalRecebidoOPP
+      return medicoes.map((m, i) => {
+        const real = medicoesR[i]
+        const val = pBR(m.valor)
+        acum += val
+        const statusReal = real?.Status_Financeiro || ''
+        const coberto = recOPP > 0 && acum <= recOPP + 0.5
+        const recebido = statusReal === 'Recebido' || coberto
+        const dataRec = real?.Data_Recebimento || ''
+        const dataPrev = m.dataPrevisao || real?.Data_Previsao || ''
+        const vencida = !recebido && dataPrev && new Date(dataPrev) < new Date()
+        const badgeStyle = recebido
+          ? 'background:#DCFCE7;color:#15803D;padding:2px 8px;border-radius:8px;font-weight:700;font-size:10px'
+          : vencida
+            ? 'background:#FEE2E2;color:#DC2626;padding:2px 8px;border-radius:8px;font-weight:700;font-size:10px'
+            : 'background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:8px;font-weight:700;font-size:10px'
+        const badgeLabel = recebido
+          ? `✓ Recebido${dataRec ? ' · ' + fD(dataRec) : ''}`
+          : vencida ? '⚠ Atrasada' : dataPrev ? 'Pendente' : '—'
+        return [m.etapa || "—", val ? fV(val) : "—", m.percentual ? `${m.percentual}%` : "—", fD(dataPrev), `<span style="${badgeStyle}">${badgeLabel}</span>`]
+      })
+    })()
   )}
   ${medicoes.length > 0 ? `<div class="total-row">Total: ${fV(medicoes.reduce((s, m) => s + pBR(m.valor), 0))} &nbsp;·&nbsp; Soma %: ${fN(medicoes.reduce((s, m) => s + pBR(m.percentual), 0), 2)}%</div>` : ""}
 
@@ -371,20 +373,26 @@ function DetalheRelatorio({ plano }) {
         <div style={{ marginBottom: 20 }}>
           {(() => {
             const hoje = new Date(); hoje.setHours(0,0,0,0)
+            let acumulado = 0
             const rows = medicoes.map((m, i) => {
               const real = medicoesReais[i]
-              const status = real?.Status_Financeiro || ''
-              const dataPrev = m.dataPrevisao || real?.Data_Previsao || ''
+              const valorM = pBR(m.valor)
+              acumulado += valorM
+              // Prioridade: status real da tabela Medicoes; fallback: coberto pelo total OPP recebido
+              const statusReal = real?.Status_Financeiro || ''
+              const cobertoPorOPP = totalRecebidoOPP > 0 && acumulado <= totalRecebidoOPP + 0.5
+              const recebido = statusReal === 'Recebido' || cobertoPorOPP
               const dataRec = real?.Data_Recebimento || ''
-              const vencida = dataPrev && new Date(dataPrev) < hoje
-              const badge = status === 'Recebido'
+              const dataPrev = m.dataPrevisao || real?.Data_Previsao || ''
+              const vencida = !recebido && dataPrev && new Date(dataPrev) < hoje
+              const badge = recebido
                 ? <span style={{ background: '#DCFCE7', color: '#15803D', fontWeight: 700, fontSize: 10, padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap' }}>✓ Recebido{dataRec ? ` · ${fmtData(dataRec)}` : ''}</span>
                 : vencida
                   ? <span style={{ background: '#FEE2E2', color: '#DC2626', fontWeight: 700, fontSize: 10, padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap' }}>⚠ Atrasada</span>
                   : dataPrev
                     ? <span style={{ background: '#FEF3C7', color: '#92400E', fontWeight: 700, fontSize: 10, padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap' }}>Pendente</span>
                     : <span style={{ color: T.text3, fontSize: 10 }}>—</span>
-              return [m.etapa || '—', m.valor ? fmt(pBR(m.valor)) : '—', m.percentual ? `${m.percentual}%` : '—', fmtData(dataPrev), badge]
+              return [m.etapa || '—', m.valor ? fmt(valorM) : '—', m.percentual ? `${m.percentual}%` : '—', fmtData(dataPrev), badge]
             })
             return <Tabela headers={["Etapa", "Valor (R$)", "%", "Data Prevista", "Status"]} rows={rows} />
           })()}
@@ -595,6 +603,7 @@ export default function RelatoriosPlanejamentoPAR() {
   const [filtroSetor, setFiltroSetor] = useState("")
   const [aberto, setAberto] = useState(null)
   const [detalhes, setDetalhes] = useState({})
+  const [recebidoMap, setRecebidoMap] = useState({})
   const [carregandoDetalhe, setCarregandoDetalhe] = useState(null)
   const [gerandoPDF, setGerandoPDF] = useState(false)
 
@@ -607,9 +616,10 @@ export default function RelatoriosPlanejamentoPAR() {
         setPlanejamentos(aprovados)
         // Já carrega todos os detalhes em paralelo
         const ids = aprovados.map(p => p.ID_Projeto).filter(Boolean)
-        const [resultadosPlan, resultadosProj] = await Promise.all([
+        const [resultadosPlan, resultadosProj, baselineRes] = await Promise.all([
           Promise.allSettled(ids.map(id => api.get(`/planejamento/${id}`))),
           Promise.allSettled(ids.map(id => api.get(`/projetos/${id}`))),
+          api.get('/planejamento/baseline-real').catch(() => ({ data: [] })),
         ])
         const mapa = {}
         resultadosPlan.forEach((res, i) => {
@@ -621,6 +631,11 @@ export default function RelatoriosPlanejamentoPAR() {
           }
         })
         setDetalhes(mapa)
+        const rm = {}
+        ;(Array.isArray(baselineRes.data) ? baselineRes.data : []).forEach(b => {
+          if (b.idProjeto) rm[b.idProjeto] = parseFloat(b.totalRecebido || 0)
+        })
+        setRecebidoMap(rm)
       } catch { }
       setLoading(false)
     }
@@ -756,7 +771,7 @@ export default function RelatoriosPlanejamentoPAR() {
                     <div style={{ padding: 20, color: T.text2, fontSize: 13 }}>Carregando detalhes...</div>
                   ) : (
                     <div style={{ marginTop: 20 }}>
-                      <DetalheRelatorio plano={detalhe} />
+                      <DetalheRelatorio plano={detalhe} totalRecebidoOPP={recebidoMap[p.ID_Projeto] || 0} />
                     </div>
                   )}
                 </div>
