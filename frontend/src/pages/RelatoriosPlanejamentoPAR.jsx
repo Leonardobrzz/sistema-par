@@ -82,6 +82,7 @@ function DetalheRelatorio({ plano }) {
     text3:   isDark ? '#475569' : '#94A3B8',
   }
   const d = plano.dadosCompletos || {}
+  const medicoesReais = plano.medicoesReais || []
   const par = calcPAR(d)
   const margemOk = par.lucroPerc >= 23
   const tercOk = par.percTerceiros <= 25
@@ -98,6 +99,7 @@ function DetalheRelatorio({ plano }) {
     const fN = (v, d = 1) => Number(v || 0).toFixed(d)
 
     const medicoes = d.medicoes || []
+    const medicoesR = medicoesReais
     const equipe = d.equipe || []
     const despesasInternas = d.despesasInternas || []
     const terceirizados = d.terceirizados || []
@@ -197,13 +199,29 @@ function DetalheRelatorio({ plano }) {
   </table>
 
   <h2>Cronograma de Medições (${medicoes.length} etapa${medicoes.length !== 1 ? "s" : ""})</h2>
-  ${rowsHtml(["Etapa / Descrição", "Valor (R$)", "%", "Data Prevista"],
-    medicoes.map(m => [
-      m.etapa || "—",
-      m.valor ? fV(pBR(m.valor)) : "—",
-      m.percentual ? `${m.percentual}%` : "—",
-      fD(m.dataPrevisao),
-    ])
+  ${rowsHtml(["Etapa / Descrição", "Valor (R$)", "%", "Data Prevista", "Status"],
+    medicoes.map((m, i) => {
+      const real = medicoesR[i]
+      const status = real?.Status_Financeiro || ''
+      const dataPrev = m.dataPrevisao || real?.Data_Previsao || ''
+      const dataRec = real?.Data_Recebimento || ''
+      const vencida = dataPrev && new Date(dataPrev) < new Date()
+      const badgeStyle = status === 'Recebido'
+        ? 'background:#DCFCE7;color:#15803D;padding:2px 8px;border-radius:8px;font-weight:700;font-size:10px'
+        : vencida
+          ? 'background:#FEE2E2;color:#DC2626;padding:2px 8px;border-radius:8px;font-weight:700;font-size:10px'
+          : 'background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:8px;font-weight:700;font-size:10px'
+      const badgeLabel = status === 'Recebido'
+        ? `✓ Recebido${dataRec ? ' · ' + fD(dataRec) : ''}`
+        : vencida ? '⚠ Atrasada' : dataPrev ? 'Pendente' : '—'
+      return [
+        m.etapa || "—",
+        m.valor ? fV(pBR(m.valor)) : "—",
+        m.percentual ? `${m.percentual}%` : "—",
+        fD(dataPrev),
+        `<span style="${badgeStyle}">${badgeLabel}</span>`,
+      ]
+    })
   )}
   ${medicoes.length > 0 ? `<div class="total-row">Total: ${fV(medicoes.reduce((s, m) => s + pBR(m.valor), 0))} &nbsp;·&nbsp; Soma %: ${fN(medicoes.reduce((s, m) => s + pBR(m.percentual), 0), 2)}%</div>` : ""}
 
@@ -351,15 +369,25 @@ function DetalheRelatorio({ plano }) {
           Cronograma de Medições ({medicoes.length} etapas)
         </h2>
         <div style={{ marginBottom: 20 }}>
-          <Tabela
-            headers={["Etapa", "Valor (R$)", "%", "Data Prevista"]}
-            rows={medicoes.map(m => [
-              m.etapa || "—",
-              m.valor ? fmt(pBR(m.valor)) : "—",
-              m.percentual ? `${m.percentual}%` : "—",
-              fmtData(m.dataPrevisao),
-            ])}
-          />
+          {(() => {
+            const hoje = new Date(); hoje.setHours(0,0,0,0)
+            const rows = medicoes.map((m, i) => {
+              const real = medicoesReais[i]
+              const status = real?.Status_Financeiro || ''
+              const dataPrev = m.dataPrevisao || real?.Data_Previsao || ''
+              const dataRec = real?.Data_Recebimento || ''
+              const vencida = dataPrev && new Date(dataPrev) < hoje
+              const badge = status === 'Recebido'
+                ? <span style={{ background: '#DCFCE7', color: '#15803D', fontWeight: 700, fontSize: 10, padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap' }}>✓ Recebido{dataRec ? ` · ${fmtData(dataRec)}` : ''}</span>
+                : vencida
+                  ? <span style={{ background: '#FEE2E2', color: '#DC2626', fontWeight: 700, fontSize: 10, padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap' }}>⚠ Atrasada</span>
+                  : dataPrev
+                    ? <span style={{ background: '#FEF3C7', color: '#92400E', fontWeight: 700, fontSize: 10, padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap' }}>Pendente</span>
+                    : <span style={{ color: T.text3, fontSize: 10 }}>—</span>
+              return [m.etapa || '—', m.valor ? fmt(pBR(m.valor)) : '—', m.percentual ? `${m.percentual}%` : '—', fmtData(dataPrev), badge]
+            })
+            return <Tabela headers={["Etapa", "Valor (R$)", "%", "Data Prevista", "Status"]} rows={rows} />
+          })()}
           {medicoes.length > 0 && (
             <div style={{ display: "flex", gap: 20, marginTop: 8, padding: "8px 12px", background: "#F0FDF4", borderRadius: 6, fontSize: 12, fontWeight: 700 }}>
               <span>Total: <span style={{ color: "#15803D" }}>{fmt(medicoes.reduce((s, m) => s + pBR(m.valor), 0))}</span></span>
@@ -579,10 +607,18 @@ export default function RelatoriosPlanejamentoPAR() {
         setPlanejamentos(aprovados)
         // Já carrega todos os detalhes em paralelo
         const ids = aprovados.map(p => p.ID_Projeto).filter(Boolean)
-        const resultados = await Promise.allSettled(ids.map(id => api.get(`/planejamento/${id}`)))
+        const [resultadosPlan, resultadosProj] = await Promise.all([
+          Promise.allSettled(ids.map(id => api.get(`/planejamento/${id}`))),
+          Promise.allSettled(ids.map(id => api.get(`/projetos/${id}`))),
+        ])
         const mapa = {}
-        resultados.forEach((res, i) => {
+        resultadosPlan.forEach((res, i) => {
           if (res.status === "fulfilled") mapa[ids[i]] = res.value.data
+        })
+        resultadosProj.forEach((res, i) => {
+          if (res.status === "fulfilled" && mapa[ids[i]]) {
+            mapa[ids[i]].medicoesReais = res.value.data.medicoes || []
+          }
         })
         setDetalhes(mapa)
       } catch { }
