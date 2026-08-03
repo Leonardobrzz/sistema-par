@@ -619,7 +619,7 @@ export default function RelatoriosPlanejamentoPAR() {
         const [resultadosPlan, resultadosProj, baselineRes] = await Promise.all([
           Promise.allSettled(ids.map(id => api.get(`/planejamento/${id}`))),
           Promise.allSettled(ids.map(id => api.get(`/projetos/${id}`))),
-          api.get('/planejamento/baseline-real').catch(() => ({ data: [] })),
+          api.get('/baseline-real').catch(() => ({ data: [] })),
         ])
         const mapa = {}
         resultadosPlan.forEach((res, i) => {
