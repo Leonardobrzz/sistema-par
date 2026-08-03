@@ -632,7 +632,8 @@ export default function RelatoriosPlanejamentoPAR() {
         })
         setDetalhes(mapa)
         const rm = {}
-        ;(Array.isArray(baselineRes.data) ? baselineRes.data : []).forEach(b => {
+        const lista = baselineRes.data?.projetos || (Array.isArray(baselineRes.data) ? baselineRes.data : [])
+        lista.forEach(b => {
           if (b.idProjeto) rm[b.idProjeto] = parseFloat(b.totalRecebido || 0)
         })
         setRecebidoMap(rm)
