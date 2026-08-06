@@ -17,6 +17,23 @@ const STATUS_LIST = [
   'Em Análise', 'Arquivado', 'Aguardando Faturamento', 'Pendência'
 ]
 
+// Filtro de status de TAREFA dentro da lista expandida de um projeto
+const TAREFA_FILTROS = [
+  { key: 'todas', label: 'Todas' },
+  { key: 'backlog', label: 'Backlog' },
+  { key: 'andamento', label: 'Andamento' },
+  { key: 'paralisado', label: 'Paralisado' },
+  { key: 'concluido', label: 'Concluído' },
+  { key: 'arquivado', label: 'Arquivado' },
+]
+const TAREFA_STATUS_MAP = {
+  backlog: 'BACKLOG',
+  andamento: 'EM ANDAMENTO',
+  paralisado: 'PARALISADO',
+  concluido: 'CONCLUÍDO',
+  arquivado: 'ARQUIVADO',
+}
+
 function StatusMultiSelect({ value, onChange, options = STATUS_LIST }) {
   // Grupo "Em Andamento" cobre os dois subtipos
   const activeKey = value.includes('Em Andamento') && value.includes('Em Andamento (Atrasado)')
@@ -408,10 +425,8 @@ export default function GestaoProjetos() {
                     const accentColor = statusAccentColor(p.Status)
                     const isExpanded = expandedId === p.ID_Projeto
                     const tarefasAll = tarefasMap[p.ID_Projeto] || []
-                    const tarefas = !isExpanded ? tarefasAll
-                      : filtroTarefas === 'concluidas' ? tarefasAll.filter(t => t.status === 'CONCLUÍDO')
-                      : filtroTarefas === 'pendentes' ? tarefasAll.filter(t => t.status !== 'CONCLUÍDO')
-                      : tarefasAll
+                    const tarefas = !isExpanded || filtroTarefas === 'todas' ? tarefasAll
+                      : tarefasAll.filter(t => t.status === TAREFA_STATUS_MAP[filtroTarefas])
                     const loadingT = loadingTarefas[p.ID_Projeto]
                     return (
                       <React.Fragment key={p.ID_Projeto}>
@@ -508,11 +523,7 @@ export default function GestaoProjetos() {
                             ) : (
                               <div style={{ overflowX: 'auto' }}>
                                 <div style={{ display: 'flex', gap: 6, padding: '10px 14px', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
-                                  {[
-                                    { key: 'todas', label: 'Todas' },
-                                    { key: 'pendentes', label: 'Não concluídas' },
-                                    { key: 'concluidas', label: 'Concluídas' },
-                                  ].map(f => (
+                                  {TAREFA_FILTROS.map(f => (
                                     <button key={f.key} type="button" onClick={() => setFiltroTarefas(f.key)}
                                       style={{
                                         padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, cursor: 'pointer',
@@ -526,7 +537,7 @@ export default function GestaoProjetos() {
                                 </div>
                                 {tarefas.length === 0 ? (
                                   <div style={{ padding: '4px 20px 16px', color: T.text3, fontSize: 12 }}>
-                                    {filtroTarefas === 'concluidas' ? 'Nenhuma tarefa concluída.' : 'Nenhuma tarefa pendente.'}
+                                    Nenhuma tarefa em "{TAREFA_FILTROS.find(f => f.key === filtroTarefas)?.label}".
                                   </div>
                                 ) : (
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
