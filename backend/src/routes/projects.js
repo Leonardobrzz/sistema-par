@@ -81,7 +81,7 @@ router.get('/', async (req, res, next) => {
         statusAtrasado && !projetoVencido && 'Projeto com status Atrasado',
         tercPendentes > 0 && tercPendentes > tercs.length / 2 && `${tercPendentes} terceirizado(s) com pagamento pendente`,
         temSemResponsavel && 'Há tarefas sem responsável atribuído',
-        temAtrasada && 'Há tarefas atrasadas no ClickUp',
+        temAtrasada && 'Tarefas atrasadas',
       ].filter(Boolean);
       const errosAuditoria = errosAuditoriaLista.length;
       const statusAuditoria = errosAuditoria > 0 ? 'ERRO' : 'OK';
