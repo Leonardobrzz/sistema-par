@@ -156,20 +156,27 @@ function isClosed(task) {
   );
 }
 
+// Tarefa ainda na fila de planejamento — não iniciada, então prazo e
+// responsável ainda não fazem sentido como "erro".
+function isBacklog(task) {
+  const status = (task.status?.status || '').toLowerCase().trim();
+  return status === 'backlog' || status === 'a planejar';
+}
+
 function isOverdue(task) {
-  if (!task.due_date || isClosed(task)) return false;
+  if (!task.due_date || isClosed(task) || isBacklog(task)) return false;
   return parseInt(task.due_date) < Date.now();
 }
 
 // Retorna quantos dias faltam para o prazo (negativo = já atrasado)
 function daysUntilDue(task) {
-  if (!task.due_date || isClosed(task)) return null;
+  if (!task.due_date || isClosed(task) || isBacklog(task)) return null;
   const diff = parseInt(task.due_date) - Date.now();
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
 function hasNoAssignee(task) {
-  return !isClosed(task) && (!task.assignees || task.assignees.length === 0);
+  return !isClosed(task) && !isBacklog(task) && (!task.assignees || task.assignees.length === 0);
 }
 
 // ── Detecta setor pelo prefixo do nome da lista (PROJETOS 2025) ──────────────
