@@ -163,11 +163,6 @@ function isBacklog(task) {
   return status === 'backlog' || status === 'a planejar';
 }
 
-function isOverdue(task) {
-  if (!task.due_date || isClosed(task) || isBacklog(task)) return false;
-  return parseInt(task.due_date) < Date.now();
-}
-
 // Retorna quantos dias faltam para o prazo (negativo = já atrasado)
 function daysUntilDue(task) {
   if (!task.due_date || isClosed(task) || isBacklog(task)) return null;
@@ -405,7 +400,6 @@ async function syncProjectStatuses(tasks, projetos, lists = []) {
 
     const total = projectTasks.length;
     const done = projectTasks.filter(isClosed).length;
-    const atrasadas = projectTasks.filter(isOverdue).length;
     const progresso = total > 0 ? Math.round((done / total) * 100) : 0;
 
     // Coleta responsáveis únicos de todas as tarefas do projeto
@@ -422,6 +416,22 @@ async function syncProjectStatuses(tasks, projetos, lists = []) {
     const listStatusRaw = (itemInfo2?.status?.status || '').toLowerCase();
     const listStatusClosed = listStatusRaw === 'closed' || listStatusRaw === 'complete' || listStatusRaw === 'fechado' || listStatusRaw === 'concluído' || listStatusRaw === 'concluido';
 
+    // Backfill: preencher Cliente e Data_Entrega_Contrato se estiverem vazios
+    const itemInfo = itemById[project.ID_ClickUp];
+    const clienteAtual = project.Cliente || '';
+    // Para pasta: o próprio nome da pasta é o cliente
+    // Para lista avulsa: usa _folderName (caso tenha)
+    const novoCliente = clienteAtual || (itemInfo?.name && itemInfo._isFolder ? itemInfo.name : (itemInfo?._folderName || ''));
+    const vencAtual = project.Data_Entrega_Contrato || '';
+    const novoVenc = vencAtual || (itemInfo?.due_date ? new Date(parseInt(itemInfo.due_date)).toISOString().split('T')[0] : '');
+    const mudouCliente = novoCliente !== clienteAtual;
+    const mudouVenc = novoVenc !== vencAtual;
+
+    // "Atrasado" no projeto reflete o prazo de entrega do PROJETO (contrato), não
+    // tarefas individuais atrasadas — tarefa atrasada isoladamente não atrasa o projeto.
+    const hojeStr = new Date().toISOString().split('T')[0];
+    const prazoVencido = !!novoVenc && novoVenc < hojeStr;
+
     let novoStatus = project.Status;
     if (listStatusClosed || done === total) {
       novoStatus = 'Concluído';
@@ -437,7 +447,7 @@ async function syncProjectStatuses(tasks, projetos, lists = []) {
       novoStatus = 'Aguardando Faturamento';
     } else if (listStatusRaw === 'pendencia' || listStatusRaw === 'pendência') {
       novoStatus = 'Pendência';
-    } else if (atrasadas > 0) {
+    } else if (prazoVencido) {
       novoStatus = 'Em Andamento (Atrasado)';
     } else {
       novoStatus = 'Em Andamento';
@@ -446,17 +456,6 @@ async function syncProjectStatuses(tasks, projetos, lists = []) {
     const mudouStatus = novoStatus !== project.Status;
     const mudouProgresso = String(progresso) !== String(project.Progresso_Perc);
     const mudouResponsavel = novoResponsavel !== (project.Responsavel || '');
-
-    // Backfill: preencher Cliente e Data_Entrega_Contrato se estiverem vazios
-    const itemInfo = itemById[project.ID_ClickUp];
-    const clienteAtual = project.Cliente || '';
-    // Para pasta: o próprio nome da pasta é o cliente
-    // Para lista avulsa: usa _folderName (caso tenha)
-    const novoCliente = clienteAtual || (itemInfo?.name && itemInfo._isFolder ? itemInfo.name : (itemInfo?._folderName || ''));
-    const vencAtual = project.Data_Entrega_Contrato || '';
-    const novoVenc = vencAtual || (itemInfo?.due_date ? new Date(parseInt(itemInfo.due_date)).toISOString().split('T')[0] : '');
-    const mudouCliente = novoCliente !== clienteAtual;
-    const mudouVenc = novoVenc !== vencAtual;
 
     if (mudouStatus || mudouProgresso || mudouCliente || mudouVenc || mudouResponsavel) {
       await db.updateRowById('Projetos_Contratos', 'ID_Projeto', project.ID_Projeto, {
