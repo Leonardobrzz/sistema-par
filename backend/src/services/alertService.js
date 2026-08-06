@@ -251,36 +251,8 @@ async function checkAllAlerts() {
       });
     }
 
-    // ─────────────────────────────────────────
-    // 2e. SEM_TEMPO_ESTIMADO
-    // Tarefas no ClickUp sem horas estimadas (Time Estimate)
-    // ─────────────────────────────────────────
-    for (const a of activeAlerts) {
-      if (a.Tipo_Alerta !== 'SEM_TEMPO_ESTIMADO') continue;
-      const p = projectMap[a.ID_Projeto];
-      if (!p || !statusAtivos.includes(p.Status) || !p.ID_ClickUp) { toResolveIds.add(a.ID); continue; }
-    }
-    // Essa validação geralmente depende de uma leitura profunda das tasks do ClickUp
-    // Por enquanto, vamos marcar tarefas que vieram do sync com tempo_estimado = 0
-    const tasks = await db.readSheet('Log_Horas'); // Usando log_horas como proxy de tasks sincronizadas
-    for (const t of tasks) {
-      if (activeIndex[`SEM_TEMPO_ESTIMADO|${t.ID_Projeto}`]) continue;
-      if (!t.Tempo_Estimado || parseFloat(t.Tempo_Estimado) === 0) {
-        const proj = projectMap[t.ID_Projeto];
-        if (proj && statusAtivos.includes(proj.Status)) {
-          // Deep link: URL direta da tarefa no ClickUp
-          const linkClickUp = t.ID_Tarefa
-            ? `https://app.clickup.com/t/${t.ID_Tarefa}`
-            : (proj.ID_ClickUp ? `https://app.clickup.com/${process.env.CLICKUP_TEAM_ID}/v/li/${proj.ID_ClickUp}` : '');
-          toCreate.push({
-            tipo: 'SEM_TEMPO_ESTIMADO', idProjeto: t.ID_Projeto,
-            mensagem: `Tarefa "${t.Tarefa}" no projeto "${proj.Nome}" está sem tempo estimado no ClickUp.`,
-            nivel: 'warning', setorDestino: ['PO'],
-            linkClickUp,
-          });
-        }
-      }
-    }
+    // SEM_TEMPO_ESTIMADO e TAREFA_SEM_PRAZO agora são gerados por tarefa,
+    // direto do ClickUp, em gerarAlertasProjeto (clickupService.js).
 
     // ─────────────────────────────────────────
     // 2f. PRAZO_NAO_DEFINIDO
