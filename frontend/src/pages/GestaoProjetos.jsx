@@ -19,13 +19,13 @@ const STATUS_LIST = [
 
 // Filtro de status de TAREFA dentro da lista expandida de um projeto
 const TAREFA_FILTROS = [
-  { key: 'todas', label: 'Todas' },
   { key: 'backlog', label: 'Backlog' },
   { key: 'andamento', label: 'Andamento' },
   { key: 'paralisado', label: 'Paralisado' },
   { key: 'concluido', label: 'Concluído' },
   { key: 'arquivado', label: 'Arquivado' },
 ]
+const TAREFA_FILTRO_PADRAO = ['backlog', 'andamento']
 const TAREFA_STATUS_MAP = {
   backlog: 'BACKLOG',
   andamento: 'EM ANDAMENTO',
@@ -94,7 +94,7 @@ export default function GestaoProjetos() {
   const bodyScrollRef = useRef(null)
   const [showNewModal, setShowNewModal] = useState(false)
   const [expandedId, setExpandedId] = useState(null)
-  const [filtroTarefas, setFiltroTarefas] = useState(['todas']) // array de keys de TAREFA_FILTROS, multi-select
+  const [filtroTarefas, setFiltroTarefas] = useState(TAREFA_FILTRO_PADRAO) // array de keys de TAREFA_FILTROS, multi-select
   const [tarefasMap, setTarefasMap] = useState({})
   const [loadingTarefas, setLoadingTarefas] = useState({})
   const [popup, setPopup] = useState(null) // { tipo: 'alertas'|'auditoria', projeto: p, rect: DOMRect }
@@ -175,7 +175,7 @@ export default function GestaoProjetos() {
     const id = p.ID_Projeto
     if (expandedId === id) { setExpandedId(null); return }
     setExpandedId(id)
-    setFiltroTarefas(['todas'])
+    setFiltroTarefas(TAREFA_FILTRO_PADRAO)
     if (tarefasMap[id]) return
     setLoadingTarefas(prev => ({ ...prev, [id]: true }))
     try {
@@ -425,7 +425,7 @@ export default function GestaoProjetos() {
                     const accentColor = statusAccentColor(p.Status)
                     const isExpanded = expandedId === p.ID_Projeto
                     const tarefasAll = tarefasMap[p.ID_Projeto] || []
-                    const tarefas = !isExpanded || filtroTarefas.includes('todas') ? tarefasAll
+                    const tarefas = !isExpanded ? tarefasAll
                       : tarefasAll.filter(t => filtroTarefas.some(f => t.status === TAREFA_STATUS_MAP[f]))
                     const loadingT = loadingTarefas[p.ID_Projeto]
                     return (
@@ -527,11 +527,9 @@ export default function GestaoProjetos() {
                                     const active = filtroTarefas.includes(f.key)
                                     return (
                                     <button key={f.key} type="button" onClick={() => {
-                                      if (f.key === 'todas') { setFiltroTarefas(['todas']); return }
                                       setFiltroTarefas(prev => {
-                                        const semTodas = prev.filter(k => k !== 'todas')
-                                        const novo = semTodas.includes(f.key) ? semTodas.filter(k => k !== f.key) : [...semTodas, f.key]
-                                        return novo.length === 0 ? ['todas'] : novo
+                                        const novo = prev.includes(f.key) ? prev.filter(k => k !== f.key) : [...prev, f.key]
+                                        return novo.length === 0 ? [f.key] : novo
                                       })
                                     }}
                                       style={{
