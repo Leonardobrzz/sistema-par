@@ -77,6 +77,7 @@ export default function GestaoProjetos() {
   const bodyScrollRef = useRef(null)
   const [showNewModal, setShowNewModal] = useState(false)
   const [expandedId, setExpandedId] = useState(null)
+  const [filtroTarefas, setFiltroTarefas] = useState('todas') // 'todas' | 'concluidas' | 'pendentes'
   const [tarefasMap, setTarefasMap] = useState({})
   const [loadingTarefas, setLoadingTarefas] = useState({})
   const [popup, setPopup] = useState(null) // { tipo: 'alertas'|'auditoria', projeto: p, rect: DOMRect }
@@ -157,6 +158,7 @@ export default function GestaoProjetos() {
     const id = p.ID_Projeto
     if (expandedId === id) { setExpandedId(null); return }
     setExpandedId(id)
+    setFiltroTarefas('todas')
     if (tarefasMap[id]) return
     setLoadingTarefas(prev => ({ ...prev, [id]: true }))
     try {
@@ -405,7 +407,11 @@ export default function GestaoProjetos() {
                   projects.map((p) => {
                     const accentColor = statusAccentColor(p.Status)
                     const isExpanded = expandedId === p.ID_Projeto
-                    const tarefas = tarefasMap[p.ID_Projeto] || []
+                    const tarefasAll = tarefasMap[p.ID_Projeto] || []
+                    const tarefas = !isExpanded ? tarefasAll
+                      : filtroTarefas === 'concluidas' ? tarefasAll.filter(t => t.status === 'CONCLUÍDO')
+                      : filtroTarefas === 'pendentes' ? tarefasAll.filter(t => t.status !== 'CONCLUÍDO')
+                      : tarefasAll
                     const loadingT = loadingTarefas[p.ID_Projeto]
                     return (
                       <React.Fragment key={p.ID_Projeto}>
@@ -497,10 +503,32 @@ export default function GestaoProjetos() {
                           <td colSpan={9} style={{ padding: 0, background: isDark ? '#111827' : '#F8FAFC' }}>
                             {loadingT ? (
                               <div style={{ padding: '16px 20px', color: T.text2, fontSize: 12 }}>Carregando tarefas...</div>
-                            ) : tarefas.length === 0 ? (
+                            ) : tarefasAll.length === 0 ? (
                               <div style={{ padding: '16px 20px', color: T.text3, fontSize: 12 }}>Nenhuma tarefa encontrada no ClickUp.</div>
                             ) : (
                               <div style={{ overflowX: 'auto' }}>
+                                <div style={{ display: 'flex', gap: 6, padding: '10px 14px', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+                                  {[
+                                    { key: 'todas', label: 'Todas' },
+                                    { key: 'pendentes', label: 'Não concluídas' },
+                                    { key: 'concluidas', label: 'Concluídas' },
+                                  ].map(f => (
+                                    <button key={f.key} type="button" onClick={() => setFiltroTarefas(f.key)}
+                                      style={{
+                                        padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                                        border: filtroTarefas === f.key ? '1.5px solid #7C3AED' : `1.5px solid ${T.border}`,
+                                        background: filtroTarefas === f.key ? '#7C3AED' : 'transparent',
+                                        color: filtroTarefas === f.key ? '#fff' : T.text2,
+                                      }}>
+                                      {f.label}
+                                    </button>
+                                  ))}
+                                </div>
+                                {tarefas.length === 0 ? (
+                                  <div style={{ padding: '4px 20px 16px', color: T.text3, fontSize: 12 }}>
+                                    {filtroTarefas === 'concluidas' ? 'Nenhuma tarefa concluída.' : 'Nenhuma tarefa pendente.'}
+                                  </div>
+                                ) : (
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                                   <thead>
                                     <tr style={{ background: isDark ? '#1E293B' : '#EEF2FF' }}>
@@ -538,6 +566,7 @@ export default function GestaoProjetos() {
                                     })}
                                   </tbody>
                                 </table>
+                                )}
                                 <div style={{ padding: '8px 14px', display: 'flex', justifyContent: 'flex-end' }}>
                                   <button
                                     onClick={(e) => { e.stopPropagation(); navigate(`/planejamento/${p.ID_Projeto}`) }}
