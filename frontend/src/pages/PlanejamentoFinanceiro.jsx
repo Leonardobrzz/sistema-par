@@ -225,10 +225,6 @@ export default function PlanejamentoFinanceiro() {
   const [baselineViewing, setBaselineViewing] = useState(null) // versão sendo visualizada
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [showBuscaOS, setShowBuscaOS] = useState(false)
-  const [buscaOSTexto, setBuscaOSTexto] = useState("")
-  const [buscaOSResultados, setBuscaOSResultados] = useState([])
-  const [buscaOSLoading, setBuscaOSLoading] = useState(false)
   const [lockingBaseline, setLockingBaseline] = useState(false)
   const [approving, setApproving] = useState(false)
   const [loadingProjetos, setLoadingProjetos] = useState(true)
@@ -513,46 +509,6 @@ export default function PlanejamentoFinanceiro() {
       toast.dismiss("opp-cc-import")
       toast.error(err.response?.data?.error || err.message || "Erro ao importar do OPP")
     }
-  }
-
-  async function importarDoOPP() {
-    if (!form.nrOsOpp) return toast.error("Preencha o campo 'O.S. OPP' com o número da Ordem de Serviço do OPP")
-    if (!projetoId) return toast.error("Selecione um projeto")
-    try {
-      toast.loading("Buscando Ordens de Compra no OPP...", { id: "opp-import" })
-      const nr = encodeURIComponent(form.nrOsOpp)
-      const r = await api.get(`/planejamento/${projetoId}/importar-os?nrOs=${nr}`, { timeout: 120000 })
-      toast.dismiss("opp-import")
-      const data = r.data
-      if (!data.osEncontrada) {
-        toast.error(`O.S. "${form.nrOsOpp}" não encontrada no OPP`)
-        console.warn("[importarDoOPP] OS não encontrada. Debug:", data)
-        return
-      }
-      if (!data.terceirizados?.length) {
-        toast("Nenhuma Ordem de Compra encontrada para esta O.S.")
-        return
-      }
-      setForm(prev => ({ ...prev, terceirizados: data.terceirizados }))
-      setSections(s => ({ ...s, terceirizados: true }))
-      toast.success(`${data.terceirizados.length} serviços terceirizados importados do OPP!`)
-    } catch (err) {
-      toast.dismiss("opp-import")
-      const msg = err.response?.data?.error || err.response?.data?.message || err.message || "Erro ao importar do OPP"
-      console.error("[importarDoOPP]", err.response?.status, msg, err)
-      toast.error(msg)
-    }
-  }
-
-  async function buscarOS(texto) {
-    setBuscaOSTexto(texto)
-    if (!texto || texto.length < 2) { setBuscaOSResultados([]); return }
-    setBuscaOSLoading(true)
-    try {
-      const r = await api.get(`/planejamento/opp/ordens-servico?busca=${encodeURIComponent(texto)}`)
-      setBuscaOSResultados(r.data.ordens || [])
-    } catch { setBuscaOSResultados([]) }
-    finally { setBuscaOSLoading(false) }
   }
 
   async function travarOPP() {
@@ -1146,22 +1102,7 @@ export default function PlanejamentoFinanceiro() {
                 </div>
               </Field>
               <Field label="O.S. OPP" style={{ gridColumn: "1 / -1" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <input value={form.nrOsOpp || ""} onChange={e => f("nrOsOpp", e.target.value)} style={{ ...INPUT, background: "#FFFBEB", flex: 1 }} placeholder="Nº da O.S. criada no OPP (ex: 2026/0142)" />
-                    <button type="button" onClick={() => { setShowBuscaOS(true); setBuscaOSTexto(""); setBuscaOSResultados([]) }}
-                      title="Pesquisar O.S. no OPP"
-                      style={{ padding: "0 12px", borderRadius: 8, border: "1.5px solid #FDE68A", background: "#FFFBEB", color: "#B45309", fontWeight: 700, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}>
-                      🔍 Buscar OS
-                    </button>
-                  </div>
-                  {form.nrOsOpp && (
-                    <button type="button" onClick={importarDoOPP}
-                      style={{ alignSelf: "flex-start", padding: "8px 14px", borderRadius: 8, border: "1.5px solid #BAE6FD", background: "#F0F9FF", color: "#0369A1", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                      ⬇️ Importar do OPP
-                    </button>
-                  )}
-                </div>
+                <input value={form.nrOsOpp || ""} onChange={e => f("nrOsOpp", e.target.value)} style={{ ...INPUT, background: "#FFFBEB" }} placeholder="Nº da O.S. criada no OPP (ex: 2026/0142)" />
               </Field>
               <Field label="Empresa">
                 <select value={form.empresa} onChange={e => f("empresa", e.target.value)} style={INPUT}>
@@ -1814,56 +1755,6 @@ export default function PlanejamentoFinanceiro() {
         )}
 
       </>)}
-
-      {/* ── Modal busca O.S. OPP ── */}
-      {showBuscaOS && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
-          onClick={() => setShowBuscaOS(false)}>
-          <div style={{ background: T.card, borderRadius: 16, padding: 28, width: "100%", maxWidth: 620, maxHeight: "80vh", display: "flex", flexDirection: "column", gap: 16 }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: T.text1 }}>🔍 Pesquisar O.S. no OPP</h3>
-              <button onClick={() => setShowBuscaOS(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#94A3B8" }}>×</button>
-            </div>
-            <input
-              autoFocus
-              value={buscaOSTexto}
-              onChange={e => buscarOS(e.target.value)}
-              placeholder="Digite o nome do projeto, cliente ou número da O.S..."
-              style={{ padding: "10px 14px", borderRadius: 8, border: "1.5px solid #E2E8F0", fontSize: 13, outline: "none", fontFamily: "inherit" }}
-            />
-            <div style={{ overflowY: "auto", flex: 1 }}>
-              {buscaOSLoading && <p style={{ color: "#94A3B8", fontSize: 13, textAlign: "center" }}>Buscando...</p>}
-              {!buscaOSLoading && buscaOSTexto.length >= 2 && buscaOSResultados.length === 0 && (
-                <p style={{ color: "#94A3B8", fontSize: 13, textAlign: "center" }}>Nenhuma O.S. encontrada.</p>
-              )}
-              {buscaOSResultados.map((os, i) => (
-                <div key={i}
-                  onClick={() => { f("nrOsOpp", os.nr_os || String(os.id)); setShowBuscaOS(false); toast.success(`O.S. "${os.nr_os || os.id}" selecionada!`) }}
-                  style={{ padding: "12px 14px", borderRadius: 8, border: "1px solid #E2E8F0", marginBottom: 8, cursor: "pointer", transition: "background 0.15s" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#F0F9FF"}
-                  onMouseLeave={e => e.currentTarget.style.background = ""}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                    <div>
-                      <span style={{ fontSize: 12, fontWeight: 800, color: "#0369A1" }}>{os.nr_os || `ID: ${os.id}`}</span>
-                      <p style={{ margin: "3px 0 0", fontSize: 12, color: "#374151", fontWeight: 500 }}>{os.descricao || "Sem descrição"}</p>
-                      {os.cliente && <p style={{ margin: "2px 0 0", fontSize: 11, color: "#94A3B8" }}>Cliente: {os.cliente}</p>}
-                    </div>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: os.situacao === "Aberta" ? "#16A34A" : "#64748B", whiteSpace: "nowrap", background: "#F1F5F9", padding: "2px 8px", borderRadius: 20 }}>
-                      {os.situacao || "—"}
-                    </span>
-                  </div>
-                </div>
-              ))}
-              {!buscaOSTexto && (
-                <p style={{ color: "#94A3B8", fontSize: 12, textAlign: "center", marginTop: 8 }}>
-                  Digite pelo menos 2 caracteres para pesquisar
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── Modal de estorno ── */}
       {showEstornoModal && (
