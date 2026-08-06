@@ -191,8 +191,11 @@ router.get('/:id/tarefas', async (req, res, next) => {
         url: t.url,
       }
     }).sort((a, b) => {
-      const order = { 'EM ANDAMENTO': 0, 'BACKLOG': 1, 'CONCLUÍDO': 2, 'ARQUIVADO': 3 }
-      return (order[a.status] ?? 2) - (order[b.status] ?? 2)
+      // Vencimento decrescente (mais distante primeiro); sem data vai pro fim
+      if (!a.vencimento && !b.vencimento) return 0
+      if (!a.vencimento) return 1
+      if (!b.vencimento) return -1
+      return b.vencimento.localeCompare(a.vencimento)
     })
     res.json(resultado)
   } catch (err) {
