@@ -156,13 +156,6 @@ function isClosed(task) {
   );
 }
 
-// Tarefa ainda na fila de planejamento — não iniciada, então não ter
-// responsável ainda não é um erro (mas prazo vencido continua contando).
-function isBacklog(task) {
-  const status = (task.status?.status || '').toLowerCase().trim();
-  return status === 'backlog' || status === 'a planejar';
-}
-
 function isOverdue(task) {
   if (!task.due_date || isClosed(task)) return false;
   return parseInt(task.due_date) < Date.now();
@@ -176,7 +169,7 @@ function daysUntilDue(task) {
 }
 
 function hasNoAssignee(task) {
-  return !isClosed(task) && !isBacklog(task) && (!task.assignees || task.assignees.length === 0);
+  return !isClosed(task) && (!task.assignees || task.assignees.length === 0);
 }
 
 // ── Detecta setor pelo prefixo do nome da lista (PROJETOS 2025) ──────────────
