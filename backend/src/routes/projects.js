@@ -77,7 +77,7 @@ router.get('/', async (req, res, next) => {
       const statusAtrasado = (p.Status || '').toLowerCase().includes('atrasado');
       const tercPendentes = tercs.filter(t => !['Pago', 'Concluído'].includes(t.Status)).length;
       const errosAuditoriaLista = [
-        projetoVencido && 'Data de entrega ultrapassada',
+        projetoVencido && 'Projeto atrasado',
         statusAtrasado && !projetoVencido && 'Projeto com status Atrasado',
         tercPendentes > 0 && tercPendentes > tercs.length / 2 && `${tercPendentes} terceirizado(s) com pagamento pendente`,
         temSemResponsavel && 'Há tarefas sem responsável atribuído',
