@@ -94,7 +94,7 @@ export default function GestaoProjetos() {
   const bodyScrollRef = useRef(null)
   const [showNewModal, setShowNewModal] = useState(false)
   const [expandedId, setExpandedId] = useState(null)
-  const [filtroTarefas, setFiltroTarefas] = useState('todas') // 'todas' | 'concluidas' | 'pendentes'
+  const [filtroTarefas, setFiltroTarefas] = useState(['todas']) // array de keys de TAREFA_FILTROS, multi-select
   const [tarefasMap, setTarefasMap] = useState({})
   const [loadingTarefas, setLoadingTarefas] = useState({})
   const [popup, setPopup] = useState(null) // { tipo: 'alertas'|'auditoria', projeto: p, rect: DOMRect }
@@ -175,7 +175,7 @@ export default function GestaoProjetos() {
     const id = p.ID_Projeto
     if (expandedId === id) { setExpandedId(null); return }
     setExpandedId(id)
-    setFiltroTarefas('todas')
+    setFiltroTarefas(['todas'])
     if (tarefasMap[id]) return
     setLoadingTarefas(prev => ({ ...prev, [id]: true }))
     try {
@@ -425,8 +425,8 @@ export default function GestaoProjetos() {
                     const accentColor = statusAccentColor(p.Status)
                     const isExpanded = expandedId === p.ID_Projeto
                     const tarefasAll = tarefasMap[p.ID_Projeto] || []
-                    const tarefas = !isExpanded || filtroTarefas === 'todas' ? tarefasAll
-                      : tarefasAll.filter(t => t.status === TAREFA_STATUS_MAP[filtroTarefas])
+                    const tarefas = !isExpanded || filtroTarefas.includes('todas') ? tarefasAll
+                      : tarefasAll.filter(t => filtroTarefas.some(f => t.status === TAREFA_STATUS_MAP[f]))
                     const loadingT = loadingTarefas[p.ID_Projeto]
                     return (
                       <React.Fragment key={p.ID_Projeto}>
@@ -523,21 +523,31 @@ export default function GestaoProjetos() {
                             ) : (
                               <div style={{ overflowX: 'auto' }}>
                                 <div style={{ display: 'flex', gap: 6, padding: '10px 14px', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
-                                  {TAREFA_FILTROS.map(f => (
-                                    <button key={f.key} type="button" onClick={() => setFiltroTarefas(f.key)}
+                                  {TAREFA_FILTROS.map(f => {
+                                    const active = filtroTarefas.includes(f.key)
+                                    return (
+                                    <button key={f.key} type="button" onClick={() => {
+                                      if (f.key === 'todas') { setFiltroTarefas(['todas']); return }
+                                      setFiltroTarefas(prev => {
+                                        const semTodas = prev.filter(k => k !== 'todas')
+                                        const novo = semTodas.includes(f.key) ? semTodas.filter(k => k !== f.key) : [...semTodas, f.key]
+                                        return novo.length === 0 ? ['todas'] : novo
+                                      })
+                                    }}
                                       style={{
                                         padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, cursor: 'pointer',
-                                        border: filtroTarefas === f.key ? '1.5px solid #7C3AED' : `1.5px solid ${T.border}`,
-                                        background: filtroTarefas === f.key ? '#7C3AED' : 'transparent',
-                                        color: filtroTarefas === f.key ? '#fff' : T.text2,
+                                        border: active ? '1.5px solid #7C3AED' : `1.5px solid ${T.border}`,
+                                        background: active ? '#7C3AED' : 'transparent',
+                                        color: active ? '#fff' : T.text2,
                                       }}>
                                       {f.label}
                                     </button>
-                                  ))}
+                                    )
+                                  })}
                                 </div>
                                 {tarefas.length === 0 ? (
                                   <div style={{ padding: '4px 20px 16px', color: T.text3, fontSize: 12 }}>
-                                    Nenhuma tarefa em "{TAREFA_FILTROS.find(f => f.key === filtroTarefas)?.label}".
+                                    Nenhuma tarefa em "{TAREFA_FILTROS.filter(f => filtroTarefas.includes(f.key)).map(f => f.label).join(', ')}".
                                   </div>
                                 ) : (
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
