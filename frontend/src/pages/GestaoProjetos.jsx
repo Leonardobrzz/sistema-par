@@ -315,24 +315,32 @@ export default function GestaoProjetos() {
               { label: 'Aguardando Faturamento', color: '#1D4ED8', bg: '#DBEAFE' },
               { label: 'Pendência',              color: '#BE185D', bg: '#FCE7F3' },
             ].map(({ label, color, bg }) => {
+              const isEmAndamento = label === 'Em Andamento'
               const emAndamentoAtivo = filters.status.includes('Em Andamento') && filters.status.includes('Em Andamento (Atrasado)')
-              const active = label === 'Em Andamento' ? emAndamentoAtivo : (filters.status.length === 1 && filters.status[0] === label)
+              const active = isEmAndamento ? emAndamentoAtivo : filters.status.includes(label)
               return (
                 <button key={label} onClick={() => {
-                  const novoStatus = label === 'Em Andamento'
-                    ? ['Em Andamento', 'Em Andamento (Atrasado)']
-                    : [label]
+                  let novoStatus
+                  if (isEmAndamento) {
+                    novoStatus = active
+                      ? filters.status.filter(s => s !== 'Em Andamento' && s !== 'Em Andamento (Atrasado)')
+                      : [...filters.status, 'Em Andamento', 'Em Andamento (Atrasado)']
+                  } else {
+                    novoStatus = active
+                      ? filters.status.filter(s => s !== label)
+                      : [...filters.status, label]
+                  }
                   setFilters(f => ({ ...f, status: novoStatus }))
                   loadProjects(novoStatus)
                 }}
                   style={{ padding: '4px 12px', borderRadius: 8, border: '2px solid', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
-                    borderColor: color,
-                    background: active ? bg : `${bg}55`,
-                    color: color,
-                    opacity: active ? 1 : 0.75,
+                    borderColor: active ? color : '#E2E8F0',
+                    background: active ? color : '#fff',
+                    color: active ? '#fff' : '#94A3B8',
+                    opacity: 1,
                     boxShadow: active ? `0 0 0 2px ${color}33` : 'none',
                   }}>
-                  {label}
+                  {active ? '✓ ' : ''}{label}
                 </button>
               )
             })}
