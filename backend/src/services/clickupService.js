@@ -156,14 +156,21 @@ function isClosed(task) {
   );
 }
 
+// Tarefa ainda na fila de planejamento — não iniciada, então prazo vencido
+// ainda não é um atraso real (mas falta de responsável continua contando).
+function isBacklog(task) {
+  const status = (task.status?.status || '').toLowerCase().trim();
+  return status === 'backlog' || status === 'a planejar';
+}
+
 function isOverdue(task) {
-  if (!task.due_date || isClosed(task)) return false;
+  if (!task.due_date || isClosed(task) || isBacklog(task)) return false;
   return parseInt(task.due_date) < Date.now();
 }
 
 // Retorna quantos dias faltam para o prazo (negativo = já atrasado)
 function daysUntilDue(task) {
-  if (!task.due_date || isClosed(task)) return null;
+  if (!task.due_date || isClosed(task) || isBacklog(task)) return null;
   const diff = parseInt(task.due_date) - Date.now();
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
