@@ -635,6 +635,9 @@ async function _doSync() {
 
   // Tenta corrigir: apenas projetos cujo nome começa com código no padrão "ARQ-2025-1", "INF-2023-5", etc.
   const codigoRegex = /^[A-Z]{2,8}[-_]\d{4}[-_]\d+/;
+  // IDs de ClickUp já vinculados a outro projeto — nunca reatribuir um ID em uso,
+  // isso é o que causava projetos duplicados apontando pra mesma lista.
+  const idsEmUso = new Set(todosProjectos.map(p => p.ID_ClickUp).filter(Boolean));
   let correcoes = 0;
   for (const proj of projSemMatch) {
     const nome = proj.Nome || '';
@@ -644,9 +647,14 @@ async function _doSync() {
     const listasMatch = allLists.filter(l => !l._isFolder && l.name && l.name.startsWith(codigo));
     if (listasMatch.length === 1) { // só corrige se houver exatamente 1 lista com esse código
       const listaMatch = listasMatch[0];
+      if (idsEmUso.has(listaMatch.id) && listaMatch.id !== proj.ID_ClickUp) {
+        console.log(`[ClickUp FIX SKIP] "${proj.Nome}": lista "${listaMatch.name}" (${listaMatch.id}) já está vinculada a outro projeto.`);
+        continue;
+      }
       console.log(`[ClickUp FIX] "${proj.Nome}": ID_ClickUp ${proj.ID_ClickUp} → ${listaMatch.id} ("${listaMatch.name}")`);
       await db.updateRowById('Projetos_Contratos', 'ID_Projeto', proj.ID_Projeto, { ID_ClickUp: listaMatch.id });
       proj.ID_ClickUp = listaMatch.id;
+      idsEmUso.add(listaMatch.id);
       correcoes++;
     } else if (listasMatch.length > 1) {
       console.log(`[ClickUp FIX SKIP] "${proj.Nome}": ${listasMatch.length} listas com código "${codigo}", ambíguo.`);

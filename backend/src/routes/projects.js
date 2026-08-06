@@ -245,6 +245,14 @@ router.post('/', audit, async (req, res, next) => {
       return res.status(400).json({ error: 'Nome e cliente são obrigatórios.' });
     }
 
+    if (idClickUp) {
+      const existentes = await db.readSheet('Projetos_Contratos');
+      const duplicado = existentes.find((p) => p.ID_ClickUp === idClickUp);
+      if (duplicado) {
+        return res.status(400).json({ error: `Esse ID do ClickUp já está vinculado ao projeto "${duplicado.Nome}".` });
+      }
+    }
+
     const valor = parseFloat(valorGlobal || 0);
     const tetoPerc = parseFloat(process.env.TETO_TERCEIROS_BLOQUEIO || '20');
 
@@ -281,6 +289,14 @@ router.put('/:id', audit, async (req, res, next) => {
   try {
     const project = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === req.params.id);
     if (!project) return res.status(404).json({ error: 'Projeto não encontrado.' });
+
+    if (req.body.ID_ClickUp && req.body.ID_ClickUp !== project.ID_ClickUp) {
+      const existentes = await db.readSheet('Projetos_Contratos');
+      const duplicado = existentes.find((p) => p.ID_ClickUp === req.body.ID_ClickUp && p.ID_Projeto !== project.ID_Projeto);
+      if (duplicado) {
+        return res.status(400).json({ error: `Esse ID do ClickUp já está vinculado ao projeto "${duplicado.Nome}".` });
+      }
+    }
 
     const updated = {
       ...project,

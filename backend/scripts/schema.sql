@@ -206,7 +206,7 @@ CREATE TABLE IF NOT EXISTS "OrdensCompra_OPP" (
 
 -- Índices de performance
 CREATE INDEX IF NOT EXISTS idx_projetos_status       ON "Projetos_Contratos"("Status");
-CREATE INDEX IF NOT EXISTS idx_projetos_clickup      ON "Projetos_Contratos"("ID_ClickUp");
+CREATE UNIQUE INDEX IF NOT EXISTS idx_projetos_clickup_unique ON "Projetos_Contratos"("ID_ClickUp") WHERE "ID_ClickUp" IS NOT NULL AND "ID_ClickUp" != '';
 CREATE INDEX IF NOT EXISTS idx_medicoes_projeto      ON "Medicoes"("ID_Projeto");
 CREATE INDEX IF NOT EXISTS idx_terceirizados_projeto ON "Terceirizados"("ID_Projeto");
 CREATE INDEX IF NOT EXISTS idx_alertas_projeto       ON "Alertas"("ID_Projeto");
