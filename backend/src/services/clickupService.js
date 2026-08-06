@@ -278,32 +278,18 @@ async function autoImportProjects(items) {
 
 // ── Gerar alertas ─────────────────────────────────────────────────────────────
 
-async function gerarAlertas(tasks, projetos) {
-  // Projetos baseados em pasta: Nome === Setor e Setor não vazio
-  // Projetos baseados em lista avulsa: Setor vazio
-  const projectByFolder = {}; // folderId → projeto-pasta
-  const projectByList = {};   // listId → projeto-lista
-  for (const p of projetos) {
-    if (!p.ID_ClickUp) continue;
-    const isFolderProject = p.Setor && p.Setor.trim() !== '' && p.Nome === p.Setor;
-    if (isFolderProject) {
-      projectByFolder[p.ID_ClickUp] = p;
-    } else {
-      projectByList[p.ID_ClickUp] = p;
-    }
-  }
+// Tipos gerenciados pelo ClickUp (IDs determinísticos)
+const CLICKUP_TIPOS = new Set(['TAREFA_ATRASADA', 'VENCE_AMANHA', 'VENCE_EM_BREVE', 'SEM_RESPONSAVEL', 'PRAZO_NAO_DEFINIDO']);
 
+// Gera/atualiza os alertas de UM projeto a partir das tarefas já buscadas dessa lista.
+// Roda junto com syncProjectStatuses (por projeto), em vez de esperar a sincronização
+// inteira terminar — assim os alertas ficam atualizados no mesmo momento que o status.
+async function gerarAlertasProjeto(tasks, projeto) {
   const agora = new Date().toISOString();
-
-  // Monta o conjunto desejado de alertas com IDs determinísticos (tipo|taskId)
   const desired = new Map(); // id → alert
 
   for (const task of tasks) {
-    // Prioriza projeto-pasta (via folderId); fallback para projeto-lista (via listId)
-    const projeto = (task._folderId && projectByFolder[task._folderId]) || projectByList[task._listId];
-    if (!projeto) continue;
     const dias = daysUntilDue(task);
-
     const taskUrl = `https://app.clickup.com/t/${task.id}`;
 
     if (dias !== null && dias < 0) {
@@ -345,48 +331,36 @@ async function gerarAlertas(tasks, projetos) {
     }
   }
 
-  for (const p of projetos) {
-    if (!p.Data_Entrega_Contrato && p.Status?.includes('Em Andamento')) {
-      const id = `SEM_PRAZO_${p.ID_Projeto}`;
-      desired.set(id, {
-        ID: id, Tipo_Alerta: 'PRAZO_NAO_DEFINIDO', ID_Projeto: p.ID_Projeto,
-        Mensagem: `[SEM PRAZO] Projeto "${p.Nome}" não tem data de entrega`,
-        Data_Geracao: agora, Setor_Destino: 'Comercial', Visto_Por: '', Status: 'Ativo', Nivel: 'warning',
-        Link_ClickUp: p.Link_ClickUp || '',
-      });
-    }
+  if (!projeto.Data_Entrega_Contrato && projeto.Status?.includes('Em Andamento')) {
+    const id = `SEM_PRAZO_${projeto.ID_Projeto}`;
+    desired.set(id, {
+      ID: id, Tipo_Alerta: 'PRAZO_NAO_DEFINIDO', ID_Projeto: projeto.ID_Projeto,
+      Mensagem: `[SEM PRAZO] Projeto "${projeto.Nome}" não tem data de entrega`,
+      Data_Geracao: agora, Setor_Destino: 'Comercial', Visto_Por: '', Status: 'Ativo', Nivel: 'warning',
+      Link_ClickUp: projeto.Link_ClickUp || '',
+    });
   }
 
-  // Tipos gerenciados pelo ClickUp (IDs determinísticos)
-  const CLICKUP_TIPOS = new Set(['TAREFA_ATRASADA', 'VENCE_AMANHA', 'VENCE_EM_BREVE', 'SEM_RESPONSAVEL', 'PRAZO_NAO_DEFINIDO']);
+  // Alertas ClickUp já existentes só deste projeto
+  const existentes = await db.findRows('Alertas', a => a.ID_Projeto === projeto.ID_Projeto && CLICKUP_TIPOS.has(a.Tipo_Alerta));
 
-  // Lê alertas existentes
-  const existentes = await db.readSheet('Alertas');
+  // Preserva os que o usuário já viu e não fazem mais parte do desejado (não apaga silenciosamente)
+  const lidosClickUp = existentes.filter(a => a.Visto_Por && a.Visto_Por.trim() !== '' && !desired.has(a.ID));
+  const lidosIds = new Set(lidosClickUp.map(a => a.ID));
 
-  // Preserva alertas fora do domínio ClickUp (gerados pelo alertService.js)
-  const naoClickUp = existentes.filter(a =>
-    !CLICKUP_TIPOS.has(a.Tipo_Alerta) &&
-    (a.Status === 'ativo' || a.Status === 'Ativo')
-  );
+  // Remove os antigos (exceto os "lidos" preservados) antes de reinserir os atuais
+  for (const a of existentes) {
+    if (!lidosIds.has(a.ID)) await db.deleteRowById('Alertas', 'ID', a.ID);
+  }
 
-  // Preserva alertas ClickUp já lidos pelo usuário que saíram do desired
-  const lidosClickUp = existentes.filter(a =>
-    CLICKUP_TIPOS.has(a.Tipo_Alerta) &&
-    a.Visto_Por && a.Visto_Por.trim() !== '' &&
-    !desired.has(a.ID)
-  );
-
-  // Lista final: alertas externos + lidos preservados + desired atual (normalizado para 'ativo')
   const desiredNormalized = [...desired.values()].map(a => ({ ...a, Status: 'ativo' }));
-  const final = [...naoClickUp, ...lidosClickUp, ...desiredNormalized];
-
-  await db.clearSheetData('Alertas');
-  if (final.length > 0) {
-    await db.insertManyRows('Alertas', final);
+  if (desiredNormalized.length > 0) {
+    await db.insertManyRows('Alertas', desiredNormalized);
   }
 
-  broadcast('alert', { count: desired.size, alertas: desiredNormalized });
-  console.log(`[ClickUp] Alertas: ${desired.size} ativos, ${lidosClickUp.length} lidos preservados, ${naoClickUp.length} externos mantidos.`);
+  if (desired.size > 0 || existentes.length > 0) {
+    broadcast('alert', { count: desired.size, projetoId: projeto.ID_Projeto });
+  }
 }
 
 // ── Atualizar status e progresso dos projetos ─────────────────────────────────
@@ -567,6 +541,9 @@ async function syncSingleProject(idProjeto) {
     // 1. Sincroniza Status e Progresso
     await syncProjectStatuses(allTasks, [projeto], allLists);
 
+    // 1b. Gera alertas (atrasada, sem responsável, etc.) deste projeto
+    await gerarAlertasProjeto(allTasks, projeto);
+
     // 2. Sincroniza Horas Logadas — busca entries por tarefa (mais confiável, independente de list_id)
     const totalSynced = await syncHorasPorTask(allTasks, projeto);
     console.log(`[ClickUp] syncHorasPorTask: ${totalSynced} entries processadas para ${projeto.Nome}`);
@@ -718,10 +695,11 @@ async function _doSync() {
         _folderName: item._folderName || null,
         _spaceId: item._spaceId,
       }));
-      // Processa status deste projeto imediatamente, sem acumular na memória
+      // Processa status e alertas deste projeto imediatamente, sem esperar a sincronização inteira
       const projeto = projetos.find(p => p.ID_ClickUp === item.id);
       if (projeto) {
         await syncProjectStatuses(mapped, [projeto], [item]);
+        await gerarAlertasProjeto(mapped, projeto);
       }
       allTasks.push(...mapped);
     } catch (err) {
@@ -737,9 +715,6 @@ async function _doSync() {
 
   // 4c. Sincronizar terceirizados do espaço Gestão
   await syncTerceirizadosClickUp();
-
-  // 5. Gerar alertas (atrasadas, sem responsável, etc.)
-  await gerarAlertas(allTasks, projetos);
 
   // 6. Sincronizar horas logadas — fetch global por equipe com chunks de 3 dias (evita limite de 100/req)
   try {
