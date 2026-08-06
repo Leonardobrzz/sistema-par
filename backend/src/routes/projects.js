@@ -175,7 +175,8 @@ router.get('/:id/tarefas', async (req, res, next) => {
     if (!project) return res.status(404).json({ error: 'Projeto não encontrado.' })
     if (!project.ID_ClickUp) return res.json([])
     const { getTasks } = require('../services/clickupService')
-    const tasks = await getTasks(project.ID_ClickUp)
+    const todasTasks = await getTasks(project.ID_ClickUp)
+    const tasks = todasTasks.filter(t => !t.parent) // exclui subtarefas — só tarefas principais
     const hoje = new Date(); hoje.setHours(0,0,0,0)
     const resultado = tasks.map(t => {
       const due = t.due_date ? new Date(parseInt(t.due_date)) : null
