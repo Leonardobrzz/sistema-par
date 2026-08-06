@@ -281,7 +281,7 @@ async function autoImportProjects(items) {
 // ── Gerar alertas ─────────────────────────────────────────────────────────────
 
 // Tipos gerenciados pelo ClickUp (IDs determinísticos)
-const CLICKUP_TIPOS = new Set(['TAREFA_ATRASADA', 'VENCE_AMANHA', 'VENCE_EM_BREVE', 'SEM_RESPONSAVEL', 'PRAZO_NAO_DEFINIDO']);
+const CLICKUP_TIPOS = new Set(['TAREFA_ATRASADA', 'VENCE_AMANHA', 'VENCE_EM_BREVE', 'SEM_RESPONSAVEL', 'PRAZO_NAO_DEFINIDO', 'DATA_INICIAL_NAO_DEFINIDA']);
 
 // Gera/atualiza os alertas de UM projeto a partir das tarefas já buscadas dessa lista.
 // Roda junto com syncProjectStatuses (por projeto), em vez de esperar a sincronização
@@ -338,6 +338,16 @@ async function gerarAlertasProjeto(tasks, projeto) {
     desired.set(id, {
       ID: id, Tipo_Alerta: 'PRAZO_NAO_DEFINIDO', ID_Projeto: projeto.ID_Projeto,
       Mensagem: `[SEM PRAZO] Projeto "${projeto.Nome}" não tem data de entrega`,
+      Data_Geracao: agora, Setor_Destino: 'Comercial', Visto_Por: '', Status: 'Ativo', Nivel: 'warning',
+      Link_ClickUp: projeto.Link_ClickUp || '',
+    });
+  }
+
+  if (!projeto.Data_Inicio && projeto.Status?.includes('Em Andamento')) {
+    const id = `SEM_DATA_INICIAL_${projeto.ID_Projeto}`;
+    desired.set(id, {
+      ID: id, Tipo_Alerta: 'DATA_INICIAL_NAO_DEFINIDA', ID_Projeto: projeto.ID_Projeto,
+      Mensagem: `[SEM DATA INICIAL] Projeto "${projeto.Nome}" não tem data inicial`,
       Data_Geracao: agora, Setor_Destino: 'Comercial', Visto_Por: '', Status: 'Ativo', Nivel: 'warning',
       Link_ClickUp: projeto.Link_ClickUp || '',
     });

@@ -68,6 +68,7 @@ router.get('/', async (req, res, next) => {
       const temSemResponsavel = alertasProj.some((a) => a.Tipo_Alerta === 'SEM_RESPONSAVEL');
       const temAtrasada = alertasProj.some((a) => a.Tipo_Alerta === 'TAREFA_ATRASADA');
       const temVenceAmanha = alertasProj.some((a) => a.Tipo_Alerta === 'VENCE_AMANHA');
+      const temSemDataInicial = alertasProj.some((a) => a.Tipo_Alerta === 'DATA_INICIAL_NAO_DEFINIDA');
       const totalAlertas = alertasProj.length;
 
       // Auditoria resumida
@@ -82,6 +83,7 @@ router.get('/', async (req, res, next) => {
         tercPendentes > 0 && tercPendentes > tercs.length / 2 && `${tercPendentes} terceirizado(s) com pagamento pendente`,
         temSemResponsavel && 'Há tarefas sem responsável atribuído',
         temAtrasada && 'Tarefas atrasadas',
+        temSemDataInicial && 'Sem data inicial',
       ].filter(Boolean);
       const errosAuditoria = errosAuditoriaLista.length;
       const statusAuditoria = errosAuditoria > 0 ? 'ERRO' : 'OK';
