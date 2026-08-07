@@ -138,7 +138,6 @@ router.get('/', async (req, res, next) => {
         horasEstimadas: parseFloat(horasEstimadas.toFixed(1)),
         temSemResponsavel,
         temAtrasada,
-        temVenceAmanha,
         totalAlertas,
         statusAuditoria,
         errosAuditoria,
