@@ -8,6 +8,7 @@ import {
 } from "lucide-react"
 import api from "../utils/api"
 import { useTheme } from "../contexts/ThemeContext"
+import { useAuth } from "../contexts/AuthContext"
 
 // ── Formatters ───────────────────────────────────────────────────────────────
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0)
@@ -192,6 +193,7 @@ function DespesasOPPCard({ despesasOPP, previsto, fmt }) {
 
 export default function PlanejamentoFinanceiro() {
   const { isDark } = useTheme()
+  const { user } = useAuth()
   const T = {
     bg:      isDark ? '#0F172A' : '#F8FAFC',
     card:    isDark ? '#1E293B' : '#ffffff',
@@ -216,6 +218,7 @@ export default function PlanejamentoFinanceiro() {
   const [planId, setPlanId] = useState(null)          // ID interno do planejamento
   const [planStatus, setPlanStatus] = useState(null)
   const [planTravado, setPlanTravado] = useState(false)
+  const isDiretor = ['Diretoria', 'Admin'].includes(user?.perfil)
   const [travandoOPP, setTravandoOPP] = useState(false)
   const [showEstornoModal, setShowEstornoModal] = useState(false)
   const [motivoEstorno, setMotivoEstorno] = useState("")
@@ -362,6 +365,7 @@ export default function PlanejamentoFinanceiro() {
   const toggle = (k) => setSections(s => ({ ...s, [k]: !s[k] }))
 
   const par = calcPAR(form)
+  const formBloqueado = planStatus === "Pendente Aprovação" || planStatus === "Aprovado"
   const margemOk = par.lucroPerc >= 23
   // tercOk: nenhum item individual pode ter custo > 25% do seu valorRef
   const itensTerc25 = (form.terceirizados || []).filter(t => {
@@ -453,8 +457,15 @@ export default function PlanejamentoFinanceiro() {
         setor:       form.setor       || proj.Setor    || "",
         linkClickUp: form.linkClickUp || proj.Link_ClickUp || "",
       }
-      await api.post("/planejamento", payload)
-      toast.success(status === "Rascunho" ? "Rascunho salvo!" : "Enviado para aprovação!")
+      const r = await api.post("/planejamento", payload)
+      // Ao encaminhar para aprovação, cria baseline automaticamente
+      if (status === "Pendente Aprovação") {
+        const idPlano = r.data?.id || r.data?.ID || planId
+        if (idPlano) {
+          try { await api.post(`/planejamento/${idPlano}/baseline`) } catch {}
+        }
+      }
+      toast.success(status === "Rascunho" ? "Rascunho salvo!" : "Enviado para aprovação! Baseline criada.")
       carregar(projetoId)
     } catch (err) {
       toast.error(err.response?.data?.error || "Erro ao salvar")
@@ -562,6 +573,18 @@ export default function PlanejamentoFinanceiro() {
     } catch (err) {
       toast.error(err.response?.data?.error || "Erro ao aprovar")
     } finally { setApproving(false) }
+  }
+
+  async function solicitarReplanejamento() {
+    if (!planId) return toast.error("Nenhum planejamento encontrado")
+    if (!window.confirm("Solicitar replanejamento? O planejamento ficará desbloqueado para edição e precisará ser aprovado novamente.")) return
+    try {
+      await api.post(`/planejamento/${planId}/aprovar`, { acao: "replanejamento" })
+      toast.success("Replanejamento solicitado. Planejamento desbloqueado para edição.")
+      carregar(projetoId)
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Erro ao solicitar replanejamento")
+    }
   }
 
   async function downloadExcel() {
@@ -867,11 +890,16 @@ export default function PlanejamentoFinanceiro() {
             </button>
           )}
 
-          {planId && planStatus === "Pendente Aprovação" && (
+          {planId && planStatus === "Pendente Aprovação" && isDiretor && (
             <button onClick={aprovar} disabled={approving}
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 16px", borderRadius: 8, border: "none", background: "#22C55E", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
               <ThumbsUp size={14} /> {approving ? "Aprovando..." : "Aprovar"}
             </button>
+          )}
+          {planId && planStatus === "Pendente Aprovação" && !isDiretor && (
+            <span style={{ fontSize: 12, color: "#92400E", background: "#FEF3C7", padding: "6px 12px", borderRadius: 8, fontWeight: 600 }}>
+              Aguardando aprovação da diretoria
+            </span>
           )}
         </div>
       </div>
@@ -974,7 +1002,20 @@ export default function PlanejamentoFinanceiro() {
         {/* ══════════════════════════════════════════════════════════
             TAB: PLANEJAMENTO
         ══════════════════════════════════════════════════════════ */}
-        {tab === "planejamento" && (<div className="space-y-4">
+        {tab === "planejamento" && (<div className="space-y-4" style={{ position: 'relative' }}>
+          {formBloqueado && (
+            <div style={{ position: 'absolute', inset: 0, zIndex: 10, borderRadius: 12, background: isDark ? 'rgba(15,23,42,0.45)' : 'rgba(248,250,252,0.55)', backdropFilter: 'blur(1.5px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 80 }}>
+              <div style={{ background: isDark ? '#1E293B' : '#fff', border: `1.5px solid ${planStatus === 'Aprovado' ? '#86EFAC' : '#FDE68A'}`, borderRadius: 12, padding: '18px 28px', textAlign: 'center', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
+                <div style={{ fontSize: 22, marginBottom: 6 }}>{planStatus === 'Aprovado' ? '✅' : '⏳'}</div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: planStatus === 'Aprovado' ? '#15803D' : '#92400E' }}>
+                  {planStatus === 'Aprovado' ? 'Planejamento Aprovado' : 'Aguardando Aprovação'}
+                </div>
+                <div style={{ fontSize: 12, color: isDark ? '#94A3B8' : '#64748B', marginTop: 4 }}>
+                  {planStatus === 'Aprovado' ? 'Use "Solicitar Replanejamento" para editar.' : 'A diretoria precisa aprovar antes de liberar edição.'}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* KPIs */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 10 }}>
@@ -1440,29 +1481,44 @@ export default function PlanejamentoFinanceiro() {
 
           {/* Botões de salvar */}
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-            <button onClick={() => salvar("Rascunho")} disabled={saving}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 20px", borderRadius: 10, border: `1.5px solid ${T.border}`, background: T.cardAlt, color: T.text2, fontWeight: 700, fontSize: 13, cursor: saving ? "not-allowed" : "pointer" }}>
-              <Save size={16} /> {saving ? "Salvando..." : "Salvar Rascunho"}
-            </button>
-            <button onClick={() => {
-              const lista = [
-                !margemOk && `Margem (${fmtN(par.lucroPerc)}%) abaixo de 23%`,
-                ...itensTerc25.map(t => {
-                  const ref = parseBR(t.valorRef); const custo = parseBR(t.custo)
-                  return `Terceirizado "${t.servico || 'sem nome'}": custo ${fmtN(custo/ref*100)}% do valor de referência (máx 25%)`
-                }),
-                !prodOk && `Custo de produção (${fmtN(par.custoProducaoPerc)}%) acima de 30%`,
-                !despGeraisOk && `Despesas Gerais (${fmtN(par.percDespesasGerais)}%) acima de 7,5%`,
-              ].filter(Boolean)
-              if (lista.length > 0) {
-                setModalRessalva({ open: true, lista, justificativa: "" })
-              } else {
-                salvar("Pendente Aprovação")
-              }
-            }} disabled={saving}
-              className="btn-primary" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <CheckCircle size={16} /> Encaminhar para Aprovação
-            </button>
+            {planStatus === "Pendente Aprovação" ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 13, color: "#92400E", background: "#FEF3C7", padding: "10px 18px", borderRadius: 10, fontWeight: 700, border: "1.5px solid #FDE68A" }}>
+                  ⏳ Aguardando aprovação da diretoria — edição bloqueada
+                </span>
+              </div>
+            ) : planStatus === "Aprovado" ? (
+              <button onClick={solicitarReplanejamento}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 20px", borderRadius: 10, border: "1.5px solid #7C3AED", background: "#EDE9FE", color: "#7C3AED", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                <RefreshCw size={16} /> Solicitar Replanejamento
+              </button>
+            ) : (
+              <>
+                <button onClick={() => salvar("Rascunho")} disabled={saving}
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 20px", borderRadius: 10, border: `1.5px solid ${T.border}`, background: T.cardAlt, color: T.text2, fontWeight: 700, fontSize: 13, cursor: saving ? "not-allowed" : "pointer" }}>
+                  <Save size={16} /> {saving ? "Salvando..." : "Salvar Rascunho"}
+                </button>
+                <button onClick={() => {
+                  const lista = [
+                    !margemOk && `Margem (${fmtN(par.lucroPerc)}%) abaixo de 23%`,
+                    ...itensTerc25.map(t => {
+                      const ref = parseBR(t.valorRef); const custo = parseBR(t.custo)
+                      return `Terceirizado "${t.servico || 'sem nome'}": custo ${fmtN(custo/ref*100)}% do valor de referência (máx 25%)`
+                    }),
+                    !prodOk && `Custo de produção (${fmtN(par.custoProducaoPerc)}%) acima de 30%`,
+                    !despGeraisOk && `Despesas Gerais (${fmtN(par.percDespesasGerais)}%) acima de 7,5%`,
+                  ].filter(Boolean)
+                  if (lista.length > 0) {
+                    setModalRessalva({ open: true, lista, justificativa: "" })
+                  } else {
+                    salvar("Pendente Aprovação")
+                  }
+                }} disabled={saving}
+                  className="btn-primary" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <CheckCircle size={16} /> Encaminhar para Aprovação
+                </button>
+              </>
+            )}
           </div>
 
         </div>)}

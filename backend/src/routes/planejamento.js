@@ -292,12 +292,20 @@ async function handleAprovar(req, res, next, acaoForced) {
       return res.status(403).json({ error: 'Somente Coordenador ou Diretoria pode aprovar planejamentos.' });
     }
 
+    const acao = acaoForced || req.body.acao || 'aprovar';
+    const comentario = req.body.comentario || req.body.justificativa || '';
+
+    // Solicitar replanejamento: volta para Em Elaboração (pode ser feito por qualquer um)
+    if (acao === 'replanejamento') {
+      const updated = { ...plan, Status: 'Em Elaboração', Atualizado_Em: new Date().toISOString() };
+      await db.updateRowById('Planejamentos', 'ID', plan.ID, updated);
+      return res.json({ ok: true, message: 'Replanejamento solicitado. Planejamento desbloqueado.' });
+    }
+
     if (plan.Status !== 'Pendente Aprovação') {
       return res.status(409).json({ error: `Planejamento está em status "${plan.Status}". Somente "Pendente Aprovação" pode ser aprovado.` });
     }
 
-    const acao = acaoForced || req.body.acao || 'aprovar';
-    const comentario = req.body.comentario || req.body.justificativa || '';
     if (!['aprovar', 'rejeitar'].includes(acao)) {
       return res.status(400).json({ error: 'Campo "acao" deve ser "aprovar" ou "rejeitar".' });
     }
