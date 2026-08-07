@@ -281,7 +281,7 @@ async function autoImportProjects(items) {
 // ── Gerar alertas ─────────────────────────────────────────────────────────────
 
 // Tipos gerenciados pelo ClickUp (IDs determinísticos)
-const CLICKUP_TIPOS = new Set(['TAREFA_ATRASADA', 'VENCE_AMANHA', 'VENCE_EM_BREVE', 'SEM_RESPONSAVEL', 'PRAZO_NAO_DEFINIDO', 'DATA_INICIAL_NAO_DEFINIDA', 'TAREFA_SEM_PRAZO', 'SEM_TEMPO_ESTIMADO']);
+const CLICKUP_TIPOS = new Set(['TAREFA_ATRASADA', 'VENCE_AMANHA', 'VENCE_EM_BREVE', 'SEM_RESPONSAVEL', 'PRAZO_NAO_DEFINIDO', 'DATA_INICIAL_NAO_DEFINIDA', 'TAREFA_SEM_PRAZO', 'SEM_TEMPO_ESTIMADO', 'SEM_FASE', 'SEM_CLIENTE']);
 
 // Gera/atualiza os alertas de UM projeto a partir das tarefas já buscadas dessa lista.
 // Roda junto com syncProjectStatuses (por projeto), em vez de esperar a sincronização
@@ -348,6 +348,26 @@ async function gerarAlertasProjeto(tasks, projeto) {
       desired.set(id, {
         ID: id, Tipo_Alerta: 'SEM_TEMPO_ESTIMADO', ID_Projeto: projeto.ID_Projeto,
         Mensagem: `[SEM ESTIMATIVA] "${task.name}" — ${projeto.Nome}`,
+        Data_Geracao: agora, Setor_Destino: 'PO', Visto_Por: '', Status: 'Ativo', Nivel: 'warning',
+        Link_ClickUp: taskUrl,
+      });
+    }
+    const fase = getCustomField(task, 'FASE')
+    if (!isClosed(task) && !fase) {
+      const id = `SEM_FASE_${task.id}`;
+      desired.set(id, {
+        ID: id, Tipo_Alerta: 'SEM_FASE', ID_Projeto: projeto.ID_Projeto,
+        Mensagem: `[SEM FASE] "${task.name}" — ${projeto.Nome}`,
+        Data_Geracao: agora, Setor_Destino: 'PO', Visto_Por: '', Status: 'Ativo', Nivel: 'warning',
+        Link_ClickUp: taskUrl,
+      });
+    }
+    const cliente = getCustomField(task, 'Cliente')
+    if (!isClosed(task) && !cliente) {
+      const id = `SEM_CLIENTE_${task.id}`;
+      desired.set(id, {
+        ID: id, Tipo_Alerta: 'SEM_CLIENTE', ID_Projeto: projeto.ID_Projeto,
+        Mensagem: `[SEM CLIENTE] "${task.name}" — ${projeto.Nome}`,
         Data_Geracao: agora, Setor_Destino: 'PO', Visto_Por: '', Status: 'Ativo', Nivel: 'warning',
         Link_ClickUp: taskUrl,
       });
