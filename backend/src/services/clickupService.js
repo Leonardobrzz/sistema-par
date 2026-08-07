@@ -281,7 +281,7 @@ async function autoImportProjects(items) {
 // ── Gerar alertas ─────────────────────────────────────────────────────────────
 
 // Tipos gerenciados pelo ClickUp (IDs determinísticos)
-const CLICKUP_TIPOS = new Set(['TAREFA_ATRASADA', 'VENCE_AMANHA', 'VENCE_EM_BREVE', 'SEM_RESPONSAVEL', 'PRAZO_NAO_DEFINIDO', 'DATA_INICIAL_NAO_DEFINIDA', 'TAREFA_SEM_PRAZO', 'SEM_TEMPO_ESTIMADO', 'SEM_FASE', 'SEM_CLIENTE']);
+const CLICKUP_TIPOS = new Set(['TAREFA_ATRASADA', 'VENCE_HOJE', 'VENCE_AMANHA', 'VENCE_EM_BREVE', 'PROJETO_VENCE_EM_BREVE', 'TAREFA_NAO_INICIADA', 'PLANEJAMENTO_REPROVADO', 'SEM_RESPONSAVEL', 'PRAZO_NAO_DEFINIDO', 'DATA_INICIAL_NAO_DEFINIDA', 'TAREFA_SEM_PRAZO', 'SEM_TEMPO_ESTIMADO', 'SEM_FASE', 'SEM_CLIENTE']);
 
 // Gera/atualiza os alertas de UM projeto a partir das tarefas já buscadas dessa lista.
 // Roda junto com syncProjectStatuses (por projeto), em vez de esperar a sincronização
@@ -304,23 +304,39 @@ async function gerarAlertasProjeto(tasks, projeto) {
         Link_ClickUp: taskUrl,
       });
     }
+    if (dias === 0) {
+      const id = `VENCE_HOJE_${task.id}`;
+      desired.set(id, {
+        ID: id, Tipo_Alerta: 'VENCE_HOJE', ID_Projeto: projeto.ID_Projeto,
+        Mensagem: `[VENCE HOJE] "${task.name}" — ${projeto.Nome}`,
+        Data_Geracao: agora, Setor_Destino: 'Coordenador', Visto_Por: '', Status: 'Ativo', Nivel: 'warning',
+        Link_ClickUp: taskUrl,
+      });
+    }
     if (dias === 1) {
       const id = `VENCE_AMANHA_${task.id}`;
       desired.set(id, {
         ID: id, Tipo_Alerta: 'VENCE_AMANHA', ID_Projeto: projeto.ID_Projeto,
         Mensagem: `[VENCE AMANHÃ] "${task.name}" — ${projeto.Nome}`,
-        Data_Geracao: agora, Setor_Destino: 'Coordenador', Visto_Por: '', Status: 'Ativo', Nivel: 'error',
-        Link_ClickUp: taskUrl,
-      });
-    }
-    if (dias === 2 || dias === 3) {
-      const id = `VENCE_EM_BREVE_${task.id}`;
-      desired.set(id, {
-        ID: id, Tipo_Alerta: 'VENCE_EM_BREVE', ID_Projeto: projeto.ID_Projeto,
-        Mensagem: `[VENCE EM ${dias} DIAS] "${task.name}" — ${projeto.Nome}`,
         Data_Geracao: agora, Setor_Destino: 'Coordenador', Visto_Por: '', Status: 'Ativo', Nivel: 'warning',
         Link_ClickUp: taskUrl,
       });
+    }
+    // Tarefa não iniciada: tem start_date definido, está aberta e a data inicial já passou
+    if (!isClosed(task) && task.start_date) {
+      const startDate = new Date(parseInt(task.start_date)); startDate.setHours(0,0,0,0);
+      const hoje = new Date(); hoje.setHours(0,0,0,0);
+      const statusNome = (task.status?.status || '').toLowerCase();
+      const naoIniciada = statusNome === 'backlog' || statusNome === 'a fazer' || statusNome === 'to do';
+      if (startDate < hoje && naoIniciada) {
+        const id = `NAO_INICIADA_${task.id}`;
+        desired.set(id, {
+          ID: id, Tipo_Alerta: 'TAREFA_NAO_INICIADA', ID_Projeto: projeto.ID_Projeto,
+          Mensagem: `[NÃO INICIADA] "${task.name}" — ${projeto.Nome}`,
+          Data_Geracao: agora, Setor_Destino: 'Coordenador', Visto_Por: '', Status: 'Ativo', Nivel: 'warning',
+          Link_ClickUp: taskUrl,
+        });
+      }
     }
     if (hasNoAssignee(task)) {
       const id = `SEM_RESP_${task.id}`;
@@ -389,6 +405,35 @@ async function gerarAlertasProjeto(tasks, projeto) {
       ID: id, Tipo_Alerta: 'DATA_INICIAL_NAO_DEFINIDA', ID_Projeto: projeto.ID_Projeto,
       Mensagem: `[SEM DATA INICIAL] Projeto "${projeto.Nome}" não tem data inicial`,
       Data_Geracao: agora, Setor_Destino: 'Comercial', Visto_Por: '', Status: 'Ativo', Nivel: 'warning',
+      Link_ClickUp: projeto.Link_ClickUp || '',
+    });
+  }
+
+  // Projeto próximo do vencimento do contrato (15 e 30 dias antes)
+  if (projeto.Data_Entrega_Contrato && projeto.Status !== 'Concluído') {
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    const entrega = new Date(projeto.Data_Entrega_Contrato);
+    const diasRestantes = Math.floor((entrega - hoje) / 86400000);
+    if (diasRestantes === 30 || diasRestantes === 15) {
+      const id = `PROJETO_VENCE_EM_BREVE_${projeto.ID_Projeto}`;
+      desired.set(id, {
+        ID: id, Tipo_Alerta: 'PROJETO_VENCE_EM_BREVE', ID_Projeto: projeto.ID_Projeto,
+        Mensagem: `[CONTRATO VENCE EM ${diasRestantes} DIAS] Projeto "${projeto.Nome}"`,
+        Data_Geracao: agora, Setor_Destino: 'Coordenador', Visto_Por: '', Status: 'Ativo', Nivel: 'warning',
+        Link_ClickUp: projeto.Link_ClickUp || '',
+      });
+    }
+  }
+
+  // Planejamento financeiro reprovado
+  const planejamentos = await db.readSheet('Planejamentos');
+  const planProjeto = planejamentos.find(pl => pl.ID_Projeto === projeto.ID_Projeto);
+  if (planProjeto && planProjeto.Status === 'Reprovado') {
+    const id = `PLAN_REPROVADO_${projeto.ID_Projeto}`;
+    desired.set(id, {
+      ID: id, Tipo_Alerta: 'PLANEJAMENTO_REPROVADO', ID_Projeto: projeto.ID_Projeto,
+      Mensagem: `[PLANEJAMENTO REPROVADO] Projeto "${projeto.Nome}" teve o planejamento financeiro reprovado`,
+      Data_Geracao: agora, Setor_Destino: 'PO', Visto_Por: '', Status: 'Ativo', Nivel: 'warning',
       Link_ClickUp: projeto.Link_ClickUp || '',
     });
   }

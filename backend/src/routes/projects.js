@@ -65,15 +65,20 @@ router.get('/', async (req, res, next) => {
       const alertasProj = alertasAtivos.filter(
         (a) => a.ID_Projeto === p.ID_Projeto && a.Status?.toLowerCase() === 'ativo'
       );
+
+      // Tipos que aparecem no badge ALERTAS (laranja)
+      const TIPOS_ALERTA = new Set(['VENCE_HOJE', 'VENCE_AMANHA', 'PROJETO_VENCE_EM_BREVE', 'TAREFA_NAO_INICIADA', 'PLANEJAMENTO_REPROVADO']);
+      const alertasBadge = alertasProj.filter(a => TIPOS_ALERTA.has(a.Tipo_Alerta));
+      const totalAlertas = alertasBadge.length;
+
+      // Tipos que aparecem nos erros de AUDITORIA
       const temSemResponsavel = alertasProj.some((a) => a.Tipo_Alerta === 'SEM_RESPONSAVEL');
       const temAtrasada = alertasProj.some((a) => a.Tipo_Alerta === 'TAREFA_ATRASADA');
-      const temVenceAmanha = alertasProj.some((a) => a.Tipo_Alerta === 'VENCE_AMANHA');
       const temSemDataInicial = alertasProj.some((a) => a.Tipo_Alerta === 'DATA_INICIAL_NAO_DEFINIDA');
       const temTarefaSemPrazo = alertasProj.some((a) => a.Tipo_Alerta === 'TAREFA_SEM_PRAZO');
       const temSemEstimativa = alertasProj.some((a) => a.Tipo_Alerta === 'SEM_TEMPO_ESTIMADO');
       const temSemFase = alertasProj.some((a) => a.Tipo_Alerta === 'SEM_FASE');
       const temSemCliente = alertasProj.some((a) => a.Tipo_Alerta === 'SEM_CLIENTE');
-      const totalAlertas = alertasProj.length;
 
       // Auditoria resumida
       const hoje2 = new Date(); hoje2.setHours(0, 0, 0, 0);
@@ -100,8 +105,8 @@ router.get('/', async (req, res, next) => {
       const errosAuditoria = errosAuditoriaLista.length;
       const statusAuditoria = errosAuditoria > 0 ? 'ERRO' : 'OK';
 
-      // Detalhes dos alertas ativos
-      const alertasDetalhes = alertasProj.map(a => ({
+      // Detalhes dos alertas (só os do badge laranja)
+      const alertasDetalhes = alertasBadge.map(a => ({
         tipo: a.Tipo_Alerta || '',
         mensagem: a.Mensagem || a.Tipo_Alerta || '',
         nivel: a.Nivel || 'warning',
