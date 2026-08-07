@@ -9,6 +9,7 @@ import {
 import api from "../utils/api"
 import { useTheme } from "../contexts/ThemeContext"
 import { useAuth } from "../contexts/AuthContext"
+import * as XLSX from "xlsx"
 
 // ── Formatters ───────────────────────────────────────────────────────────────
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0)
@@ -577,6 +578,50 @@ export default function PlanejamentoFinanceiro() {
     } catch (err) {
       toast.error(err.response?.data?.error || "Erro ao aprovar")
     } finally { setApproving(false) }
+  }
+
+  function exportarRelMed(lista, maxMed) {
+    const hoje = new Date(); hoje.setHours(0,0,0,0)
+    function statusMedExp(m, totalRecebido, acumulado) {
+      if (!m) return ''
+      const coberto = totalRecebido > 0 && acumulado <= totalRecebido + 0.5
+      if (m.statusReal === 'Recebido' || coberto) return 'Recebido'
+      if (m.dataPrevista && new Date(m.dataPrevista + 'T00:00:00') < hoje) return 'Atrasada'
+      return 'Pendente'
+    }
+
+    const headerRow1 = ['Projeto', 'Setor', 'Valor Contrato (R$)', 'Total Recebido (R$)']
+    const headerRow2 = ['', '', '', '']
+    for (let i = 0; i < maxMed; i++) {
+      headerRow1.push(`${i + 1}ª Medição`, '', '')
+      headerRow2.push('Valor (R$)', 'Data Prevista', 'Status')
+    }
+
+    const rows = [headerRow1, headerRow2]
+    lista.forEach(p => {
+      let acumulado = 0
+      const row = [p.nome, p.setor || '', p.valorContrato, p.totalRecebido]
+      for (let i = 0; i < maxMed; i++) {
+        const m = (p.cronograma || [])[i] || null
+        if (m) acumulado += (m.valorPlan || 0)
+        const st = statusMedExp(m, p.totalRecebido, acumulado)
+        row.push(m ? (m.valorPlan || 0) : '', m?.dataPrevista ? new Date(m.dataPrevista + 'T00:00:00').toLocaleDateString('pt-BR') : '', st)
+      }
+      rows.push(row)
+    })
+
+    const ws = XLSX.utils.aoa_to_sheet(rows)
+    // Mescla cabeçalhos das medições (3 cols cada)
+    const merges = [{ s: { r: 0, c: 0 }, e: { r: 1, c: 0 } }, { s: { r: 0, c: 1 }, e: { r: 1, c: 1 } }, { s: { r: 0, c: 2 }, e: { r: 1, c: 2 } }, { s: { r: 0, c: 3 }, e: { r: 1, c: 3 } }]
+    for (let i = 0; i < maxMed; i++) merges.push({ s: { r: 0, c: 4 + i * 3 }, e: { r: 0, c: 6 + i * 3 } })
+    ws['!merges'] = merges
+
+    // Larguras de coluna
+    ws['!cols'] = [{ wch: 45 }, { wch: 14 }, { wch: 18 }, { wch: 18 }, ...Array(maxMed * 3).fill(null).flatMap(() => [{ wch: 14 }, { wch: 13 }, { wch: 10 }])]
+
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Medições')
+    XLSX.writeFile(wb, `Rel_Medicoes_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`)
   }
 
   async function abrirRelMed() {
@@ -2130,8 +2175,12 @@ export default function PlanejamentoFinanceiro() {
                       {s}
                     </button>
                   ))}
+                  <button onClick={() => exportarRelMed(lista, maxMed)}
+                    style={{ padding: '5px 14px', borderRadius: 7, border: '1.5px solid #16A34A', background: '#DCFCE7', color: '#15803D', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <FileSpreadsheet size={14} /> Exportar Excel
+                  </button>
                   <button onClick={() => setShowRelMed(false)}
-                    style={{ padding: '5px 14px', borderRadius: 7, border: '1.5px solid #E2E8F0', background: '#F1F5F9', color: '#64748B', fontWeight: 700, fontSize: 13, cursor: 'pointer', marginLeft: 8 }}>
+                    style={{ padding: '5px 14px', borderRadius: 7, border: '1.5px solid #E2E8F0', background: '#F1F5F9', color: '#64748B', fontWeight: 700, fontSize: 13, cursor: 'pointer', marginLeft: 4 }}>
                     Fechar
                   </button>
                 </div>
