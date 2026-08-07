@@ -231,6 +231,10 @@ export default function PlanejamentoFinanceiro() {
   const [lockingBaseline, setLockingBaseline] = useState(false)
   const [approving, setApproving] = useState(false)
   const [loadingProjetos, setLoadingProjetos] = useState(true)
+  const [showRelMed, setShowRelMed] = useState(false)
+  const [relMedData, setRelMedData] = useState([])
+  const [relMedLoading, setRelMedLoading] = useState(false)
+  const [relMedSetor, setRelMedSetor] = useState("Todos")
   const [tab, setTab] = useState("planejamento")
   const [comparativo, setComparativo] = useState(null)
   const [loadingComp, setLoadingComp] = useState(false)
@@ -575,6 +579,18 @@ export default function PlanejamentoFinanceiro() {
     } finally { setApproving(false) }
   }
 
+  async function abrirRelMed() {
+    setShowRelMed(true)
+    if (relMedData.length > 0) return
+    setRelMedLoading(true)
+    try {
+      const res = await api.get('/baseline-real')
+      const lista = res.data?.projetos || (Array.isArray(res.data) ? res.data : [])
+      setRelMedData(lista)
+    } catch { toast.error('Erro ao carregar rel. medições') }
+    finally { setRelMedLoading(false) }
+  }
+
   async function solicitarReplanejamento() {
     if (!planId) return toast.error("Nenhum planejamento encontrado")
     if (!window.confirm("Solicitar replanejamento? O planejamento ficará desbloqueado para edição e precisará ser aprovado novamente.")) return
@@ -845,6 +861,10 @@ export default function PlanejamentoFinanceiro() {
           <button onClick={() => navigate("/relatorios-planejamento")}
             style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: `1.5px solid ${T.border}`, background: T.cardAlt, color: T.text2, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
             <FileSpreadsheet size={15} /> Relatórios
+          </button>
+          <button onClick={abrirRelMed}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 8, border: "1.5px solid #0EA5E9", background: "#E0F2FE", color: "#0369A1", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+            <TrendingUp size={15} /> REL. MED
           </button>
           {planStatus && (
             <span style={{ fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 8, border: `1.5px solid ${sc.border}`, background: sc.bg, color: sc.color }}>
@@ -2075,6 +2095,113 @@ export default function PlanejamentoFinanceiro() {
           </div>
         </div>
       )}
+
+      {/* ── Modal REL. MED ── */}
+      {showRelMed && (() => {
+        const hoje = new Date(); hoje.setHours(0,0,0,0)
+        const setores = ['Todos', ...Array.from(new Set(relMedData.map(p => p.setor).filter(Boolean))).sort()]
+        const lista = relMedSetor === 'Todos' ? relMedData : relMedData.filter(p => p.setor === relMedSetor)
+        const maxMed = Math.max(...lista.map(p => (p.cronograma || []).length), 0)
+
+        function statusMed(m, totalRecebido, acumulado) {
+          if (!m) return null
+          const statusReal = m.statusReal || ''
+          const coberto = totalRecebido > 0 && acumulado <= totalRecebido + 0.5
+          if (statusReal === 'Recebido' || coberto) return 'Recebido'
+          if (m.dataPrevista && new Date(m.dataPrevista) < hoje) return 'Atrasada'
+          return 'Pendente'
+        }
+
+        const badgeMed = { Recebido: { bg: '#DCFCE7', color: '#15803D' }, Atrasada: { bg: '#FEE2E2', color: '#DC2626' }, Pendente: { bg: '#FEF9C3', color: '#92400E' } }
+
+        return (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 40, overflowY: 'auto' }}
+            onClick={e => { if (e.target === e.currentTarget) setShowRelMed(false) }}>
+            <div style={{ background: isDark ? '#0F172A' : '#fff', borderRadius: 14, width: '97vw', maxWidth: 1400, padding: '24px 28px 32px', boxShadow: '0 8px 48px rgba(0,0,0,0.3)', marginBottom: 40 }}>
+              {/* header modal */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                <TrendingUp size={20} color="#0EA5E9" />
+                <span style={{ fontWeight: 900, fontSize: 17, color: T.text1 }}>Relatório de Medições</span>
+                <span style={{ fontSize: 12, color: T.text2, marginLeft: 4 }}>Projetos Aprovados</span>
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+                  {setores.map(s => (
+                    <button key={s} onClick={() => setRelMedSetor(s)}
+                      style={{ padding: '5px 12px', borderRadius: 7, border: '1.5px solid', borderColor: relMedSetor === s ? '#0EA5E9' : T.border, background: relMedSetor === s ? '#E0F2FE' : T.cardAlt, color: relMedSetor === s ? '#0369A1' : T.text2, fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+                      {s}
+                    </button>
+                  ))}
+                  <button onClick={() => setShowRelMed(false)}
+                    style={{ padding: '5px 14px', borderRadius: 7, border: '1.5px solid #E2E8F0', background: '#F1F5F9', color: '#64748B', fontWeight: 700, fontSize: 13, cursor: 'pointer', marginLeft: 8 }}>
+                    Fechar
+                  </button>
+                </div>
+              </div>
+
+              {relMedLoading ? (
+                <div style={{ textAlign: 'center', padding: 60, color: T.text2 }}>Carregando...</div>
+              ) : lista.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 60, color: T.text2 }}>Nenhum projeto aprovado encontrado.</div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ background: isDark ? '#1E293B' : '#F8FAFC' }}>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: T.text2, whiteSpace: 'nowrap', borderBottom: `2px solid ${T.border}` }}>Projeto</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: T.text2, whiteSpace: 'nowrap', borderBottom: `2px solid ${T.border}` }}>Setor</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: T.text2, whiteSpace: 'nowrap', borderBottom: `2px solid ${T.border}` }}>Vl. Contrato</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: T.text2, whiteSpace: 'nowrap', borderBottom: `2px solid ${T.border}` }}>Total Recebido</th>
+                        {Array.from({ length: maxMed }, (_, i) => (
+                          <th key={i} colSpan={2} style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 700, color: T.text2, borderBottom: `2px solid ${T.border}`, borderLeft: `1px solid ${T.border}` }}>
+                            {i + 1}ª Medição
+                          </th>
+                        ))}
+                      </tr>
+                      <tr style={{ background: isDark ? '#1E293B' : '#F8FAFC' }}>
+                        <th colSpan={4} style={{ borderBottom: `1px solid ${T.border}` }} />
+                        {Array.from({ length: maxMed }, (_, i) => (
+                          <>
+                            <th key={`v${i}`} style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 600, color: T.text2, fontSize: 11, borderLeft: `1px solid ${T.border}` }}>Valor / Data</th>
+                            <th key={`s${i}`} style={{ padding: '4px 8px', textAlign: 'center', fontWeight: 600, color: T.text2, fontSize: 11 }}>Status</th>
+                          </>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lista.map((p, idx) => {
+                        let acumulado = 0
+                        return (
+                          <tr key={p.id || idx} style={{ borderBottom: `1px solid ${T.border}`, background: idx % 2 === 0 ? 'transparent' : (isDark ? 'rgba(255,255,255,0.02)' : '#F8FAFC') }}>
+                            <td style={{ padding: '10px 12px', fontWeight: 600, color: T.text1, maxWidth: 260, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={p.nome}>{p.nome}</td>
+                            <td style={{ padding: '10px 12px', color: T.text2 }}>{p.setor || '—'}</td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: T.text1, whiteSpace: 'nowrap' }}>{fmt(p.valorContrato)}</td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#15803D', whiteSpace: 'nowrap' }}>{fmt(p.totalRecebido)}</td>
+                            {Array.from({ length: maxMed }, (_, i) => {
+                              const m = (p.cronograma || [])[i] || null
+                              if (m) acumulado += (m.valorPlan || 0)
+                              const st = statusMed(m, p.totalRecebido, acumulado)
+                              const bc = st ? badgeMed[st] : null
+                              return (
+                                <>
+                                  <td key={`v${i}`} style={{ padding: '8px', textAlign: 'right', color: T.text2, whiteSpace: 'nowrap', borderLeft: `1px solid ${T.border}`, fontSize: 11 }}>
+                                    {m ? (<><div style={{ fontWeight: 600, color: T.text1 }}>{fmt(m.valorPlan)}</div><div style={{ color: T.text2 }}>{m.dataPrevista ? new Date(m.dataPrevista + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</div></>) : <span style={{ color: '#CBD5E1' }}>—</span>}
+                                  </td>
+                                  <td key={`s${i}`} style={{ padding: '8px', textAlign: 'center' }}>
+                                    {st ? <span style={{ padding: '2px 8px', borderRadius: 5, background: bc.bg, color: bc.color, fontWeight: 700, fontSize: 10, whiteSpace: 'nowrap' }}>{st}</span> : <span style={{ color: '#CBD5E1' }}>—</span>}
+                                  </td>
+                                </>
+                              )
+                            })}
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
