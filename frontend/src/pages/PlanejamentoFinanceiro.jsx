@@ -236,6 +236,7 @@ export default function PlanejamentoFinanceiro() {
   const [relMedData, setRelMedData] = useState([])
   const [relMedLoading, setRelMedLoading] = useState(false)
   const [relMedSetor, setRelMedSetor] = useState("Todos")
+  const [modalReplan, setModalReplan] = useState({ open: false, justificativa: "" })
   const [tab, setTab] = useState("planejamento")
   const [comparativo, setComparativo] = useState(null)
   const [loadingComp, setLoadingComp] = useState(false)
@@ -370,7 +371,7 @@ export default function PlanejamentoFinanceiro() {
   const toggle = (k) => setSections(s => ({ ...s, [k]: !s[k] }))
 
   const par = calcPAR(form)
-  const formBloqueado = planStatus === "Pendente Aprovação" || planStatus === "Aprovado"
+  const formBloqueado = planStatus === "Pendente Aprovação" || planStatus === "Pendente Replanejamento"
   const margemOk = par.lucroPerc >= 23
   // tercOk: nenhum item individual pode ter custo > 25% do seu valorRef
   const itensTerc25 = (form.terceirizados || []).filter(t => {
@@ -636,16 +637,33 @@ export default function PlanejamentoFinanceiro() {
     finally { setRelMedLoading(false) }
   }
 
-  async function solicitarReplanejamento() {
+  async function enviarSolicitacaoReplanejamento() {
     if (!planId) return toast.error("Nenhum planejamento encontrado")
-    if (!window.confirm("Solicitar replanejamento? O planejamento ficará desbloqueado para edição e precisará ser aprovado novamente.")) return
     try {
-      await api.post(`/planejamento/${planId}/aprovar`, { acao: "replanejamento" })
-      toast.success("Replanejamento solicitado. Planejamento desbloqueado para edição.")
+      await api.post(`/planejamento/${planId}/aprovar`, { acao: "replanejamento", justificativa: modalReplan.justificativa })
+      toast.success("Solicitação enviada. Aguardando aprovação da diretoria.")
+      setModalReplan({ open: false, justificativa: "" })
       carregar(projetoId)
     } catch (err) {
       toast.error(err.response?.data?.error || "Erro ao solicitar replanejamento")
     }
+  }
+
+  async function aprovarReplanejamento() {
+    if (!planId) return
+    if (!window.confirm("Aprovar solicitação de replanejamento? O planejamento ficará liberado para edição.")) return
+    try {
+      await api.post(`/planejamento/${planId}/aprovar`, { acao: "aprovar_replanejamento" })
+      toast.success("Replanejamento aprovado. Planejamento liberado para edição.")
+      carregar(projetoId)
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Erro ao aprovar replanejamento")
+    }
+  }
+
+  function solicitarReplanejamento() {
+    if (!planId) return toast.error("Nenhum planejamento encontrado")
+    setModalReplan({ open: true, justificativa: "" })
   }
 
   async function downloadExcel() {
@@ -1070,17 +1088,17 @@ export default function PlanejamentoFinanceiro() {
         {tab === "planejamento" && (<div className="space-y-4" style={{ position: 'relative' }}>
           {formBloqueado && (
             <div style={{ position: 'absolute', inset: 0, zIndex: 10, borderRadius: 12, background: isDark ? 'rgba(15,23,42,0.45)' : 'rgba(248,250,252,0.55)', backdropFilter: 'blur(1.5px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 80 }}>
-              <div style={{ background: isDark ? '#1E293B' : '#fff', border: `1.5px solid ${planStatus === 'Aprovado' ? '#86EFAC' : '#FDE68A'}`, borderRadius: 12, padding: '18px 28px', textAlign: 'center', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
-                <div style={{ fontSize: 22, marginBottom: 6 }}>{planStatus === 'Aprovado' ? '✅' : '⏳'}</div>
-                <div style={{ fontWeight: 800, fontSize: 15, color: planStatus === 'Aprovado' ? '#15803D' : '#92400E' }}>
-                  {planStatus === 'Aprovado' ? 'Planejamento Aprovado' : 'Aguardando Aprovação'}
+              <div style={{ background: isDark ? '#1E293B' : '#fff', border: `1.5px solid #FDE68A`, borderRadius: 12, padding: '18px 28px', textAlign: 'center', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
+                <div style={{ fontSize: 22, marginBottom: 6 }}>⏳</div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: '#92400E' }}>
+                  {planStatus === 'Pendente Replanejamento' ? 'Aguardando Aprovação de Replanejamento' : 'Aguardando Aprovação'}
                 </div>
                 <div style={{ fontSize: 12, color: isDark ? '#94A3B8' : '#64748B', marginTop: 4 }}>
-                  {planStatus === 'Aprovado' ? 'Clique abaixo para solicitar edição.' : 'A diretoria precisa aprovar antes de liberar edição.'}
+                  {planStatus === 'Pendente Replanejamento' ? 'A diretoria precisa aprovar a solicitação de replanejamento.' : 'A diretoria precisa aprovar antes de liberar edição.'}
                 </div>
-                {planStatus === 'Aprovado' && (
-                  <button onClick={solicitarReplanejamento} style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 8, border: '1.5px solid #7C3AED', background: '#EDE9FE', color: '#7C3AED', fontWeight: 700, fontSize: 13, cursor: 'pointer', margin: '14px auto 0' }}>
-                    <RefreshCw size={15} /> Solicitar Replanejamento
+                {planStatus === 'Pendente Replanejamento' && isDiretor && (
+                  <button onClick={() => aprovarReplanejamento()} style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 8, border: '1.5px solid #16A34A', background: '#DCFCE7', color: '#15803D', fontWeight: 700, fontSize: 13, cursor: 'pointer', margin: '14px auto 0' }}>
+                    <CheckCircle size={15} /> Aprovar Replanejamento
                   </button>
                 )}
               </div>
@@ -1556,6 +1574,17 @@ export default function PlanejamentoFinanceiro() {
                 <span style={{ fontSize: 13, color: "#92400E", background: "#FEF3C7", padding: "10px 18px", borderRadius: 10, fontWeight: 700, border: "1.5px solid #FDE68A" }}>
                   ⏳ Aguardando aprovação da diretoria — edição bloqueada
                 </span>
+              </div>
+            ) : planStatus === "Pendente Replanejamento" ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 13, color: "#92400E", background: "#FEF3C7", padding: "10px 18px", borderRadius: 10, fontWeight: 700, border: "1.5px solid #FDE68A" }}>
+                  ⏳ Aguardando aprovação da diretoria para replanejamento
+                </span>
+                {isDiretor && (
+                  <button onClick={aprovarReplanejamento} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", borderRadius: 10, border: "none", background: "#22C55E", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                    <CheckCircle size={15} /> Aprovar Replanejamento
+                  </button>
+                )}
               </div>
             ) : planStatus === "Aprovado" ? (
               <button onClick={solicitarReplanejamento}
@@ -2251,6 +2280,38 @@ export default function PlanejamentoFinanceiro() {
           </div>
         )
       })()}
+
+      {/* ── Modal Solicitar Replanejamento ── */}
+      {modalReplan.open && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: isDark ? '#1E293B' : '#fff', borderRadius: 14, padding: '28px 32px', width: 480, maxWidth: '95vw', boxShadow: '0 8px 48px rgba(0,0,0,0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <RefreshCw size={18} color="#7C3AED" />
+              <span style={{ fontWeight: 800, fontSize: 16, color: T.text1 }}>Solicitar Replanejamento</span>
+            </div>
+            <p style={{ fontSize: 13, color: T.text2, marginBottom: 14, lineHeight: 1.5 }}>
+              Descreva o motivo da solicitação. A diretoria receberá a solicitação e precisará aprovar antes de liberar a edição.
+            </p>
+            <textarea
+              value={modalReplan.justificativa}
+              onChange={e => setModalReplan(m => ({ ...m, justificativa: e.target.value }))}
+              placeholder="Justificativa (obrigatório)..."
+              rows={4}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: `1.5px solid ${T.border}`, background: T.cardAlt, color: T.text1, fontSize: 13, fontFamily: 'inherit', resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
+              <button onClick={() => setModalReplan({ open: false, justificativa: "" })}
+                style={{ padding: '9px 18px', borderRadius: 9, border: `1.5px solid ${T.border}`, background: T.cardAlt, color: T.text2, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                Cancelar
+              </button>
+              <button onClick={enviarSolicitacaoReplanejamento} disabled={!modalReplan.justificativa.trim()}
+                style={{ padding: '9px 20px', borderRadius: 9, border: 'none', background: !modalReplan.justificativa.trim() ? '#94A3B8' : '#7C3AED', color: '#fff', fontWeight: 700, fontSize: 13, cursor: !modalReplan.justificativa.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <RefreshCw size={14} /> Enviar Solicitação
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

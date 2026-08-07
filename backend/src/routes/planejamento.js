@@ -295,11 +295,27 @@ async function handleAprovar(req, res, next, acaoForced) {
     const acao = acaoForced || req.body.acao || 'aprovar';
     const comentario = req.body.comentario || req.body.justificativa || '';
 
-    // Solicitar replanejamento: volta para Em Elaboração (pode ser feito por qualquer um)
+    // PO solicita replanejamento: vai para Pendente Replanejamento (aguarda diretoria)
     if (acao === 'replanejamento') {
-      const updated = { ...plan, Status: 'Em Elaboração', Atualizado_Em: new Date().toISOString() };
+      if (plan.Status !== 'Aprovado') {
+        return res.status(409).json({ error: 'Somente planejamentos "Aprovados" podem solicitar replanejamento.' });
+      }
+      const updated = { ...plan, Status: 'Pendente Replanejamento', Justificativa_Replanejamento: comentario, Atualizado_Em: new Date().toISOString() };
       await db.updateRowById('Planejamentos', 'ID', plan.ID, updated);
-      return res.json({ ok: true, message: 'Replanejamento solicitado. Planejamento desbloqueado.' });
+      return res.json({ ok: true, message: 'Solicitação de replanejamento enviada para a diretoria.' });
+    }
+
+    // Diretoria aprova solicitação de replanejamento: libera para edição
+    if (acao === 'aprovar_replanejamento') {
+      if (!['Admin', 'Diretoria'].includes(req.user.perfil)) {
+        return res.status(403).json({ error: 'Somente Diretoria pode aprovar o replanejamento.' });
+      }
+      if (plan.Status !== 'Pendente Replanejamento') {
+        return res.status(409).json({ error: 'Planejamento não está aguardando replanejamento.' });
+      }
+      const updated = { ...plan, Status: 'Em Elaboração', Aprovado_Por: req.user.nome, Aprovado_Em: new Date().toISOString(), Atualizado_Em: new Date().toISOString() };
+      await db.updateRowById('Planejamentos', 'ID', plan.ID, updated);
+      return res.json({ ok: true, message: 'Replanejamento aprovado. Planejamento liberado para edição.' });
     }
 
     if (plan.Status !== 'Pendente Aprovação') {
