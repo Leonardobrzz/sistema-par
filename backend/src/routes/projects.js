@@ -81,6 +81,9 @@ router.get('/', async (req, res, next) => {
       const projetoVencido = vencData && vencData < hoje2 && p.Status !== 'Concluído';
       const statusAtrasado = (p.Status || '').toLowerCase().includes('atrasado');
       const tercPendentes = tercs.filter(t => !['Pago', 'Concluído'].includes(t.Status)).length;
+      const planData = p.Data_Entrega_Planejada ? new Date(p.Data_Entrega_Planejada) : null;
+      const diasEstourado = planData && p.Status !== 'Concluído' && planData < hoje2
+        ? Math.floor((hoje2 - planData) / 86400000) : 0;
       const errosAuditoriaLista = [
         projetoVencido && 'Projeto atrasado',
         statusAtrasado && !projetoVencido && 'Projeto com status Atrasado',
@@ -92,6 +95,7 @@ router.get('/', async (req, res, next) => {
         temSemEstimativa && 'Há tarefas sem estimativa de tempo',
         temSemFase && 'Há tarefas sem indicação de fase',
         temSemCliente && 'Há tarefas sem indicação de cliente',
+        diasEstourado > 0 && `Planejamento estourado (${diasEstourado} dia${diasEstourado > 1 ? 's' : ''})`,
       ].filter(Boolean);
       const errosAuditoria = errosAuditoriaLista.length;
       const statusAuditoria = errosAuditoria > 0 ? 'ERRO' : 'OK';
