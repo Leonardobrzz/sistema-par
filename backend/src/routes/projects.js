@@ -71,6 +71,8 @@ router.get('/', async (req, res, next) => {
       const temSemDataInicial = alertasProj.some((a) => a.Tipo_Alerta === 'DATA_INICIAL_NAO_DEFINIDA');
       const temTarefaSemPrazo = alertasProj.some((a) => a.Tipo_Alerta === 'TAREFA_SEM_PRAZO');
       const temSemEstimativa = alertasProj.some((a) => a.Tipo_Alerta === 'SEM_TEMPO_ESTIMADO');
+      const temSemFase = alertasProj.some((a) => a.Tipo_Alerta === 'SEM_FASE');
+      const temSemCliente = alertasProj.some((a) => a.Tipo_Alerta === 'SEM_CLIENTE');
       const totalAlertas = alertasProj.length;
 
       // Auditoria resumida
@@ -88,6 +90,8 @@ router.get('/', async (req, res, next) => {
         temSemDataInicial && 'Sem data inicial',
         temTarefaSemPrazo && 'Há tarefas sem data de vencimento',
         temSemEstimativa && 'Há tarefas sem estimativa de tempo',
+        temSemFase && 'Há tarefas sem indicação de fase',
+        temSemCliente && 'Há tarefas sem indicação de cliente',
       ].filter(Boolean);
       const errosAuditoria = errosAuditoriaLista.length;
       const statusAuditoria = errosAuditoria > 0 ? 'ERRO' : 'OK';
