@@ -331,7 +331,8 @@ async function gerarAlertasProjeto(tasks, projeto) {
         Link_ClickUp: taskUrl,
       });
     }
-    if (!isClosed(task) && !task.due_date) {
+    const projetoVencido = projeto.Data_Entrega_Contrato && new Date(projeto.Data_Entrega_Contrato) < new Date()
+    if (!isClosed(task) && !task.due_date && projetoVencido) {
       const id = `TAREFA_SEM_PRAZO_${task.id}`;
       desired.set(id, {
         ID: id, Tipo_Alerta: 'TAREFA_SEM_PRAZO', ID_Projeto: projeto.ID_Projeto,
@@ -340,7 +341,9 @@ async function gerarAlertasProjeto(tasks, projeto) {
         Link_ClickUp: taskUrl,
       });
     }
-    if (!isClosed(task) && !task.time_estimate) {
+    const nomeTask = (task.name || '').toLowerCase()
+    const isMedicaoOuProtocolo = /medi[çc]|protocolo/i.test(nomeTask)
+    if (!isClosed(task) && !task.time_estimate && !isMedicaoOuProtocolo) {
       const id = `SEM_ESTIMATIVA_${task.id}`;
       desired.set(id, {
         ID: id, Tipo_Alerta: 'SEM_TEMPO_ESTIMADO', ID_Projeto: projeto.ID_Projeto,
@@ -361,7 +364,8 @@ async function gerarAlertasProjeto(tasks, projeto) {
     });
   }
 
-  if (!projeto.Data_Inicio && projeto.Status?.includes('Em Andamento')) {
+  const projetoEntregaPassou = projeto.Data_Entrega_Contrato && new Date(projeto.Data_Entrega_Contrato) < new Date()
+  if (!projeto.Data_Inicio && projeto.Status?.includes('Em Andamento') && projetoEntregaPassou) {
     const id = `SEM_DATA_INICIAL_${projeto.ID_Projeto}`;
     desired.set(id, {
       ID: id, Tipo_Alerta: 'DATA_INICIAL_NAO_DEFINIDA', ID_Projeto: projeto.ID_Projeto,
