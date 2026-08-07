@@ -1011,8 +1011,13 @@ export default function PlanejamentoFinanceiro() {
                   {planStatus === 'Aprovado' ? 'Planejamento Aprovado' : 'Aguardando Aprovação'}
                 </div>
                 <div style={{ fontSize: 12, color: isDark ? '#94A3B8' : '#64748B', marginTop: 4 }}>
-                  {planStatus === 'Aprovado' ? 'Use "Solicitar Replanejamento" para editar.' : 'A diretoria precisa aprovar antes de liberar edição.'}
+                  {planStatus === 'Aprovado' ? 'Clique abaixo para solicitar edição.' : 'A diretoria precisa aprovar antes de liberar edição.'}
                 </div>
+                {planStatus === 'Aprovado' && (
+                  <button onClick={solicitarReplanejamento} style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 8, border: '1.5px solid #7C3AED', background: '#EDE9FE', color: '#7C3AED', fontWeight: 700, fontSize: 13, cursor: 'pointer', margin: '14px auto 0' }}>
+                    <RefreshCw size={15} /> Solicitar Replanejamento
+                  </button>
+                )}
               </div>
             </div>
           )}
