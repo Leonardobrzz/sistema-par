@@ -92,7 +92,7 @@ router.get('/', async (req, res, next) => {
       const errosAuditoriaLista = [
         projetoVencido && 'Projeto atrasado',
         statusAtrasado && !projetoVencido && 'Projeto com status Atrasado',
-        tercPendentes > 0 && tercPendentes > tercs.length / 2 && `${tercPendentes} terceirizado(s) com pagamento pendente`,
+        false,
         temSemResponsavel && 'Há tarefas sem responsável atribuído',
         temAtrasada && 'Tarefas atrasadas',
         temSemDataInicial && 'Sem data inicial',
