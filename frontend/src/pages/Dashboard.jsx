@@ -27,6 +27,8 @@ const STATUS_COLORS = {
   'Planejado':              '#8B5CF6',
   'Concluído':              '#0EA5E9',
   'Pausado':                '#94A3B8',
+  'Paralisado':             '#CBD5E1',
+  'Backlog':                '#E2E8F0',
 }
 
 const STATUS_BG = {
@@ -432,7 +434,7 @@ export default function Dashboard() {
   const totalAReceber = totalAReceberTabela + totalAReceberPlanejado
   const alertasCriticos = alertas.filter(a => a.Nivel === 'error')
 
-  const STATUS_VISIVEIS_GRAFICO = ['Backlog', 'A Planejar', 'Em Andamento', 'Em Andamento (Atrasado)', 'Paralisado', 'Pausado']
+  const STATUS_VISIVEIS_GRAFICO = ['Backlog', 'A Planejar', 'Em Andamento', 'Em Andamento (Atrasado)', 'Paralisado', 'Pausado', 'Planejado', 'Concluído']
   const statusData = Object.entries(
     projetosFiltrados
       .filter(p => STATUS_VISIVEIS_GRAFICO.includes(p.Status))
