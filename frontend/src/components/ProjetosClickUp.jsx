@@ -41,7 +41,7 @@ export default function ProjetosClickUp({ filtroSetor = '' }) {
         const ativos = lista.filter(p =>
           p.ID_ClickUp &&
           p.Status &&
-          !['Concluído', 'Cancelado', 'A Planejar'].includes(p.Status)
+          !['Concluído', 'Cancelado'].includes(p.Status)
         )
         setProjetos(ativos)
       })
