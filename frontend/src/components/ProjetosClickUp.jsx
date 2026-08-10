@@ -39,7 +39,6 @@ export default function ProjetosClickUp({ filtroSetor = '' }) {
       .then(r => {
         const lista = r.data?.projetos || r.data || []
         const ativos = lista.filter(p =>
-          p.ID_ClickUp &&
           p.Status &&
           !['Concluído', 'Cancelado'].includes(p.Status)
         )
