@@ -288,14 +288,10 @@ async function handleAprovar(req, res, next, acaoForced) {
     const plan = await db.findOne('Planejamentos', (p) => p.ID === req.params.id);
     if (!plan) return res.status(404).json({ error: 'Planejamento não encontrado.' });
 
-    if (!['Coordenador', 'Admin', 'Diretoria'].includes(req.user.perfil)) {
-      return res.status(403).json({ error: 'Somente Coordenador ou Diretoria pode aprovar planejamentos.' });
-    }
-
     const acao = acaoForced || req.body.acao || 'aprovar';
     const comentario = req.body.comentario || req.body.justificativa || '';
 
-    // PO solicita replanejamento: vai para Pendente Replanejamento (aguarda diretoria)
+    // PO solicita replanejamento: qualquer cargo pode fazer
     if (acao === 'replanejamento') {
       if (plan.Status !== 'Aprovado') {
         return res.status(409).json({ error: 'Somente planejamentos "Aprovados" podem solicitar replanejamento.' });
