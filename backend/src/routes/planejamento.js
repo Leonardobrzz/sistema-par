@@ -314,6 +314,13 @@ async function handleAprovar(req, res, next, acaoForced) {
       return res.json({ ok: true, message: 'Replanejamento aprovado. Planejamento liberado para edição.' });
     }
 
+    // Se o plano está Aprovado e alguém está tentando aprovar novamente, trata como replanejamento
+    if (plan.Status === 'Aprovado') {
+      const updated = { ...plan, Status: 'Pendente Replanejamento', Justificativa_Replanejamento: comentario, Atualizado_Em: new Date().toISOString() };
+      await db.updateRowById('Planejamentos', 'ID', plan.ID, updated);
+      return res.json({ ok: true, message: 'Solicitação de replanejamento enviada para a diretoria.' });
+    }
+
     if (plan.Status !== 'Pendente Aprovação') {
       return res.status(409).json({ error: `Planejamento está em status "${plan.Status}". Somente "Pendente Aprovação" pode ser aprovado.` });
     }
