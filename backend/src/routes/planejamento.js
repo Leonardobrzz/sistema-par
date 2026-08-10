@@ -296,7 +296,7 @@ async function handleAprovar(req, res, next, acaoForced) {
       if (plan.Status !== 'Aprovado') {
         return res.status(409).json({ error: 'Somente planejamentos "Aprovados" podem solicitar replanejamento.' });
       }
-      const updated = { ...plan, Status: 'Pendente Replanejamento', Comentario_Aprovacao: comentario, Atualizado_Em: new Date().toISOString() };
+      const updated = { ...plan, Status: 'Pendente Replanejamento', Comentario_Aprovacao: comentario };
       await db.updateRowById('Planejamentos', 'ID', plan.ID, updated);
       return res.json({ ok: true, message: 'Solicitação de replanejamento enviada para a diretoria.' });
     }
@@ -309,14 +309,14 @@ async function handleAprovar(req, res, next, acaoForced) {
       if (plan.Status !== 'Pendente Replanejamento') {
         return res.status(409).json({ error: 'Planejamento não está aguardando replanejamento.' });
       }
-      const updated = { ...plan, Status: 'Em Elaboração', Aprovado_Por: req.user.nome, Aprovado_Em: new Date().toISOString(), Atualizado_Em: new Date().toISOString() };
+      const updated = { ...plan, Status: 'Em Elaboração', Aprovado_Por: req.user.nome, Aprovado_Em: new Date().toISOString() };
       await db.updateRowById('Planejamentos', 'ID', plan.ID, updated);
       return res.json({ ok: true, message: 'Replanejamento aprovado. Planejamento liberado para edição.' });
     }
 
     // Se o plano está Aprovado e alguém está tentando aprovar novamente, trata como replanejamento
     if (plan.Status === 'Aprovado') {
-      const updated = { ...plan, Status: 'Pendente Replanejamento', Comentario_Aprovacao: comentario, Atualizado_Em: new Date().toISOString() };
+      const updated = { ...plan, Status: 'Pendente Replanejamento', Comentario_Aprovacao: comentario };
       await db.updateRowById('Planejamentos', 'ID', plan.ID, updated);
       return res.json({ ok: true, message: 'Solicitação de replanejamento enviada para a diretoria.' });
     }
