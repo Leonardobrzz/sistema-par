@@ -434,10 +434,8 @@ export default function Dashboard() {
   const totalAReceber = totalAReceberTabela + totalAReceberPlanejado
   const alertasCriticos = alertas.filter(a => a.Nivel === 'error')
 
-  const STATUS_VISIVEIS_GRAFICO = ['Backlog', 'A Planejar', 'Em Andamento', 'Em Andamento (Atrasado)', 'Paralisado', 'Pausado', 'Planejado', 'Concluído']
   const statusData = Object.entries(
     projetosFiltrados
-      .filter(p => STATUS_VISIVEIS_GRAFICO.includes(p.Status))
       .reduce((acc, p) => {
         const s = p.Status || 'Outros'
         acc[s] = (acc[s] || 0) + 1
