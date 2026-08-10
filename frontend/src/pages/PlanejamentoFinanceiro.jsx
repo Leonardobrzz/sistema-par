@@ -371,7 +371,7 @@ export default function PlanejamentoFinanceiro() {
   const toggle = (k) => setSections(s => ({ ...s, [k]: !s[k] }))
 
   const par = calcPAR(form)
-  const formBloqueado = planStatus === "Pendente Aprovação" || planStatus === "Pendente Replanejamento"
+  const formBloqueado = planStatus === "Pendente Aprovação" || (planStatus === "Pendente Replanejamento" && !isDiretor)
   const margemOk = par.lucroPerc >= 23
   // tercOk: nenhum item individual pode ter custo > 25% do seu valorRef
   const itensTerc25 = (form.terceirizados || []).filter(t => {
