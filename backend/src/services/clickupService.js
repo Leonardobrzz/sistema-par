@@ -188,7 +188,7 @@ function detectarSetorPorPrefixo(nomeLista) {
 // Infere setor por palavras-chave no nome (para folders que são projetos sem prefixo padrão)
 function inferirSetorPorKeyword(nome) {
   const n = (nome || '').toUpperCase();
-  if (/\bÁGUA[S]?\b|SAA\b|SES\b|SANEAMENTO|ABASTECIMENTO|ESGOTO|HÍDRIC/.test(n)) return 'Saneamento';
+  if (/ÁGUA|SAA\b|SES\b|SANEAMENTO|ABASTECIMENTO|ESGOTO|HIDRIC/.test(n)) return 'Saneamento';
   if (/\bARQUITETUR|\bARQ\b/.test(n)) return 'Arquitetura';
   if (/\bINFRAESTRUTUR|\bPAVIMENTAÇÃO|\bESTRADA|\bINF\b/.test(n)) return 'Infraestrutura';
   return '';
