@@ -185,6 +185,15 @@ function detectarSetorPorPrefixo(nomeLista) {
   return '';
 }
 
+// Infere setor por palavras-chave no nome (para folders que são projetos sem prefixo padrão)
+function inferirSetorPorKeyword(nome) {
+  const n = (nome || '').toUpperCase();
+  if (/\bÁGUA[S]?\b|SAA\b|SES\b|SANEAMENTO|ABASTECIMENTO|ESGOTO|HÍDRIC/.test(n)) return 'Saneamento';
+  if (/\bARQUITETUR|\bARQ\b/.test(n)) return 'Arquitetura';
+  if (/\bINFRAESTRUTUR|\bPAVIMENTAÇÃO|\bESTRADA|\bINF\b/.test(n)) return 'Infraestrutura';
+  return '';
+}
+
 // ── Coletar todas as listas de um space ──────────────────────────────────────
 
 async function getAllListsFromSpace(spaceId) {
@@ -234,15 +243,29 @@ async function autoImportProjects(items) {
   const existingIds = new Set(existing.map((p) => p.ID_ClickUp).filter(Boolean));
 
   const novosProjetos = [];
+  const atualizacoes = [];
+  const existingMap = {};
+  for (const p of existing) { if (p.ID_ClickUp) existingMap[p.ID_ClickUp] = p; }
+
   for (const item of items) {
     if (existingIds.has(item.id)) {
-      console.log(`[ClickUp DIAG] Pulando (já existe): ${item.name} (${item.id})`);
+      // Se já existe mas com Setor vazio, tenta corrigir por keyword
+      const existente = existingMap[item.id];
+      if (existente && (!existente.Setor || existente.Setor.trim() === '')) {
+        const setorInferido = inferirSetorPorKeyword(item.name);
+        if (setorInferido) {
+          atualizacoes.push({ ID_Projeto: existente.ID_Projeto, Setor: setorInferido });
+          console.log(`[ClickUp] Corrigindo Setor vazio: ${item.name} → ${setorInferido}`);
+        } else {
+          console.log(`[ClickUp DIAG] Pulando (já existe, setor vazio sem inferência): ${item.name} (${item.id})`);
+        }
+      }
       continue;
     }
 
     // _isFolder=true significa que a pasta em si é o projeto (ex: ÁGUAS DO SERTÃO - CONTRATO 15)
     // _isFolder=false são listas dentro de pastas de cliente (fluxo normal ARQ/SAN/INF)
-    const setor = detectarSetorPorPrefixo(item.name);
+    const setor = detectarSetorPorPrefixo(item.name) || inferirSetorPorKeyword(item.name);
     const projeto = {
       ID_Projeto: uuidv4(),
       Nome: item.name,
@@ -287,6 +310,18 @@ async function autoImportProjects(items) {
     await db.insertManyRows('Projetos_Contratos', novosProjetos);
     console.log(`[ClickUp] ${novosProjetos.length} novos projetos importados do ClickUp em lote.`);
     broadcast('sync', { type: 'PROJETOS_IMPORTADOS', count: novosProjetos.length });
+  }
+
+  for (const upd of atualizacoes) {
+    try {
+      await db.updateRowById('Projetos_Contratos', 'ID_Projeto', upd.ID_Projeto, { Setor: upd.Setor });
+    } catch (e) {
+      console.error(`[ClickUp] Erro ao atualizar Setor de ${upd.ID_Projeto}:`, e.message);
+    }
+  }
+  if (atualizacoes.length > 0) {
+    console.log(`[ClickUp] ${atualizacoes.length} projeto(s) com Setor corrigido.`);
+    broadcast('sync', { type: 'PROJETOS_ATUALIZADOS', count: atualizacoes.length });
   }
 }
 
