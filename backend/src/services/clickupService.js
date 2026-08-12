@@ -200,6 +200,7 @@ async function getAllListsFromSpace(spaceId) {
         // Se sim: Pasta = Cliente, Listas = Projetos (fluxo normal)
         // Se não: Pasta = Projeto em si (ex: ÁGUAS DO SERTÃO - CONTRATO 15)
         const temListaComSetor = lists.some(l => detectarSetorPorPrefixo(l.name) !== '');
+        console.log(`[ClickUp DIAG] Pasta "${folder.name}" (${folder.id}): listas=[${lists.map(l => `"${l.name}"`).join(', ')}] | temListaComSetor=${temListaComSetor}`);
         if (temListaComSetor) {
           for (const list of lists) {
             result.push({ ...list, _isFolder: false, _folderId: folder.id, _folderName: folder.name, _spaceId: spaceId });
@@ -234,7 +235,10 @@ async function autoImportProjects(items) {
 
   const novosProjetos = [];
   for (const item of items) {
-    if (existingIds.has(item.id)) continue;
+    if (existingIds.has(item.id)) {
+      console.log(`[ClickUp DIAG] Pulando (já existe): ${item.name} (${item.id})`);
+      continue;
+    }
 
     // _isFolder=true significa que a pasta em si é o projeto (ex: ÁGUAS DO SERTÃO - CONTRATO 15)
     // _isFolder=false são listas dentro de pastas de cliente (fluxo normal ARQ/SAN/INF)
