@@ -155,6 +155,17 @@ app.get('/api/diagnostico-opp/contas-pagar', async (req, res) => {
 // ── WebSocket ─────────────────────────────────────────────────────────────────
 initWebSocket(server);
 
+// ── Sync manual ClickUp ───────────────────────────────────────────────────────
+app.post('/api/sync-clickup', async (req, res) => {
+  try {
+    console.log('[Manual] Sync ClickUp disparado manualmente.');
+    syncClickUp().then(() => checkAllAlerts()).catch(e => console.error('[Manual] Erro sync:', e.message));
+    res.json({ ok: true, message: 'Sync iniciado. Aguarde alguns instantes.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Sincronização automática com ClickUp ──────────────────────────────────────
 const syncInterval = parseInt(process.env.SYNC_INTERVAL_MINUTES || '15');
 cron.schedule(`*/${syncInterval} * * * *`, async () => {
