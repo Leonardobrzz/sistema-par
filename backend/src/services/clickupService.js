@@ -194,11 +194,19 @@ async function getAllListsFromSpace(spaceId) {
     console.log(`[ClickUp] Space ${spaceId}: ${folders.length} pasta(s) encontradas: ${folders.map(f => f.name).join(', ')}`);
     for (const folder of folders) {
       try {
-        // Pasta = Cliente — não vira projeto, apenas as listas dentro viram
         const lists = await getLists(folder.id);
         console.log(`[ClickUp] Pasta "${folder.name}": ${lists.length} lista(s)`);
-        for (const list of lists) {
-          result.push({ ...list, _isFolder: false, _folderId: folder.id, _folderName: folder.name, _spaceId: spaceId });
+        // Verifica se alguma lista tem prefixo de setor (ARQ/SAN/INF)
+        // Se sim: Pasta = Cliente, Listas = Projetos (fluxo normal)
+        // Se não: Pasta = Projeto em si (ex: ÁGUAS DO SERTÃO - CONTRATO 15)
+        const temListaComSetor = lists.some(l => detectarSetorPorPrefixo(l.name) !== '');
+        if (temListaComSetor) {
+          for (const list of lists) {
+            result.push({ ...list, _isFolder: false, _folderId: folder.id, _folderName: folder.name, _spaceId: spaceId });
+          }
+        } else {
+          // A pasta em si é o projeto — usa dados do folder
+          result.push({ ...folder, _isFolder: true, _folderId: folder.id, _folderName: null, _spaceId: spaceId });
         }
       } catch (err) {
         console.error(`[ClickUp] Erro ao buscar listas da pasta "${folder.name}" (${folder.id}):`, err.message);
@@ -228,10 +236,8 @@ async function autoImportProjects(items) {
   for (const item of items) {
     if (existingIds.has(item.id)) continue;
 
-    // No espaço PROJETOS 2025: Pasta = Cliente, Lista = Projeto
-    // Pastas não viram projetos — apenas listas são importadas como projetos
-    if (item._isFolder) continue;
-
+    // _isFolder=true significa que a pasta em si é o projeto (ex: ÁGUAS DO SERTÃO - CONTRATO 15)
+    // _isFolder=false são listas dentro de pastas de cliente (fluxo normal ARQ/SAN/INF)
     const setor = detectarSetorPorPrefixo(item.name);
     const projeto = {
       ID_Projeto: uuidv4(),
@@ -260,7 +266,9 @@ async function autoImportProjects(items) {
       Empresa: 'Jota Barros Projetos',
       Setor: setor,
       Tipologia: '',
-      Link_ClickUp: `https://app.clickup.com/${process.env.CLICKUP_TEAM_ID}/v/li/${item.id}`,
+      Link_ClickUp: item._isFolder
+        ? `https://app.clickup.com/${process.env.CLICKUP_TEAM_ID}/v/f/${item.id}`
+        : `https://app.clickup.com/${process.env.CLICKUP_TEAM_ID}/v/li/${item.id}`,
       Criado_Em: new Date().toISOString(),
       Atualizado_Em: new Date().toISOString(),
       Responsavel: '',
