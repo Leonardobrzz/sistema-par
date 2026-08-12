@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { MagnifyingGlassIcon, PlusIcon, FunnelIcon, ArrowTopRightOnSquareIcon, SparklesIcon, FolderIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
+import { MagnifyingGlassIcon, PlusIcon, FunnelIcon, ArrowTopRightOnSquareIcon, SparklesIcon, FolderIcon, ChevronDownIcon, ChevronRightIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
 import { toast } from 'react-hot-toast'
 import { useForm } from 'react-hook-form'
 import api from '../utils/api'
@@ -89,6 +89,7 @@ export default function GestaoProjetos() {
   const [searchParams] = useSearchParams()
   const [allProjects, setAllProjects] = useState([])
   const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const topScrollRef  = useRef(null)
   const bodyScrollRef = useRef(null)
@@ -171,6 +172,18 @@ export default function GestaoProjetos() {
     })
   }, [allProjects, filters])
 
+  async function syncClickUp() {
+    setSyncing(true)
+    try {
+      await api.post('/sync-clickup')
+      toast.success('Sync iniciado! Aguarde ~1 minuto e recarregue a página.')
+    } catch {
+      toast.error('Erro ao iniciar sync.')
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   async function toggleExpand(p) {
     const id = p.ID_Projeto
     if (expandedId === id) { setExpandedId(null); return }
@@ -214,6 +227,15 @@ export default function GestaoProjetos() {
           </p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={syncClickUp}
+            disabled={syncing}
+            className="btn-secondary flex items-center gap-2"
+            title="Sincronizar projetos do ClickUp"
+          >
+            <ArrowPathIcon className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing ? 'Sincronizando...' : 'Sync ClickUp'}
+          </button>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`btn-secondary flex items-center gap-2 ${showFilters ? 'ring-2 ring-slate-200 bg-slate-50' : ''}`}
