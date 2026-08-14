@@ -117,6 +117,7 @@ export default function Aprovacao() {
   const [baselineLoading, setBaselineLoading] = useState(false)
   const [baselineMsg, setBaselineMsg] = useState("")
   const [justBypass, setJustBypass] = useState("")
+  const [modalRejeitar, setModalRejeitar] = useState({ open: false, justificativa: "" })
   const [versaoViewing, setVersaoViewing] = useState(null)
   const [dadosCompletos, setDadosCompletos] = useState(null)
   const [loadingDetalhe, setLoadingDetalhe] = useState(false)
@@ -561,7 +562,7 @@ export default function Aprovacao() {
                       <textarea value={justificativa} onChange={e => setJustificativa(e.target.value)} rows={3}
                         style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${T.border}`, background: T.inputBg, color: T.text1, fontSize: 13, fontFamily: "inherit", resize: "none", outline: "none", boxSizing: "border-box" }} />
                       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 12 }}>
-                        <button onClick={() => acao("rejeitar")} disabled={actionLoading}
+                        <button onClick={() => setModalRejeitar({ open: true, justificativa: "" })} disabled={actionLoading}
                           style={{ padding: "10px 20px", borderRadius: 10, border: "1.5px solid #EF4444", background: "transparent", color: "#EF4444", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                           Rejeitar
                         </button>
@@ -787,6 +788,54 @@ export default function Aprovacao() {
           </div>
         </div>
       )}
+
+    {/* Modal de rejeição com justificativa obrigatória */}
+    {modalRejeitar.open && (
+      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ background: T.card, borderRadius: 16, padding: 28, width: 460, maxWidth: "90vw", boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }}>
+          <div style={{ fontWeight: 800, fontSize: 17, color: "#EF4444", marginBottom: 6 }}>Rejeitar Planejamento</div>
+          <div style={{ fontSize: 13, color: T.text2, marginBottom: 16 }}>
+            Informe o motivo da rejeição. Essa justificativa ficará visível para o responsável pelo planejamento.
+          </div>
+          <label style={{ fontWeight: 600, fontSize: 13, color: T.text2, display: "block", marginBottom: 6 }}>
+            Justificativa <span style={{ color: "#EF4444" }}>*</span>
+          </label>
+          <textarea
+            value={modalRejeitar.justificativa}
+            onChange={e => setModalRejeitar(m => ({ ...m, justificativa: e.target.value }))}
+            rows={4}
+            placeholder="Descreva o motivo da rejeição..."
+            style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${modalRejeitar.justificativa.trim() ? T.border : "#EF4444"}`, background: T.inputBg, color: T.text1, fontSize: 13, fontFamily: "inherit", resize: "vertical", outline: "none", boxSizing: "border-box" }}
+          />
+          {!modalRejeitar.justificativa.trim() && (
+            <div style={{ fontSize: 12, color: "#EF4444", marginTop: 4 }}>Justificativa obrigatória para rejeitar.</div>
+          )}
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 18 }}>
+            <button onClick={() => setModalRejeitar({ open: false, justificativa: "" })}
+              style={{ padding: "9px 18px", borderRadius: 9, border: `1px solid ${T.border}`, background: "transparent", color: T.text2, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+              Cancelar
+            </button>
+            <button
+              disabled={!modalRejeitar.justificativa.trim() || actionLoading}
+              onClick={async () => {
+                if (!selected) return
+                setActionLoading(true)
+                try {
+                  await api.post(`/planejamento/${selected.ID}/rejeitar`, { justificativa: modalRejeitar.justificativa.trim() })
+                  setModalRejeitar({ open: false, justificativa: "" })
+                  toast.success("Planejamento rejeitado.")
+                  load()
+                  setSelected(null)
+                } catch (err) { toast.error(err.response?.data?.error || "Erro") }
+                finally { setActionLoading(false) }
+              }}
+              style={{ padding: "9px 20px", borderRadius: 9, border: "none", background: !modalRejeitar.justificativa.trim() ? "#94A3B8" : "#EF4444", color: "#fff", fontWeight: 700, fontSize: 13, cursor: !modalRejeitar.justificativa.trim() ? "not-allowed" : "pointer" }}>
+              {actionLoading ? "Rejeitando..." : "Confirmar Rejeição"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </div>
   )
 }

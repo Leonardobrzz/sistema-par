@@ -218,6 +218,7 @@ export default function PlanejamentoFinanceiro() {
   const [ccFocado, setCcFocado] = useState(false)
   const [planId, setPlanId] = useState(null)          // ID interno do planejamento
   const [planStatus, setPlanStatus] = useState(null)
+  const [planComentario, setPlanComentario] = useState("")
   const [planTravado, setPlanTravado] = useState(false)
   const isDiretor = ['Diretoria', 'Admin'].includes(user?.perfil)
   const [travandoOPP, setTravandoOPP] = useState(false)
@@ -270,6 +271,7 @@ export default function PlanejamentoFinanceiro() {
       setPlanId(p.ID || null)
       setPlanStatus(p.Status || null)
       setPlanTravado(!!(p.Travado))
+      setPlanComentario(p.Comentario_Aprovacao || "")
       setBaseline(d._baseline || null)
       setHistoricoBaselines(d._historicoBaselines || [])
       setForm({
@@ -1086,6 +1088,22 @@ export default function PlanejamentoFinanceiro() {
             TAB: PLANEJAMENTO
         ══════════════════════════════════════════════════════════ */}
         {tab === "planejamento" && (<div className="space-y-4" style={{ position: 'relative' }}>
+          {planStatus === "Rejeitado" && (
+            <div style={{ background: "#FEF2F2", border: "1.5px solid #FECACA", borderRadius: 12, padding: "14px 20px", display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <span style={{ fontSize: 20 }}>❌</span>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 14, color: "#DC2626", marginBottom: 4 }}>Planejamento Rejeitado</div>
+                {planComentario ? (
+                  <div style={{ fontSize: 13, color: "#7F1D1D" }}>
+                    <strong>Motivo:</strong> {planComentario}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 13, color: "#991B1B" }}>Nenhuma justificativa informada.</div>
+                )}
+                <div style={{ fontSize: 12, color: "#B91C1C", marginTop: 6 }}>Corrija o planejamento e reencaminhe para aprovação.</div>
+              </div>
+            </div>
+          )}
           {formBloqueado && (
             <div style={{ position: 'absolute', inset: 0, zIndex: 10, borderRadius: 12, background: isDark ? 'rgba(15,23,42,0.45)' : 'rgba(248,250,252,0.55)', backdropFilter: 'blur(1.5px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 80 }}>
               <div style={{ background: isDark ? '#1E293B' : '#fff', border: `1.5px solid #FDE68A`, borderRadius: 12, padding: '18px 28px', textAlign: 'center', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
