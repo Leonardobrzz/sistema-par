@@ -453,41 +453,36 @@ export default function Dashboard() {
   ).map(([name, value]) => ({ name, value }))
 
   const medicoesPorMes = (() => {
+    const _parseBR = v => { if (!v) return 0; const s = String(v).replace(/\./g, '').replace(',', '.'); return parseFloat(s) || 0 }
+    const mesAtual = new Date().toISOString().slice(0, 7)
     const meses = {}
 
-    // 1. Medições reais da tabela Medicoes (recebidos e datas de realização)
-    medicoesFiltradas.forEach(m => {
-      const d = m.Data_Previsao || m.Data_Prevista || m.Data_Emissao_NF
-      if (!d) return
-      const key = d.slice(0, 7)
-      if (!meses[key]) meses[key] = { mes: key, previsto: 0, recebido: 0 }
-      if (m.Status_Financeiro === 'Recebido') {
-        meses[key].recebido += parseFloat(m.Valor_Medicao || m.Valor || 0)
-      }
-    })
-
-    // 2. Medições planejadas dos planejamentos aprovados (Dados_JSON)
-    const plansAtivos = filtroSetor
-      ? aprovados.filter(p => p.Setor === filtroSetor)
-      : aprovados
+    const plansAtivos = filtroSetor ? aprovados.filter(p => p.Setor === filtroSetor) : aprovados
     plansAtivos.forEach(plan => {
       try {
         const dados = JSON.parse(plan.Dados_JSON || '{}')
+        const ip = Math.max(parseFloat(dados.impostosPerc || 20), 16.33)
+        const ta = Math.max(parseFloat(dados.taxaAdmPerc || 12), 5)
+        const co = 7.5
+        const percDespesas = (ip + ta + co) / 100
+
         const meds = dados.medicoes || dados._baseline?.medicoesCronograma || []
         meds.forEach(m => {
           const d = m.dataPrevisao || m.dataPrevista || m.dataPrevisaoPlanejada || ''
           if (!d) return
           const key = d.slice(0, 7)
-          if (!meses[key]) meses[key] = { mes: key, previsto: 0, recebido: 0 }
-          const _parseBR = v => { if (!v) return 0; const s = String(v).replace(/\./g, '').replace(',', '.'); return parseFloat(s) || 0 }
-          meses[key].previsto += _parseBR(m.valor || m.valorPlanejado || 0)
+          if (key > mesAtual) return  // corta datas futuras
+          if (!meses[key]) meses[key] = { mes: key, aReceber: 0, aPagar: 0 }
+          const val = _parseBR(m.valor || m.valorPlanejado || 0)
+          meses[key].aReceber += val
+          meses[key].aPagar += val * percDespesas
         })
       } catch {}
     })
 
     return Object.values(meses).sort((a, b) => a.mes.localeCompare(b.mes)).slice(-12).map(m => ({
       ...m,
-      label: new Date(m.mes + '-01').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+      label: new Date(m.mes + '-15').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
     }))
   })()
 
@@ -677,30 +672,30 @@ export default function Dashboard() {
             <div style={{ background: T.card, borderRadius: 18, padding: '22px 24px', border: `1px solid ${T.border}`, boxShadow: `0 2px 12px ${T.shadow}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                 <BadgeDollarSign size={16} style={{ color: '#7C3AED' }} />
-                <span style={{ fontWeight: 800, fontSize: 15, color: T.text1 }}>Faturamento Previsto vs. Recebido</span>
+                <span style={{ fontWeight: 800, fontSize: 15, color: T.text1 }}>A Receber vs. A Pagar</span>
               </div>
-              <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 20 }}>Baseado nos planejamentos aprovados{filtroSetor ? ` · ${filtroSetor}` : ''}</div>
+              <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 20 }}>Medições planejadas (até hoje) · impostos + taxa adm + comissão{filtroSetor ? ` · ${filtroSetor}` : ''}</div>
               {medicoesPorMes.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: 13 }}>Nenhuma medição com data registrada ainda</div>
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: 13 }}>Nenhuma medição com data registrada nos planejamentos aprovados</div>
               ) : (
                 <ResponsiveContainer width="100%" height={220}>
                   <AreaChart data={medicoesPorMes} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <defs>
-                      <linearGradient id="gradPrevisto" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient id="gradAReceber" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.18} />
                         <stop offset="95%" stopColor="#7C3AED" stopOpacity={0} />
                       </linearGradient>
-                      <linearGradient id="gradRecebido" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#0EA5E9" stopOpacity={0.22} />
-                        <stop offset="95%" stopColor="#0EA5E9" stopOpacity={0} />
+                      <linearGradient id="gradAPagar" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#EF4444" stopOpacity={0.22} />
+                        <stop offset="95%" stopColor="#EF4444" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#F1F5F9'} vertical={false} />
                     <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#94A3B8', fontWeight: 600 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={v => fmt(v)} width={70} />
                     <Tooltip content={<CustomTooltipBar />} />
-                    <Area type="monotone" dataKey="previsto" name="Previsto" stroke="#7C3AED" strokeWidth={2.5} fill="url(#gradPrevisto)" dot={{ r: 4, fill: '#7C3AED', strokeWidth: 0 }} activeDot={{ r: 6 }} />
-                    <Area type="monotone" dataKey="recebido" name="Recebido" stroke="#0EA5E9" strokeWidth={2.5} fill="url(#gradRecebido)" dot={{ r: 4, fill: '#0EA5E9', strokeWidth: 0 }} activeDot={{ r: 6 }} />
+                    <Area type="monotone" dataKey="aReceber" name="A Receber" stroke="#7C3AED" strokeWidth={2.5} fill="url(#gradAReceber)" dot={{ r: 4, fill: '#7C3AED', strokeWidth: 0 }} activeDot={{ r: 6 }} />
+                    <Area type="monotone" dataKey="aPagar" name="A Pagar" stroke="#EF4444" strokeWidth={2.5} fill="url(#gradAPagar)" dot={{ r: 4, fill: '#EF4444', strokeWidth: 0 }} activeDot={{ r: 6 }} />
                   </AreaChart>
                 </ResponsiveContainer>
               )}
