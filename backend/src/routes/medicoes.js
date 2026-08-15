@@ -28,13 +28,17 @@ router.get('/', async (req, res, next) => {
     if (projeto) rows = rows.filter((r) => r.ID_Projeto === projeto);
     if (status) rows = rows.filter((r) => r.Status_Financeiro === status);
 
-    // Carrega projetos e receitas OPP em paralelo
-    const [projects, finOPP] = await Promise.all([
+    // Carrega projetos, planejamentos e receitas OPP em paralelo
+    const [projects, planejamentos, finOPP] = await Promise.all([
       db.readSheet('Projetos_Contratos'),
+      db.readSheet('Planejamentos'),
       db.readSheet('Financeiro_OPP').catch(() => []),
     ]);
     const projMap = {};
     for (const p of projects) { projMap[p.ID_Projeto] = p; }
+    // Fallback: mapa de nome via planejamento (para medições cujo projeto foi removido)
+    const planNomeMap = {};
+    for (const pl of planejamentos) { if (pl.ID_Projeto && pl.Nome_Projeto) planNomeMap[pl.ID_Projeto] = pl.Nome_Projeto; }
 
     // Mapa: Nr_Contrato_OS → receitas OPP (apenas Receitas)
     const receitasPorCC = {};
@@ -73,7 +77,7 @@ router.get('/', async (req, res, next) => {
 
       return {
         ...m,
-        nomeProjeto: proj.Nome || m.nomeProjeto || '',
+        nomeProjeto: proj.Nome || m.nomeProjeto || planNomeMap[m.ID_Projeto] || '',
         cliente: proj.Cliente || proj.Nome_Cliente || '',
         setor: proj.Setor || '',
         atrasada: statusFin !== 'Recebido' && m.Data_Previsao && new Date(m.Data_Previsao) < new Date(),

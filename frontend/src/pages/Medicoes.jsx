@@ -241,7 +241,7 @@ export default function Medicoes() {
                       </td>
                       <td style={{ padding: "11px 14px" }}>
                         <div style={{ fontWeight: 700, fontSize: 13, color: T.text1, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis" }} title={m.nomeProjeto}>
-                          {m.nomeProjeto || m.ID_Projeto || '—'}
+                          {m.nomeProjeto || '(projeto não encontrado)'}
                         </div>
                         <div style={{ fontSize: 11, color: T.text2, marginTop: 2 }}>
                           {m.cliente || proj.Cliente || <span style={{ color: "#CBD5E1" }}>—</span>}
