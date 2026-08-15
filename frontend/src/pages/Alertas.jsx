@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   CheckCircleIcon, XMarkIcon, ArrowTopRightOnSquareIcon,
   ExclamationCircleIcon, ExclamationTriangleIcon, InformationCircleIcon,
@@ -49,6 +50,7 @@ function setorStyle(s) { return SETOR_COLORS[s] || { bg: '#F1F5F9', color: '#647
 export default function Alertas() {
   const { alerts, resolveAlert, refreshAlerts } = useAlerts()
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [limpando, setLimpando] = useState(false)
   const [filtro, setFiltro] = useState('Todos')
   const [filtroSetor, setFiltroSetor] = useState('')
@@ -262,7 +264,7 @@ export default function Alertas() {
                     const Icon = cfg.icon
                     const setores = (alerta.Setor_Destino || '').split(',').map(s => s.trim()).filter(Boolean)
                     return (
-                      <div key={alerta.ID} style={{ background: '#fff', borderRadius: 14, padding: '14px 18px', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'flex-start', gap: 14, transition: 'box-shadow 0.15s' }}>
+                      <div key={alerta.ID} onClick={() => alerta.ID_Projeto && navigate(`/planejamento-financeiro/${alerta.ID_Projeto}`)} style={{ background: '#fff', borderRadius: 14, padding: '14px 18px', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'flex-start', gap: 14, transition: 'box-shadow 0.15s', cursor: alerta.ID_Projeto ? 'pointer' : 'default' }} onMouseEnter={e => { if (alerta.ID_Projeto) e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.10)' }} onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
                         <div style={{ flexShrink: 0, width: 36, height: 36, borderRadius: 10, background: cfg.bg, border: `1px solid`, borderColor: cfg.border.replace('border-', ''), display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
                           <Icon className={`w-5 h-5 ${cfg.iconColor}`} />
                         </div>
@@ -301,7 +303,7 @@ export default function Alertas() {
                           </div>
                         </div>
 
-                        <button onClick={() => resolveAlert(alerta.ID)}
+                        <button onClick={(e) => { e.stopPropagation(); resolveAlert(alerta.ID) }}
                           style={{ flexShrink: 0, padding: '6px 12px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                           <XMarkIcon className="w-4 h-4" />
                           Resolver
