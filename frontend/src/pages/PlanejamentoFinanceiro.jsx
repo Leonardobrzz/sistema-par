@@ -250,7 +250,7 @@ export default function PlanejamentoFinanceiro() {
   const [filtroSetor, setFiltroSetor] = useState("")
   const [filtroCliente, setFiltroCliente] = useState("")
   const [filtroBusca, setFiltroBusca] = useState("")
-  const [filtroStatus, setFiltroStatus] = useState("Em Andamento")
+  const [filtroStatus, setFiltroStatus] = useState("")
 
   useEffect(() => {
     api.get("/projetos").then(r => setProjetos(r.data?.projetos || r.data || [])).catch(() => []).finally(() => setLoadingProjetos(false))
@@ -1004,38 +1004,27 @@ export default function PlanejamentoFinanceiro() {
             <span style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 2 }}>Setor:</span>
             {[{ label: "Todos", val: "" }, { label: "ARQ", val: "Arquitetura" }, { label: "INF", val: "Infraestrutura" }, { label: "SAN", val: "Saneamento" }].map(({ label, val }) => (
               <button key={label} onClick={() => setFiltroSetor(val)}
-                style={{ padding: "4px 12px", borderRadius: 8, border: "1.5px solid", fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
-                  borderColor: filtroSetor === val ? "#7C3AED" : T.border,
-                  background: filtroSetor === val ? "#EDE9FE" : T.card,
-                  color: filtroSetor === val ? "#7C3AED" : T.text2,
+                style={{ padding: "4px 12px", borderRadius: 8, border: `1.5px solid ${filtroSetor === val ? T.accent : T.border}`, fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
+                  background: filtroSetor === val ? T.accent : T.card,
+                  color: filtroSetor === val ? "#fff" : T.text2,
                 }}>
-                {label}
+                {filtroSetor === val && val !== "" && "✓ "}{label}
               </button>
             ))}
             <span style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginLeft: 8, marginRight: 2 }}>Status:</span>
-            {[
-              { label: "Backlog",                color: "#7C3AED", bg: "#EDE9FE" },
-              { label: "Em Andamento",           color: "#D97706", bg: "#FEF3C7" },
-              { label: "Em Análise",             color: "#0891B2", bg: "#CFFAFE" },
-              { label: "Paralisado",             color: "#DC2626", bg: "#FEE2E2" },
-              { label: "Concluído",              color: "#16A34A", bg: "#DCFCE7" },
-              { label: "Arquivado",              color: "#475569", bg: "#E2E8F0" },
-              { label: "Aguardando Faturamento", color: "#1D4ED8", bg: "#DBEAFE" },
-              { label: "Pendência",              color: "#BE185D", bg: "#FCE7F3" },
-            ].map(({ label, color, bg }) => {
-              const active = filtroStatus === label || (label === "Em Andamento" && filtroStatus === "Em Andamento")
+            {["Backlog", "Em Andamento", "Em Análise", "Paralisado", "Concluído", "Arquivado", "Aguardando Faturamento", "Pendência"].map(label => {
+              const active = filtroStatus === label
               return (
                 <button key={label} onClick={() => setFiltroStatus(active ? "" : label)}
-                  style={{ padding: "4px 12px", borderRadius: 8, border: "2px solid", fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
-                    borderColor: color, background: active ? bg : `${bg}55`, color: color,
-                    opacity: active ? 1 : 0.75, boxShadow: active ? `0 0 0 2px ${color}33` : "none",
+                  style={{ padding: "4px 12px", borderRadius: 8, border: `1.5px solid ${active ? T.accent : T.border}`, fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
+                    background: active ? T.accent : T.card, color: active ? "#fff" : T.text2,
                   }}>
-                  {label}
+                  {active && "✓ "}{label}
                 </button>
               )
             })}
-            {(filtroSetor || filtroStatus !== "Em Andamento" || filtroBusca) && (
-              <button onClick={() => { setFiltroSetor(""); setFiltroCliente(""); setFiltroStatus("Em Andamento"); setFiltroBusca("") }}
+            {(filtroSetor || filtroStatus || filtroBusca) && (
+              <button onClick={() => { setFiltroSetor(""); setFiltroCliente(""); setFiltroStatus(""); setFiltroBusca("") }}
                 style={{ padding: "4px 12px", borderRadius: 8, border: "1.5px solid #FECACA", background: "#FEF2F2", color: "#DC2626", fontSize: 12, fontWeight: 700, cursor: "pointer", marginLeft: 4 }}>
                 Limpar
               </button>
