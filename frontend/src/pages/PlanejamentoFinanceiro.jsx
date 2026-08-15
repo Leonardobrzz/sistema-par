@@ -436,6 +436,10 @@ export default function PlanejamentoFinanceiro() {
     if (!v.dataEntregaContrato?.trim())  faltando.push("Data Entrega Contrato")
     if (!v.dataEntregaPlanejada?.trim()) faltando.push("Data Entrega Planejada")
     if (!(v.medicoes?.length > 0))       faltando.push("Pelo menos 1 Medição")
+    if (v.medicoes?.length > 0) {
+      const somaPerc = (v.medicoes || []).reduce((s, m) => s + parseBR(m.percentual), 0)
+      if (Math.abs(somaPerc - 100) > 0.01) faltando.push(`Soma das medições deve ser 100% (atual: ${fmtN(somaPerc, 2)}%)`)
+    }
     return faltando
   }
 
