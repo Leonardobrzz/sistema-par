@@ -889,7 +889,7 @@ export default function Dashboard() {
             <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
                 {projetosExibidos.map((p, i) => (
-                  <SemafProjeto key={i} projeto={p} onClick={() => navigate(`/acompanhamento?projeto=${p.ID_Projeto}`)} />
+                  <SemafProjeto key={i} projeto={p} onClick={() => navigate(`/planejamento-financeiro/${p.ID_Projeto}`)} />
                 ))}
               </div>
               {projetosRicos.length > 12 && (
