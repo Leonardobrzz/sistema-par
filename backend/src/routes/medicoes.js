@@ -28,19 +28,59 @@ router.get('/', async (req, res, next) => {
     if (projeto) rows = rows.filter((r) => r.ID_Projeto === projeto);
     if (status) rows = rows.filter((r) => r.Status_Financeiro === status);
 
-    // Enriquece com nome do projeto, cliente e setor
-    const projects = await db.readSheet('Projetos_Contratos');
+    // Carrega projetos e receitas OPP em paralelo
+    const [projects, finOPP] = await Promise.all([
+      db.readSheet('Projetos_Contratos'),
+      db.readSheet('Financeiro_OPP').catch(() => []),
+    ]);
     const projMap = {};
     for (const p of projects) { projMap[p.ID_Projeto] = p; }
 
+    // Mapa: Nr_Contrato_OS → receitas OPP (apenas Receitas)
+    const receitasPorCC = {};
+    for (const f of finOPP) {
+      if (f.Tipo !== 'Receita') continue;
+      const cc = (f.Profissional || '').trim();
+      if (!cc) continue;
+      if (!receitasPorCC[cc]) receitasPorCC[cc] = [];
+      receitasPorCC[cc].push(f);
+    }
+
+    const pBR = (v) => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0;
+
     const enriched = rows.map((m) => {
       const proj = projMap[m.ID_Projeto] || {};
+      const cc = proj.Nr_Contrato_OS || '';
+
+      // Tenta enriquecer com dados do OPP se ainda não tem Nr_NF
+      let nrNF = m.Nr_NF || '';
+      let nrOS = m.Nr_OS_OPP || '';
+      let statusFin = m.Status_Financeiro || '';
+      let linkOPP = m.Link_Produto || m.Link_Contrato || '';
+
+      if (cc && !nrNF) {
+        const receitas = receitasPorCC[cc] || [];
+        const valorMed = pBR(m.Valor_Medicao || m.Valor || 0);
+        // Tenta casar por valor (tolerância de R$1)
+        const match = receitas.find(r => Math.abs(pBR(r.Valor) - valorMed) < 1);
+        if (match) {
+          nrNF = match.Nr_Documento || '';
+          nrOS = nrOS || match.Nr_OS_OPP || '';
+          if (match.Situacao === 'Liquidado') statusFin = 'Recebido';
+          else if (!statusFin || statusFin === 'Pendente') statusFin = 'NF Emitida';
+        }
+      }
+
       return {
         ...m,
         nomeProjeto: proj.Nome || m.nomeProjeto || '',
         cliente: proj.Cliente || proj.Nome_Cliente || '',
         setor: proj.Setor || '',
-        atrasada: m.Status_Financeiro !== 'Recebido' && m.Data_Previsao && new Date(m.Data_Previsao) < new Date(),
+        atrasada: statusFin !== 'Recebido' && m.Data_Previsao && new Date(m.Data_Previsao) < new Date(),
+        Nr_NF: nrNF,
+        Nr_OS_OPP: nrOS,
+        Status_Financeiro: statusFin,
+        Link_Produto: linkOPP,
       };
     });
 
