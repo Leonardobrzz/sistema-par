@@ -363,7 +363,7 @@ router.get('/extrato-por-projeto', async (req, res, next) => {
     const CUSTO_HORA = 36.40;
 
     const resultado = projetos
-      .filter(p => parseFloat(p.Valor_Global || 0) > 0 || (p.Nr_Contrato && String(p.Nr_Contrato).trim()))
+      .filter(p => /^(ARQ|SAN|INF)-/i.test(p.Nome || '') && p.Status !== 'Arquivado')
       .map(p => {
         const centroCusto = (p.Centro_Custo_OPP || '').trim().toLowerCase();
         const clienteNome = (p.Cliente || '').trim().toLowerCase();
