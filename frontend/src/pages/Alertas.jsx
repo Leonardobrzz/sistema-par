@@ -264,7 +264,7 @@ export default function Alertas() {
                     const Icon = cfg.icon
                     const setores = (alerta.Setor_Destino || '').split(',').map(s => s.trim()).filter(Boolean)
                     return (
-                      <div key={alerta.ID} onClick={() => alerta.ID_Projeto && navigate(`/planejamento-financeiro/${alerta.ID_Projeto}`)} style={{ background: '#fff', borderRadius: 14, padding: '14px 18px', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'flex-start', gap: 14, transition: 'box-shadow 0.15s', cursor: alerta.ID_Projeto ? 'pointer' : 'default' }} onMouseEnter={e => { if (alerta.ID_Projeto) e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.10)' }} onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
+                      <div key={alerta.ID} onClick={() => alerta.ID_Projeto && navigate(`/planejamento/${alerta.ID_Projeto}`)} style={{ background: '#fff', borderRadius: 14, padding: '14px 18px', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'flex-start', gap: 14, transition: 'box-shadow 0.15s', cursor: alerta.ID_Projeto ? 'pointer' : 'default' }} onMouseEnter={e => { if (alerta.ID_Projeto) e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.10)' }} onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
                         <div style={{ flexShrink: 0, width: 36, height: 36, borderRadius: 10, background: cfg.bg, border: `1px solid`, borderColor: cfg.border.replace('border-', ''), display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
                           <Icon className={`w-5 h-5 ${cfg.iconColor}`} />
                         </div>
