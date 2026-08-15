@@ -408,6 +408,15 @@ export default function Dashboard() {
   })()
 
   const totalContrato = aprovados.reduce((s, p) => s + parseFloat(p.Valor_Contrato || 0), 0)
+  const totalAPagar = aprovados.reduce((s, plan) => {
+    try {
+      const d = JSON.parse(plan.Dados_JSON || '{}')
+      const equipe = (d.equipe || []).reduce((a, e) => a + parseFloat(e.horas || 0) * parseFloat(e.mediaHora || 36.40), 0)
+      const terc = (d.terceirizados || []).reduce((a, t) => a + parseFloat(t.custo || 0), 0)
+      const desp = (d.despesas || []).reduce((a, dsp) => a + parseFloat(dsp.valor || 0), 0)
+      return s + equipe + terc + desp
+    } catch { return s }
+  }, 0)
   const medicoesPeriodo = medicoesFiltradas.filter(m => {
     if (m.Status_Financeiro !== 'Recebido') return false
     const d = m.Data_Recebimento || m.Data_Previsao || m.Data_Prevista || m.Data_Emissao_NF
@@ -655,19 +664,7 @@ export default function Dashboard() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
           <StatCard label="Projetos em Andamento" value={emAndamento.length} sub={`${projetosFiltrados.length} total · ${concluidos.length} concluídos`} icon={<FolderOpen size={20} />} bg="#22C55E" onClick={() => navigate('/projetos')} />
           <StatCard label="Carteira Aprovada" value={fmt(totalContrato)} sub={`${aprovados.length} planejamento(s) aprovado(s)`} icon={<Briefcase size={20} />} bg="#EF4444" />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <StatCard label="Total Recebido" value={fmt(totalRecebidoOPP ?? totalRecebido)} sub={periodoRecebido.inicio || periodoRecebido.fim ? 'filtrado por período' : 'contas recebidas (OPP)'} icon={<CheckCircle2 size={20} />} bg="#0EA5E9" />
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              <input type="date" value={periodoRecebido.inicio} onChange={e => setPeriodoRecebido(p => ({ ...p, inicio: e.target.value }))}
-                style={{ flex: 1, padding: '5px 8px', borderRadius: 6, border: '1.5px solid #E2E8F0', fontSize: 11, color: '#475569', fontFamily: 'inherit', outline: 'none' }} />
-              <span style={{ fontSize: 11, color: '#94A3B8' }}>até</span>
-              <input type="date" value={periodoRecebido.fim} onChange={e => setPeriodoRecebido(p => ({ ...p, fim: e.target.value }))}
-                style={{ flex: 1, padding: '5px 8px', borderRadius: 6, border: '1.5px solid #E2E8F0', fontSize: 11, color: '#475569', fontFamily: 'inherit', outline: 'none' }} />
-              {(periodoRecebido.inicio || periodoRecebido.fim) && (
-                <button onClick={() => setPeriodoRecebido({ inicio: '', fim: '' })} style={{ padding: '4px 7px', borderRadius: 6, border: 'none', background: '#FEE2E2', color: '#DC2626', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>✕</button>
-              )}
-            </div>
-          </div>
+          <StatCard label="Total a Pagar" value={fmt(totalAPagar)} sub="custo total dos planejamentos aprovados" icon={<CheckCircle2 size={20} />} bg="#0EA5E9" />
           <StatCard label="A Receber" value={fmt(totalAReceber)} sub="medições pendentes/em andamento" icon={<BadgeDollarSign size={20} />} bg="#F59E0B"
             onClick={() => navigate('/medicoes')} />
         </div>
