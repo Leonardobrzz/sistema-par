@@ -358,7 +358,11 @@ export default function Dashboard() {
         api.get('/medicoes'),
       ])
       if (rP.status === 'fulfilled') setProjetos(rP.value.data?.projetos || rP.value.data || [])
-      if (rPl.status === 'fulfilled') setPlanejamentos(rPl.value.data?.planejamentos || rPl.value.data || [])
+      if (rPl.status === 'fulfilled') {
+        const plData = rPl.value.data?.planejamentos || rPl.value.data || []
+        console.log('[Dashboard] planejamentos recebidos:', plData.length, 'aprovados:', plData.filter(p => p.Status === 'Aprovado').length, 'status sample:', plData.slice(0,3).map(p => p.Status))
+        setPlanejamentos(plData)
+      }
       if (rA.status === 'fulfilled') setAlertas(rA.value.data?.alertas || rA.value.data || [])
       if (rM.status === 'fulfilled') setMedicoes(rM.value.data?.medicoes || rM.value.data || [])
       api.get('/opp/status').then(r => setOppStatus(r.data)).catch(() => setOppStatus({ ok: false }))
