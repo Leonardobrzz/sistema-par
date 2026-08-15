@@ -67,17 +67,24 @@ export default function Medicoes() {
         try {
           const dados = JSON.parse(plan.Dados_JSON || '{}')
           const meds = dados.medicoes || dados._baseline?.medicoesCronograma || []
+          const hoje = new Date(); hoje.setHours(0,0,0,0)
           meds.forEach((m, idx) => {
+            const dataPrevisao = m.dataPrevisao || m.dataPrevista || ''
+            let statusFin = 'Pendente'
+            if (dataPrevisao) {
+              const dt = new Date(dataPrevisao + 'T00:00:00')
+              if (dt < hoje) statusFin = 'Atrasado'
+            }
             doPlanejamento.push({
               ID_Medicao: `plan_${plan.ID_Projeto}_${idx}`,
               ID_Projeto: plan.ID_Projeto,
               nomeProjeto: proj.Nome || plan.ID_Projeto,
               cliente: proj.Cliente || proj.Nome_Cliente || '',
               setor: proj.Setor || '',
-              Data_Previsao: m.dataPrevisao || m.dataPrevista || '',
+              Data_Previsao: dataPrevisao,
               Valor: parseBRval(m.valor || m.valorPlanejado || 0),
               Descricao: m.descricao || m.etapa || `Medição ${idx + 1}`,
-              Status_Financeiro: 'Pendente',
+              Status_Financeiro: statusFin,
               _doPlanejamento: true,
             })
           })
@@ -127,9 +134,6 @@ export default function Medicoes() {
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={load} style={{ padding: "9px 16px", borderRadius: 8, border: `1.5px solid ${T.border}`, background: T.card, color: T.text2, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
             <ArrowPathIcon style={{ width: 15, height: 15 }} /> Atualizar
-          </button>
-          <button onClick={() => { setEditItem(null); setShowModal(true) }} style={{ padding: "9px 16px", borderRadius: 8, border: "none", background: "#00B5CC", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-            <PlusIcon style={{ width: 15, height: 15 }} /> Nova Medição
           </button>
         </div>
       </div>
