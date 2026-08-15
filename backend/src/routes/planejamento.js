@@ -350,6 +350,46 @@ async function handleAprovar(req, res, next, acaoForced) {
 
     await db.updateRowById('Planejamentos', 'ID', plan.ID, updated);
 
+    // ── Trava baseline automaticamente ao aprovar ───────────────────────────
+    if (acao === 'aprovar') {
+      try {
+        let dados = {};
+        try { dados = JSON.parse(plan.Dados_JSON || '{}'); } catch {}
+        if (!dados._baseline?.travado) {
+          const parseBRLocal = (v) => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0;
+          const equipe = dados.equipe || [];
+          const medicoes = dados.medicoes || [];
+          const versaoAnterior = dados._baseline?.versao || 0;
+          const versaoNova = versaoAnterior + 1;
+          const baseline = {
+            travado: true, travadoEm: new Date().toISOString(),
+            travadoPor: req.user.nome, travadoPorId: req.user.id,
+            versao: versaoNova, versaoLabel: `Versão ${versaoNova}`,
+            dataInicioOS: dados.dataInicioOS || plan.Data_Inicio_OS || '',
+            dataEntregaContrato: dados.dataEntregaContrato || plan.Data_Entrega_Contrato || '',
+            dataEntregaPlanejada: dados.dataEntregaPlanejada || plan.Data_Entrega_Planejada || '',
+            horasPorColaborador: equipe.map((e) => ({ colaborador: e.colaborador || e.nome || '', horasEstimadas: parseFloat(e.horas || 0), mediaHora: parseFloat(e.mediaHora || 0), custoEstimado: parseFloat(e.mediaHora || 0) * parseFloat(e.horas || 0) })),
+            totalHorasEstimadas: equipe.reduce((s, e) => s + parseFloat(e.horas || 0), 0),
+            totalCustoEquipe: equipe.reduce((s, e) => s + (parseFloat(e.mediaHora || 0) * parseFloat(e.horas || 0)), 0),
+            medicoes: medicoes.map((m) => ({ etapa: m.etapa || m.nome || '', percentual: parseFloat(m.percentual || 0), valor: parseFloat(m.valor || 0), dataPrevisao: m.dataPrevisao || m.data_previsao || '' })),
+            terceirizados: (dados.terceirizados || []).map((t) => ({ descricao: t.descricao || t.servico || t.nome || '', custo: parseBRLocal(t.custo), fornecedor: t.fornecedor || '' })),
+            despesas: (dados.despesas || []).map((d) => ({ descricao: d.descricao || '', valor: parseFloat(d.valor || 0) })),
+            valorContrato: parseFloat(dados.valorContrato || plan.Valor_Contrato || 0),
+            impostosPerc: parseFloat(dados.impostosPerc || plan.Impostos_Perc || 16.33),
+            taxaAdmPerc: parseFloat(dados.taxaAdmPerc || plan.Taxa_Adm_Perc || 12),
+            comissaoPerc: parseFloat(dados.comissaoPerc || plan.Comissao_Perc || 7.5),
+          };
+          const historicoBaselines = dados._historicoBaselines || [];
+          if (dados._baseline) historicoBaselines.push({ ...dados._baseline, arquivadoEm: new Date().toISOString() });
+          const dadosAtualizados = { ...dados, _baseline: baseline, _historicoBaselines: historicoBaselines };
+          await db.updateRowById('Planejamentos', 'ID', plan.ID, { ...updated, Dados_JSON: JSON.stringify(dadosAtualizados) });
+          console.log(`[Aprovação] Baseline ${baseline.versaoLabel} travada automaticamente para ${plan.Nome_Projeto}`);
+        }
+      } catch (errBaseline) {
+        console.error('[Aprovação] Falha ao travar baseline automaticamente (não bloqueante):', errBaseline.message);
+      }
+    }
+
     // Atualiza status do projeto se aprovado
     if (acao === 'aprovar' && plan.ID_Projeto) {
       const project = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === plan.ID_Projeto);
