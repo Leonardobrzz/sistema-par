@@ -167,6 +167,7 @@ router.get('/', async (req, res, next) => {
         id:          plan.ID,
         idProjeto:   plan.ID_Projeto,
         nome:        plan.Nome_Projeto,
+        cliente:     plan.Cliente || '',
         setor:       plan.Setor,
         valorContrato:   Math.round(V),
         receitaLiquida:  Math.round(recLiq),

@@ -627,6 +627,59 @@ export default function PlanejamentoFinanceiro() {
     XLSX.writeFile(wb, `Rel_Medicoes_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`)
   }
 
+  function exportarRelMedPDF(lista, maxMed, setor, statusMedFn, badgeMed, fmtFn) {
+    const hoje = new Date(); hoje.setHours(0,0,0,0)
+    const agora = new Date().toLocaleString('pt-BR')
+    const cabecalho = ['Projeto','Cliente','Setor','Vl. Contrato','Total Recebido',
+      ...Array.from({length: maxMed}, (_,i) => [`${i+1}ª Med. Valor`,`${i+1}ª Med. Data`,`${i+1}ª Med. Status`]).flat()
+    ]
+    let totRecebido=0, totPendente=0, totAtrasada=0
+    const linhas = lista.map(p => {
+      let acum=0
+      const cols = [p.nome, p.cliente||'', p.setor||'', fmtFn(p.valorContrato), fmtFn(p.totalRecebido)]
+      ;(Array.from({length: maxMed}, (_,i) => (p.cronograma||[])[i]||null)).forEach(m => {
+        if (m) acum += (m.valorPlan||0)
+        const st = statusMedFn(m, p.totalRecebido, acum)
+        if(st==='Recebido') totRecebido+=(m?.valorPlan||0)
+        else if(st==='Atrasada') totAtrasada+=(m?.valorPlan||0)
+        else if(st==='Pendente') totPendente+=(m?.valorPlan||0)
+        cols.push(m ? fmtFn(m.valorPlan) : '—')
+        cols.push(m?.dataPrevista ? new Date(m.dataPrevista+'T00:00:00').toLocaleDateString('pt-BR') : '—')
+        cols.push(st||'—')
+      })
+      return cols
+    })
+    const statusColor = {Recebido:'#15803D',Atrasada:'#DC2626',Pendente:'#92400E'}
+    const statusBg = {Recebido:'#DCFCE7',Atrasada:'#FEE2E2',Pendente:'#FEF9C3'}
+    const thStyle = 'padding:6px 8px;font-size:10px;font-weight:700;color:#475569;background:#F8FAFC;border:1px solid #E2E8F0;white-space:nowrap;'
+    const tdStyle = 'padding:6px 8px;font-size:10px;border:1px solid #E2E8F0;white-space:nowrap;'
+    const headerRow = `<tr>${cabecalho.map(h=>`<th style="${thStyle}">${h}</th>`).join('')}</tr>`
+    const dataRows = linhas.map((cols,ri) => {
+      const bg = ri%2===0?'#fff':'#F8FAFC'
+      return `<tr style="background:${bg}">${cols.map((c,ci)=>{
+        const isStatus = ci>=5 && (ci-5)%3===2
+        const bc = isStatus && statusBg[c] ? `background:${statusBg[c]};color:${statusColor[c]};font-weight:700;border-radius:4px;padding:2px 6px;` : ''
+        return `<td style="${tdStyle}">${isStatus&&bc?`<span style="${bc}">${c}</span>`:c}</td>`
+      }).join('')}</tr>`
+    }).join('')
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Rel. Medições</title>
+    <style>body{font-family:Arial,sans-serif;margin:20px}table{border-collapse:collapse}@media print{.noprint{display:none}}</style></head><body>
+    <div style="margin-bottom:12px">
+      <strong style="font-size:14px">Relatório de Medições — ${setor==='Todos'?'Todos os Setores':setor}</strong><br>
+      <span style="font-size:11px;color:#64748B">Gerado em: ${agora} | ${lista.length} projetos aprovados</span>
+    </div>
+    <table>${headerRow}${dataRows}</table>
+    <div style="margin-top:16px;display:flex;gap:16px;font-size:11px">
+      <span style="background:#DCFCE7;color:#15803D;padding:4px 10px;border-radius:6px;font-weight:700">✓ Recebido: ${fmtFn(totRecebido)}</span>
+      <span style="background:#FEF9C3;color:#92400E;padding:4px 10px;border-radius:6px;font-weight:700">⏳ Pendente: ${fmtFn(totPendente)}</span>
+      <span style="background:#FEE2E2;color:#DC2626;padding:4px 10px;border-radius:6px;font-weight:700">⚠ Atrasada: ${fmtFn(totAtrasada)}</span>
+    </div>
+    <script>window.onload=()=>window.print()</script></body></html>`
+    const w = window.open('','_blank')
+    w.document.write(html)
+    w.document.close()
+  }
+
   async function abrirRelMed() {
     setShowRelMed(true)
     if (relMedData.length > 0) return
@@ -2224,6 +2277,10 @@ export default function PlanejamentoFinanceiro() {
                     style={{ padding: '5px 14px', borderRadius: 7, border: '1.5px solid #16A34A', background: '#DCFCE7', color: '#15803D', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <FileSpreadsheet size={14} /> Exportar Excel
                   </button>
+                  <button onClick={() => exportarRelMedPDF(lista, maxMed, relMedSetor, statusMed, badgeMed, fmt)}
+                    style={{ padding: '5px 14px', borderRadius: 7, border: '1.5px solid #DC2626', background: '#FEE2E2', color: '#DC2626', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    📄 Exportar PDF
+                  </button>
                   <button onClick={() => setShowRelMed(false)}
                     style={{ padding: '5px 14px', borderRadius: 7, border: '1.5px solid #E2E8F0', background: '#F1F5F9', color: '#64748B', fontWeight: 700, fontSize: 13, cursor: 'pointer', marginLeft: 4 }}>
                     Fechar
@@ -2241,6 +2298,7 @@ export default function PlanejamentoFinanceiro() {
                     <thead>
                       <tr style={{ background: isDark ? '#1E293B' : '#F8FAFC' }}>
                         <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: T.text2, whiteSpace: 'nowrap', borderBottom: `2px solid ${T.border}` }}>Projeto</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: T.text2, whiteSpace: 'nowrap', borderBottom: `2px solid ${T.border}` }}>Cliente</th>
                         <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: T.text2, whiteSpace: 'nowrap', borderBottom: `2px solid ${T.border}` }}>Setor</th>
                         <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: T.text2, whiteSpace: 'nowrap', borderBottom: `2px solid ${T.border}` }}>Vl. Contrato</th>
                         <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: T.text2, whiteSpace: 'nowrap', borderBottom: `2px solid ${T.border}` }}>Total Recebido</th>
@@ -2251,7 +2309,7 @@ export default function PlanejamentoFinanceiro() {
                         ))}
                       </tr>
                       <tr style={{ background: isDark ? '#1E293B' : '#F8FAFC' }}>
-                        <th colSpan={4} style={{ borderBottom: `1px solid ${T.border}` }} />
+                        <th colSpan={5} style={{ borderBottom: `1px solid ${T.border}` }} />
                         {Array.from({ length: maxMed }, (_, i) => (
                           <>
                             <th key={`v${i}`} style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 600, color: T.text2, fontSize: 11, borderLeft: `1px solid ${T.border}` }}>Valor / Data</th>
@@ -2266,6 +2324,7 @@ export default function PlanejamentoFinanceiro() {
                         return (
                           <tr key={p.id || idx} style={{ borderBottom: `1px solid ${T.border}`, background: idx % 2 === 0 ? 'transparent' : (isDark ? 'rgba(255,255,255,0.02)' : '#F8FAFC') }}>
                             <td style={{ padding: '10px 12px', fontWeight: 600, color: T.text1, maxWidth: 260, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={p.nome}>{p.nome}</td>
+                            <td style={{ padding: '10px 12px', color: T.text2, whiteSpace: 'nowrap' }}>{p.cliente || '—'}</td>
                             <td style={{ padding: '10px 12px', color: T.text2 }}>{p.setor || '—'}</td>
                             <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: T.text1, whiteSpace: 'nowrap' }}>{fmt(p.valorContrato)}</td>
                             <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#15803D', whiteSpace: 'nowrap' }}>{fmt(p.totalRecebido)}</td>
@@ -2288,6 +2347,35 @@ export default function PlanejamentoFinanceiro() {
                           </tr>
                         )
                       })}
+                      {/* Linha de totais por status */}
+                      {(() => {
+                        let totRecebido = 0, totPendente = 0, totAtrasada = 0, totContrato = 0
+                        lista.forEach(p => {
+                          totContrato += p.valorContrato || 0
+                          let acum = 0
+                          ;(p.cronograma || []).forEach(m => {
+                            acum += (m.valorPlan || 0)
+                            const st = statusMed(m, p.totalRecebido, acum)
+                            if (st === 'Recebido') totRecebido += (m.valorPlan || 0)
+                            else if (st === 'Atrasada') totAtrasada += (m.valorPlan || 0)
+                            else if (st === 'Pendente') totPendente += (m.valorPlan || 0)
+                          })
+                        })
+                        return (
+                          <tr style={{ borderTop: `2px solid ${T.border}`, background: isDark ? '#1E293B' : '#F1F5F9' }}>
+                            <td colSpan={3} style={{ padding: '10px 12px', fontWeight: 800, color: T.text1, fontSize: 12 }}>TOTAIS ({lista.length} projetos)</td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, color: T.text1, whiteSpace: 'nowrap' }}>{fmt(totContrato)}</td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, color: '#15803D', whiteSpace: 'nowrap' }}>{fmt(lista.reduce((s,p) => s + (p.totalRecebido||0), 0))}</td>
+                            <td colSpan={maxMed * 2} style={{ padding: '10px 16px' }}>
+                              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                                <span style={{ padding: '3px 10px', borderRadius: 6, background: '#DCFCE7', color: '#15803D', fontWeight: 800, fontSize: 12 }}>✓ Recebido: {fmt(totRecebido)}</span>
+                                <span style={{ padding: '3px 10px', borderRadius: 6, background: '#FEF9C3', color: '#92400E', fontWeight: 800, fontSize: 12 }}>⏳ Pendente: {fmt(totPendente)}</span>
+                                <span style={{ padding: '3px 10px', borderRadius: 6, background: '#FEE2E2', color: '#DC2626', fontWeight: 800, fontSize: 12 }}>⚠ Atrasada: {fmt(totAtrasada)}</span>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })()}
                     </tbody>
                   </table>
                 </div>
