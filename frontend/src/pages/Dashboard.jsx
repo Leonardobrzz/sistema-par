@@ -448,12 +448,11 @@ export default function Dashboard() {
     projetosFiltrados
       .reduce((acc, p) => {
         let s = p.Status || 'Outros'
-        // Unifica variações de "Em Andamento (Atrasado)" em "Atrasado"
         if (s === 'Em Andamento (Atrasado)' || s === 'Atrasado') s = 'Atrasado'
         acc[s] = (acc[s] || 0) + 1
         return acc
       }, {})
-  ).map(([name, value]) => ({ name, value }))
+  ).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
 
   const medicoesPorMes = (() => {
     const _parseBR = v => { if (!v) return 0; const s = String(v).replace(/\./g, '').replace(',', '.'); return parseFloat(s) || 0 }
@@ -776,7 +775,7 @@ export default function Dashboard() {
                   </div>
                   {/* Legenda customizada */}
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7 }}>
-                    {statusData.sort((a, b) => b.value - a.value).map((entry) => {
+                    {statusData.map((entry) => {
                       const total = statusData.reduce((a, b) => a + b.value, 0)
                       const pct = total > 0 ? Math.round((entry.value / total) * 100) : 0
                       const cor = STATUS_COLORS[entry.name] || '#94A3B8'
