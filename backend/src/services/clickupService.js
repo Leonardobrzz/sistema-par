@@ -568,14 +568,16 @@ async function syncProjectStatuses(tasks, projetos, lists = []) {
     const listStatusRaw = (itemInfo2?.status?.status || '').toLowerCase();
     const listStatusClosed = listStatusRaw === 'closed' || listStatusRaw === 'complete' || listStatusRaw === 'fechado' || listStatusRaw === 'concluído' || listStatusRaw === 'concluido';
 
-    // Backfill: preencher Cliente e Data_Entrega_Contrato se estiverem vazios
     const itemInfo = itemById[project.ID_ClickUp];
     const clienteAtual = project.Cliente || '';
-    // Para pasta: o próprio nome da pasta é o cliente
-    // Para lista avulsa: usa _folderName (caso tenha)
     const novoCliente = clienteAtual || (itemInfo?.name && itemInfo._isFolder ? itemInfo.name : (itemInfo?._folderName || ''));
     const vencAtual = project.Data_Entrega_Contrato || '';
-    const novoVenc = vencAtual || (itemInfo?.due_date ? new Date(parseInt(itemInfo.due_date)).toISOString().split('T')[0] : '');
+    // Data do ClickUp tem prioridade: sempre reflete a data atual do projeto no ClickUp
+    const vencClickUp = itemInfo?.due_date ? new Date(parseInt(itemInfo.due_date)).toISOString().split('T')[0] : '';
+    const novoVenc = vencClickUp || vencAtual;
+    if (vencClickUp && vencClickUp !== vencAtual) {
+      console.log(`[ClickUp] Data de entrega atualizada: "${project.Nome}" ${vencAtual || '(vazio)'} → ${vencClickUp}`);
+    }
     const mudouCliente = novoCliente !== clienteAtual;
     const mudouVenc = novoVenc !== vencAtual;
 
