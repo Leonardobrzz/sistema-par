@@ -249,15 +249,24 @@ async function autoImportProjects(items) {
 
   for (const item of items) {
     if (existingIds.has(item.id)) {
-      // Se já existe mas com Setor vazio, tenta corrigir por keyword
       const existente = existingMap[item.id];
-      if (existente && (!existente.Setor || existente.Setor.trim() === '')) {
-        const setorInferido = inferirSetorPorKeyword(item.name);
-        if (setorInferido) {
-          atualizacoes.push({ ID_Projeto: existente.ID_Projeto, Setor: setorInferido });
-          console.log(`[ClickUp] Corrigindo Setor vazio: ${item.name} → ${setorInferido}`);
-        } else {
-          console.log(`[ClickUp DIAG] Pulando (já existe, setor vazio sem inferência): ${item.name} (${item.id})`);
+      if (existente) {
+        const upd = {};
+        // Atualiza nome se mudou no ClickUp
+        if (item.name && existente.Nome !== item.name) {
+          upd.Nome = item.name;
+          console.log(`[ClickUp] Nome atualizado: "${existente.Nome}" → "${item.name}"`);
+        }
+        // Corrige Setor vazio por keyword
+        if (!existente.Setor || existente.Setor.trim() === '') {
+          const setorInferido = inferirSetorPorKeyword(item.name);
+          if (setorInferido) {
+            upd.Setor = setorInferido;
+            console.log(`[ClickUp] Corrigindo Setor vazio: ${item.name} → ${setorInferido}`);
+          }
+        }
+        if (Object.keys(upd).length > 0) {
+          atualizacoes.push({ ID_Projeto: existente.ID_Projeto, ...upd });
         }
       }
       continue;
@@ -314,7 +323,8 @@ async function autoImportProjects(items) {
 
   for (const upd of atualizacoes) {
     try {
-      await db.updateRowById('Projetos_Contratos', 'ID_Projeto', upd.ID_Projeto, { Setor: upd.Setor });
+      const { ID_Projeto, ...campos } = upd;
+      await db.updateRowById('Projetos_Contratos', 'ID_Projeto', ID_Projeto, campos);
     } catch (e) {
       console.error(`[ClickUp] Erro ao atualizar Setor de ${upd.ID_Projeto}:`, e.message);
     }
