@@ -1004,20 +1004,29 @@ export default function PlanejamentoFinanceiro() {
             <span style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginRight: 2 }}>Setor:</span>
             {[{ label: "Todos", val: "" }, { label: "ARQ", val: "Arquitetura" }, { label: "INF", val: "Infraestrutura" }, { label: "SAN", val: "Saneamento" }].map(({ label, val }) => (
               <button key={label} onClick={() => setFiltroSetor(val)}
-                style={{ padding: "4px 12px", borderRadius: 8, border: `1.5px solid ${filtroSetor === val ? T.accent : T.border}`, fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
-                  background: filtroSetor === val ? T.accent : T.card,
-                  color: filtroSetor === val ? "#fff" : T.text2,
+                style={{ padding: "4px 12px", borderRadius: 8, border: `1.5px solid ${filtroSetor === val ? "#7C3AED" : T.border}`, fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
+                  background: filtroSetor === val ? "#EDE9FE" : T.card,
+                  color: filtroSetor === val ? "#7C3AED" : T.text2,
                 }}>
                 {filtroSetor === val && val !== "" && "✓ "}{label}
               </button>
             ))}
             <span style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginLeft: 8, marginRight: 2 }}>Status:</span>
-            {["Backlog", "Em Andamento", "Em Análise", "Paralisado", "Concluído", "Arquivado", "Aguardando Faturamento", "Pendência"].map(label => {
+            {[
+              { label: "Backlog",                color: "#7C3AED", bg: "#EDE9FE" },
+              { label: "Em Andamento",           color: "#D97706", bg: "#FEF3C7" },
+              { label: "Em Análise",             color: "#0891B2", bg: "#CFFAFE" },
+              { label: "Paralisado",             color: "#DC2626", bg: "#FEE2E2" },
+              { label: "Concluído",              color: "#16A34A", bg: "#DCFCE7" },
+              { label: "Arquivado",              color: "#475569", bg: "#E2E8F0" },
+              { label: "Aguardando Faturamento", color: "#1D4ED8", bg: "#DBEAFE" },
+              { label: "Pendência",              color: "#BE185D", bg: "#FCE7F3" },
+            ].map(({ label, color, bg }) => {
               const active = filtroStatus === label
               return (
                 <button key={label} onClick={() => setFiltroStatus(active ? "" : label)}
-                  style={{ padding: "4px 12px", borderRadius: 8, border: `1.5px solid ${active ? T.accent : T.border}`, fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
-                    background: active ? T.accent : T.card, color: active ? "#fff" : T.text2,
+                  style={{ padding: "4px 12px", borderRadius: 8, border: `1.5px solid ${active ? color : T.border}`, fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
+                    background: active ? bg : T.card, color: active ? color : T.text2,
                   }}>
                   {active && "✓ "}{label}
                 </button>
