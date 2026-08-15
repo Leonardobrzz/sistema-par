@@ -251,6 +251,7 @@ export default function PlanejamentoFinanceiro() {
   const [filtroCliente, setFiltroCliente] = useState("")
   const [filtroBusca, setFiltroBusca] = useState("")
   const [filtroStatus, setFiltroStatus] = useState("")
+  const [filtroPlan, setFiltroPlan] = useState("")  // "aprovado" | "sem_plan" | ""
 
   useEffect(() => {
     api.get("/projetos").then(r => setProjetos(r.data?.projetos || r.data || [])).catch(() => []).finally(() => setLoadingProjetos(false))
@@ -417,9 +418,11 @@ export default function PlanejamentoFinanceiro() {
         const b = filtroBusca.toLowerCase()
         if (!(p.Nome || '').toLowerCase().includes(b) && !(p.Cliente || '').toLowerCase().includes(b)) return false
       }
+      if (filtroPlan === 'aprovado' && p.statusPlanejamento !== 'Aprovado') return false
+      if (filtroPlan === 'sem_plan' && p.statusPlanejamento) return false
       return true
     })
-  }, [projetos, filtroSetor, filtroCliente, filtroStatus, filtroBusca])
+  }, [projetos, filtroSetor, filtroCliente, filtroStatus, filtroBusca, filtroPlan])
 
   function validarCampos() {
     const v = form
@@ -1089,8 +1092,23 @@ export default function PlanejamentoFinanceiro() {
                 </button>
               )
             })}
-            {(filtroSetor || filtroStatus || filtroBusca) && (
-              <button onClick={() => { setFiltroSetor(""); setFiltroCliente(""); setFiltroStatus(""); setFiltroBusca("") }}
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginLeft: 8, marginRight: 2 }}>Planej.:</span>
+            {[
+              { label: "Aprovado",      val: "aprovado",  color: "#16A34A", bg: "#DCFCE7" },
+              { label: "Sem Planej.",   val: "sem_plan",  color: "#DC2626", bg: "#FEE2E2" },
+            ].map(({ label, val, color, bg }) => {
+              const active = filtroPlan === val
+              return (
+                <button key={val} onClick={() => setFiltroPlan(active ? "" : val)}
+                  style={{ padding: "4px 12px", borderRadius: 8, border: `1.5px solid ${active ? color : T.border}`, fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
+                    background: active ? bg : T.card, color: active ? color : T.text2,
+                  }}>
+                  {active && "✓ "}{label}
+                </button>
+              )
+            })}
+            {(filtroSetor || filtroStatus || filtroBusca || filtroPlan) && (
+              <button onClick={() => { setFiltroSetor(""); setFiltroCliente(""); setFiltroStatus(""); setFiltroBusca(""); setFiltroPlan("") }}
                 style={{ padding: "4px 12px", borderRadius: 8, border: "1.5px solid #FECACA", background: "#FEF2F2", color: "#DC2626", fontSize: 12, fontWeight: 700, cursor: "pointer", marginLeft: 4 }}>
                 Limpar
               </button>
