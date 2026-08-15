@@ -21,14 +21,15 @@ const fmtFull = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', curre
 const fmtN = (v, dec = 1) => Number(v || 0).toFixed(dec)
 
 const STATUS_COLORS = {
-  'Em Andamento':           '#22C55E',
-  'Em Andamento (Atrasado)':'#EF4444',
-  'A Planejar':             '#F59E0B',
-  'Planejado':              '#8B5CF6',
-  'Concluído':              '#0EA5E9',
-  'Pausado':                '#94A3B8',
-  'Paralisado':             '#CBD5E1',
-  'Backlog':                '#E2E8F0',
+  'Em Andamento':            '#22C55E',
+  'Atrasado':                '#EF4444',
+  'Pendência':               '#94A3B8',
+  'Aguardando Faturamento':  '#8B5CF6',
+  'Paralisado':              '#CBD5E1',
+  'A Planejar':              '#F59E0B',
+  'Planejado':               '#0EA5E9',
+  'Concluído':               '#0EA5E9',
+  'Backlog':                 '#E2E8F0',
 }
 
 const STATUS_BG = {
@@ -446,7 +447,9 @@ export default function Dashboard() {
   const statusData = Object.entries(
     projetosFiltrados
       .reduce((acc, p) => {
-        const s = p.Status || 'Outros'
+        let s = p.Status || 'Outros'
+        // Unifica variações de "Em Andamento (Atrasado)" em "Atrasado"
+        if (s === 'Em Andamento (Atrasado)' || s === 'Atrasado') s = 'Atrasado'
         acc[s] = (acc[s] || 0) + 1
         return acc
       }, {})
