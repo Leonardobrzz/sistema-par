@@ -207,7 +207,7 @@ export default function Aprovacao() {
     <div className="space-y-5 fade-in">
       <div className="flex items-center gap-3 mb-2">
         <ShieldCheckIcon className="w-6 h-6 text-par-400" />
-        <h1 className="page-title">Aprovacoes e Baseline</h1>
+        <h1 className="page-title">Aprovações e Baseline</h1>
       </div>
 
       {/* Abas */}
