@@ -238,6 +238,13 @@ async function getAllListsFromSpace(spaceId) {
 
 // ── Auto-importar listas como projetos ───────────────────────────────────────
 
+// Extrai o código do projeto (ex: "ARQ-2026-3") do nome
+function extrairCodigo(nome) {
+  if (!nome) return null;
+  const m = String(nome).match(/^((?:ARQ|SAN|INF)-\d{4}-\d+)/i);
+  return m ? m[1].toUpperCase() : null;
+}
+
 async function autoImportProjects(items) {
   const existing = await db.readSheet('Projetos_Contratos');
   const existingIds = new Set(existing.map((p) => p.ID_ClickUp).filter(Boolean));
@@ -246,6 +253,15 @@ async function autoImportProjects(items) {
   const atualizacoes = [];
   const existingMap = {};
   for (const p of existing) { if (p.ID_ClickUp) existingMap[p.ID_ClickUp] = p; }
+
+  // Mapa de código → projeto sem ID_ClickUp (para match por prefixo)
+  const semVinculo = {};
+  for (const p of existing) {
+    if (!p.ID_ClickUp) {
+      const cod = extrairCodigo(p.Nome);
+      if (cod) semVinculo[cod] = p;
+    }
+  }
 
   for (const item of items) {
     if (existingIds.has(item.id)) {
@@ -294,6 +310,24 @@ async function autoImportProjects(items) {
           atualizacoes.push({ ID_Projeto: existente.ID_Projeto, ...upd });
         }
       }
+      continue;
+    }
+
+    // Tenta vincular por código (ARQ-YYYY-N) projeto sem ID_ClickUp
+    const codClickUp = extrairCodigo(item.name);
+    if (codClickUp && semVinculo[codClickUp]) {
+      const existente = semVinculo[codClickUp];
+      const upd = { ID_ClickUp: item.id };
+      if (item.name && existente.Nome !== item.name) {
+        upd.Nome = item.name;
+        upd._nomeAnterior = existente.Nome;
+        console.log(`[ClickUp] Vinculando por código ${codClickUp}: "${existente.Nome}" → "${item.name}"`);
+      }
+      const dueDateClickUp = item.due_date ? new Date(parseInt(item.due_date)).toISOString().split('T')[0] : '';
+      if (dueDateClickUp) upd.Data_Entrega_Planejada = dueDateClickUp;
+      atualizacoes.push({ ID_Projeto: existente.ID_Projeto, ...upd });
+      existingIds.add(item.id); // não importa como novo
+      delete semVinculo[codClickUp];
       continue;
     }
 
