@@ -252,12 +252,37 @@ async function autoImportProjects(items) {
       const existente = existingMap[item.id];
       if (existente) {
         const upd = {};
-        // Atualiza nome se mudou no ClickUp
+        // Nome: sempre usa o ClickUp como fonte de verdade
         if (item.name && existente.Nome !== item.name) {
           upd.Nome = item.name;
+          upd._nomeAnterior = existente.Nome; // para atualizar Planejamentos depois
           console.log(`[ClickUp] Nome atualizado: "${existente.Nome}" → "${item.name}"`);
         }
-        // Corrige Setor vazio por keyword
+        // Data de entrega: sempre sobrescreve com o due_date do ClickUp
+        const dueDateClickUp = item.due_date
+          ? new Date(parseInt(item.due_date)).toISOString().split('T')[0]
+          : '';
+        if (dueDateClickUp && existente.Data_Entrega_Planejada !== dueDateClickUp) {
+          upd.Data_Entrega_Planejada = dueDateClickUp;
+          console.log(`[ClickUp] Data entrega atualizada: "${existente.Data_Entrega_Planejada}" → "${dueDateClickUp}"`);
+        }
+        // Status: sincroniza status do ClickUp
+        const statusClickUp = (() => {
+          const s = (item.status?.status || '').toLowerCase().trim();
+          if (s === 'closed' || s === 'complete' || s === 'concluído' || s === 'concluido') return 'Concluído';
+          if (s === 'backlog' || s === 'a planejar') return 'A Planejar';
+          if (s === 'paralisado') return 'Paralisado';
+          if (s === 'arquivado') return 'Arquivado';
+          if (s === 'aguardando faturamento') return 'Aguardando Faturamento';
+          if (s === 'pendencia' || s === 'pendência') return 'Pendência';
+          if (s === 'em andamento') return 'Em Andamento';
+          return null; // não sobrescreve se não reconhecer
+        })();
+        if (statusClickUp && existente.Status !== statusClickUp) {
+          upd.Status = statusClickUp;
+          console.log(`[ClickUp] Status atualizado: "${existente.Status}" → "${statusClickUp}"`);
+        }
+        // Setor: corrige apenas se estiver vazio
         if (!existente.Setor || existente.Setor.trim() === '') {
           const setorInferido = inferirSetorPorKeyword(item.name);
           if (setorInferido) {
@@ -265,7 +290,7 @@ async function autoImportProjects(items) {
             console.log(`[ClickUp] Corrigindo Setor vazio: ${item.name} → ${setorInferido}`);
           }
         }
-        if (Object.keys(upd).length > 0) {
+        if (Object.keys(upd).filter(k => k !== '_nomeAnterior').length > 0) {
           atualizacoes.push({ ID_Projeto: existente.ID_Projeto, ...upd });
         }
       }
@@ -323,14 +348,21 @@ async function autoImportProjects(items) {
 
   for (const upd of atualizacoes) {
     try {
-      const { ID_Projeto, ...campos } = upd;
+      const { ID_Projeto, _nomeAnterior, ...campos } = upd;
       await db.updateRowById('Projetos_Contratos', 'ID_Projeto', ID_Projeto, campos);
+      // Propaga novo nome para tabela Planejamentos (campo Nome_Projeto)
+      if (campos.Nome) {
+        const plans = await db.findRows('Planejamentos', p => p.ID_Projeto === ID_Projeto);
+        for (const plan of plans) {
+          await db.updateRowById('Planejamentos', 'ID_Planejamento', plan.ID_Planejamento, { ...plan, Nome_Projeto: campos.Nome });
+        }
+      }
     } catch (e) {
-      console.error(`[ClickUp] Erro ao atualizar Setor de ${upd.ID_Projeto}:`, e.message);
+      console.error(`[ClickUp] Erro ao atualizar projeto ${upd.ID_Projeto}:`, e.message);
     }
   }
   if (atualizacoes.length > 0) {
-    console.log(`[ClickUp] ${atualizacoes.length} projeto(s) com Setor corrigido.`);
+    console.log(`[ClickUp] ${atualizacoes.length} projeto(s) atualizado(s) do ClickUp.`);
     broadcast('sync', { type: 'PROJETOS_ATUALIZADOS', count: atualizacoes.length });
   }
 }
