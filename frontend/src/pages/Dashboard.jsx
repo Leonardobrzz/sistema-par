@@ -444,11 +444,11 @@ export default function Dashboard() {
   const totalAReceber = totalAReceberTabela + totalAReceberPlanejado
   const alertasCriticos = alertas.filter(a => a.Nivel === 'error')
 
+  // Usa o status original do ClickUp — remove sufixo " (Atrasado)" que é derivado pelo PAR
   const statusData = Object.entries(
     projetosFiltrados
       .reduce((acc, p) => {
-        let s = p.Status || 'Outros'
-        if (s === 'Em Andamento (Atrasado)' || s === 'Atrasado') s = 'Atrasado'
+        const s = (p.Status || 'Outros').replace(' (Atrasado)', '').trim()
         acc[s] = (acc[s] || 0) + 1
         return acc
       }, {})
