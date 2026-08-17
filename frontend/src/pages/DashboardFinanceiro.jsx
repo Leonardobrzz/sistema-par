@@ -260,27 +260,37 @@ export default function DashboardFinanceiro() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
-        {/* Receita vs Previsto por mês */}
-        <Secao titulo="Receita — Recebido vs Previsto (18 meses)" T={T}>
-          <ResponsiveContainer width="100%" height={240}>
+        {/* A Receber vs A Pagar */}
+        <Secao titulo="A Receber vs. A Pagar — 12 meses passados + 12 futuros" T={T}>
+          <div style={{ fontSize: 10, color: T.text3, marginBottom: 8 }}>
+            A Receber = medições pendentes por mês · A Pagar = deduções (imp. + taxa adm. + comissão) · Recebido = medições recebidas
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={receitaMensal} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
               <defs>
-                <linearGradient id="gradRecebido" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#7C3AED" stopOpacity={0.25} />
+                <linearGradient id="gradRec" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#7C3AED" stopOpacity={0.3} />
                   <stop offset="95%" stopColor="#7C3AED" stopOpacity={0} />
                 </linearGradient>
-                <linearGradient id="gradPrevisto" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="gradPag" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#EF4444" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#EF4444" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="gradRecebido" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%"  stopColor="#22C55E" stopOpacity={0.2} />
                   <stop offset="95%" stopColor="#22C55E" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke={T.grid} />
-              <XAxis dataKey="mes" tickFormatter={mesCurto} tick={{ fill: T.text2, fontSize: 10 }} />
+              <XAxis dataKey="mes" type="category" tickFormatter={mesCurto} tick={{ fill: T.text2, fontSize: 9 }} interval={1} />
               <YAxis tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} tick={{ fill: T.text2, fontSize: 10 }} />
-              <Tooltip contentStyle={tooltipStyle} formatter={(v, n) => [fmtR(v), n === "recebido" ? "Recebido" : "Previsto"]} labelFormatter={mesCurto} />
-              <Legend formatter={v => v === "recebido" ? "Recebido" : "Previsto"} wrapperStyle={{ fontSize: 11, color: T.text2 }} />
-              <Area type="monotone" dataKey="recebido" stroke="#7C3AED" fill="url(#gradRecebido)" strokeWidth={2} dot={false} />
-              <Area type="monotone" dataKey="previsto" stroke="#22C55E" fill="url(#gradPrevisto)" strokeWidth={2} dot={false} strokeDasharray="4 2" />
+              <Tooltip contentStyle={tooltipStyle}
+                formatter={(v, n) => [fmtR(v), n === "aReceber" ? "A Receber" : n === "aPagar" ? "A Pagar" : "Recebido"]}
+                labelFormatter={mesCurto} />
+              <Legend formatter={v => v === "aReceber" ? "A Receber" : v === "aPagar" ? "A Pagar" : "Recebido"} wrapperStyle={{ fontSize: 11, color: T.text2 }} />
+              <Area type="monotone" dataKey="recebido" stroke="#22C55E" fill="url(#gradRecebido)" strokeWidth={2} dot={false} />
+              <Area type="monotone" dataKey="aReceber" stroke="#7C3AED" fill="url(#gradRec)" strokeWidth={2} dot={false} strokeDasharray="4 2" />
+              <Area type="monotone" dataKey="aPagar"   stroke="#EF4444" fill="url(#gradPag)"  strokeWidth={2} dot={false} strokeDasharray="4 2" />
             </AreaChart>
           </ResponsiveContainer>
         </Secao>

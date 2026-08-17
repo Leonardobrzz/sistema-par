@@ -125,57 +125,62 @@ router.get('/', async (req, res, next) => {
       return info ? info.setor : 'Outros';
     }
 
-    // ── Receita mensal — últimos 18 meses ─────────────────────────────────
+    // ── Receita mensal — últimos 12 meses + próximos 12 meses ─────────────
     const hoje = new Date();
+    const mesAtual = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
     const meses = [];
-    for (let i = 17; i >= 0; i--) {
+    for (let i = 11; i >= 0; i--) {
       const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
       meses.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
     }
-    const SETORES_LIST = ['Arquitetura','Infraestrutura','Saneamento'];
-    const recebidoPorMes = Object.fromEntries(meses.map(m => [m, 0]));
-    const previsaoPorMes = Object.fromEntries(meses.map(m => [m, 0]));
-    const recebidoPorMesSetor = Object.fromEntries(meses.map(m => [m, {}]));
-    const previsaoPorMesSetor = Object.fromEntries(meses.map(m => [m, {}]));
+    for (let i = 1; i <= 12; i++) {
+      const d = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
+      meses.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    }
 
-    // Recebidos vêm do OPP (contas-receber liquidadas)
-    oppReceitas
-      .filter(r => r.liquidado_rec === 'Sim')
-      .forEach(r => {
-        const valor = parseFloat(r.valor_rec || 0);
-        if (!valor) return;
-        const setor = setorDaReceita(r);
-        // data do recebimento: vencimento_rec ou data_emissao
-        const mes = mesYM(r.vencimento_rec) || mesYM(r.data_emissao);
-        if (mes && recebidoPorMes[mes] !== undefined) {
-          recebidoPorMes[mes] += valor;
-          recebidoPorMesSetor[mes][setor] = (recebidoPorMesSetor[mes][setor] || 0) + valor;
-        }
+    const recebidoPorMes  = Object.fromEntries(meses.map(m => [m, 0]));
+    const aReceberPorMesMap = Object.fromEntries(meses.map(m => [m, 0]));
+    const aPagePorMesMap    = Object.fromEntries(meses.map(m => [m, 0]));
+
+    // Mapa idProjeto → percentuais do planejamento
+    const percPorProjeto = {};
+    aprovados.forEach(plan => {
+      let dados = {};
+      try { dados = JSON.parse(plan.Dados_JSON || '{}'); } catch {}
+      const d = dados._baseline || dados;
+      const imp = Math.max(pBR(d.impostosPerc) || 20, 16.33);
+      const ta  = Math.max(pBR(d.taxaAdmPerc)  || 12, 5);
+      const co  = 7.5;
+      percPorProjeto[plan.ID_Projeto] = (imp + ta + co) / 100;
+    });
+
+    // Recebidos = medições com Status_Financeiro = 'Recebido' (Data_Recebimento ou Data_Previsao)
+    medicoesTabela
+      .filter(m => m.Status_Financeiro === 'Recebido')
+      .forEach(m => {
+        const dataRef = m.Data_Recebimento || m.Data_Previsao;
+        const mes = mesYM(dataRef);
+        const valor = pBR(m.Valor);
+        if (mes && recebidoPorMes[mes] !== undefined) recebidoPorMes[mes] += valor;
       });
 
-    // Previsto vem das medições não recebidas (tabela + JSON)
+    // A Receber = medições pendentes agrupadas por Data_Previsao
+    // A Pagar   = A Receber × percentual de deduções do planejamento do projeto
     todasMedicoes.forEach(m => {
-      const setor = setorPorProjeto[m.idProjeto] || 'Outros';
-      if (m.statusFinanceiro !== 'Recebido' && m.dataPrevisao) {
-        const mes = mesYM(m.dataPrevisao);
-        if (mes && previsaoPorMes[mes] !== undefined) {
-          previsaoPorMes[mes] += m.valor;
-          previsaoPorMesSetor[mes][setor] = (previsaoPorMesSetor[mes][setor] || 0) + m.valor;
-        }
-      }
+      if (m.statusFinanceiro === 'Recebido' || !m.dataPrevisao) return;
+      const mes = mesYM(m.dataPrevisao);
+      if (!mes || aReceberPorMesMap[mes] === undefined) return;
+      aReceberPorMesMap[mes] += m.valor;
+      const perc = percPorProjeto[m.idProjeto] || 0.355; // fallback ~35.5%
+      aPagePorMesMap[mes] += m.valor * perc;
     });
 
     const receitaMensal = meses.map(mes => ({
       mes,
-      recebido: Math.round(recebidoPorMes[mes]),
-      previsto:  Math.round(previsaoPorMes[mes]),
-      porSetor: SETORES_LIST.reduce((acc, s) => {
-        acc[s] = {
-          recebido: Math.round(recebidoPorMesSetor[mes][s] || 0),
-          previsto:  Math.round(previsaoPorMesSetor[mes][s] || 0),
-        };
-        return acc;
-      }, {}),
+      recebido:  Math.round(recebidoPorMes[mes]),
+      aReceber:  Math.round(aReceberPorMesMap[mes]),
+      aPagar:    Math.round(aPagePorMesMap[mes]),
+      isFuture:  mes > mesAtual,
     }));
 
     // ── Fluxo de caixa: próximos 6 meses ─────────────────────────────────
@@ -218,7 +223,9 @@ router.get('/', async (req, res, next) => {
 
     // ── KPIs ──────────────────────────────────────────────────────────────
     const totalCarteira  = aprovados.reduce((s, p) => s + pBR(p.Valor_Contrato), 0);
-    const totalRecebido  = Object.values(recebidoOPPPorProjeto).reduce((s, v) => s + v, 0);
+    const totalRecebido  = medicoesTabela
+      .filter(m => m.Status_Financeiro === 'Recebido')
+      .reduce((s, m) => s + pBR(m.Valor), 0);
     const totalAReceber  = todasMedicoes.filter(m => m.statusFinanceiro !== 'Recebido').reduce((s, m) => s + m.valor, 0);
     const totalAtrasado  = aging.total;
 
@@ -238,7 +245,9 @@ router.get('/', async (req, res, next) => {
       const totalDespInt = (d.despesasInternas|| []).reduce((s, x) => s + pBR(x.custo), 0);
       const lucro   = recLiq - totalTercs - totalEq - totalDesp - totalDespInt;
       const margem  = V > 0 ? (lucro / V) * 100 : 0;
-      const recebido = recebidoOPPPorProjeto[plan.ID_Projeto] || 0;
+      const recebido = medicoesTabela
+        .filter(m => m.ID_Projeto === plan.ID_Projeto && m.Status_Financeiro === 'Recebido')
+        .reduce((s, m) => s + pBR(m.Valor), 0);
 
       return {
         id: plan.ID_Projeto,
