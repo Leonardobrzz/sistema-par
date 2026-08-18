@@ -458,34 +458,58 @@ export default function Dashboard() {
 
   const medicoesPorMes = (() => {
     const _parseBR = v => { if (!v) return 0; const s = String(v).replace(/\./g, '').replace(',', '.'); return parseFloat(s) || 0 }
-    const mesAtual = new Date().toISOString().slice(0, 7)
+    const hoje = new Date()
+    const mesAtual = hoje.toISOString().slice(0, 7)
+    const mesFuturo6 = new Date(hoje.getFullYear(), hoje.getMonth() + 6, 1).toISOString().slice(0, 7)
+    const acumPassado = { aReceber: 0, aPagar: 0 }
     const meses = {}
 
     const plansAtivos = filtroSetor ? aprovados.filter(p => p.Setor === filtroSetor) : aprovados
     plansAtivos.forEach(plan => {
       try {
         const dados = JSON.parse(plan.Dados_JSON || '{}')
-        const ip = Math.max(parseFloat(dados.impostosPerc || 20), 16.33)
-        const ta = Math.max(parseFloat(dados.taxaAdmPerc || 12), 5)
+        const V = _parseBR(dados.valorContrato || plan.Valor_Contrato)
+        const ip = Math.max(_parseBR(dados.impostosPerc || 20), 16.33)
+        const ta = Math.max(_parseBR(dados.taxaAdmPerc || 12), 5)
         const co = 7.5
-        const percDespesas = (ip + ta + co) / 100
+        const totalCusto = V > 0
+          ? V * (ip + ta + co) / 100
+            + (dados.terceirizados || []).reduce((s, t) => s + _parseBR(t.custo), 0)
+            + (dados.despesas || []).reduce((s, x) => s + _parseBR(x.valor), 0)
+            + (dados.despesasInternas || []).reduce((s, x) => s + _parseBR(x.custo), 0)
+          : 0
 
         const meds = dados.medicoes || dados._baseline?.medicoesCronograma || []
         meds.forEach(m => {
           const d = m.dataPrevisao || m.dataPrevista || m.dataPrevisaoPlanejada || ''
           if (!d) return
           const key = d.slice(0, 7)
-          if (key > mesAtual) return  // corta datas futuras
-          if (!meses[key]) meses[key] = { mes: key, aReceber: 0, aPagar: 0 }
+          if (key > mesFuturo6) return
           const val = _parseBR(m.valor || m.valorPlanejado || 0)
-          meses[key].aReceber += val
-          meses[key].aPagar += val * percDespesas
+          const pagar = V > 0 ? (val / V) * totalCusto : val * 0.355
+          if (key < mesAtual) {
+            acumPassado.aReceber += val
+            acumPassado.aPagar += pagar
+          } else {
+            if (!meses[key]) meses[key] = { mes: key, aReceber: 0, aPagar: 0 }
+            meses[key].aReceber += val
+            meses[key].aPagar += pagar
+          }
         })
       } catch {}
     })
 
-    return Object.values(meses).sort((a, b) => a.mes.localeCompare(b.mes)).slice(-12).map(m => ({
+    // Garante que todos os meses da janela existam
+    for (let i = 0; i <= 6; i++) {
+      const d = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1)
+      const key = d.toISOString().slice(0, 7)
+      if (!meses[key]) meses[key] = { mes: key, aReceber: 0, aPagar: 0 }
+    }
+
+    return Object.values(meses).sort((a, b) => a.mes.localeCompare(b.mes)).map((m, idx) => ({
       ...m,
+      aReceber: idx === 0 ? m.aReceber + acumPassado.aReceber : m.aReceber,
+      aPagar:   idx === 0 ? m.aPagar   + acumPassado.aPagar   : m.aPagar,
       label: new Date(m.mes + '-15').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
     }))
   })()
@@ -678,7 +702,7 @@ export default function Dashboard() {
                 <BadgeDollarSign size={16} style={{ color: '#7C3AED' }} />
                 <span style={{ fontWeight: 800, fontSize: 15, color: T.text1 }}>A Receber vs. A Pagar</span>
               </div>
-              <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 20 }}>Medições planejadas (até hoje) · impostos + taxa adm + comissão{filtroSetor ? ` · ${filtroSetor}` : ''}</div>
+              <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 20 }}>Mês atual acumula passado · próximos 6 meses · A Pagar = deduções + terceirizados + despesas{filtroSetor ? ` · ${filtroSetor}` : ''}</div>
               {medicoesPorMes.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 0', color: '#94A3B8', fontSize: 13 }}>Nenhuma medição com data registrada nos planejamentos aprovados</div>
               ) : (
