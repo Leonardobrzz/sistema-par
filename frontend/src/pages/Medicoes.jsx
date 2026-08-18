@@ -12,10 +12,11 @@ import { useTheme } from '../contexts/ThemeContext'
 const STATUS_MEDICAO = ['Prevista', 'Em Andamento', 'Concluída', 'Cancelada']
 
 function statusFinBadge(s) {
-  if (s === 'Recebido')  return { bg: '#DCFCE7', color: '#15803D' }
-  if (s === 'Faturado' || s === 'NF Emitida') return { bg: '#DBEAFE', color: '#1D4ED8' }
-  if (s === 'Atrasado')  return { bg: '#FEE2E2', color: '#DC2626' }
-  return { bg: '#F1F5F9', color: '#64748B' }
+  if (s === 'Recebido')           return { bg: '#DCFCE7', color: '#15803D', label: 'Recebido' }
+  if (s === 'Faturado' || s === 'NF Emitida') return { bg: '#DBEAFE', color: '#1D4ED8', label: s }
+  if (s === 'Atrasado')           return { bg: '#FEE2E2', color: '#DC2626', label: 'Atrasado' }
+  if (s === 'Pendente' || !s)     return { bg: '#FEF3C7', color: '#92400E', label: 'A Faturar' }
+  return { bg: '#F1F5F9', color: '#64748B', label: s }
 }
 
 const SETORES_PAR = ['Arquitetura', 'Saneamento', 'Infraestrutura', 'Administrativo']
@@ -49,7 +50,7 @@ export default function Medicoes() {
     try {
       const [medRes, projRes, planRes] = await Promise.all([
         api.get('/medicoes'),
-        api.get('/projetos'),
+        api.get('/projetos?incluirTodos=true'),
         api.get('/planejamento'),
       ])
       const tabela = medRes.data.medicoes || medRes.data || []
@@ -226,7 +227,8 @@ export default function Medicoes() {
                   const finSt = statusFinBadge(m.Status_Financeiro)
                   const valorTotal = parseFloat(m.Valor_Medicao || m.Valor || 0)
                   const valorRecebido = m.Status_Financeiro === 'Recebido' ? valorTotal : 0
-                  const nrMedicao = m.Nr_Medicao || m.Etapa || m.Descricao || '—'
+                  const nrMedicao = m.Nr_Medicao || null
+                  const descricaoMed = m.Etapa || m.Descricao || ''
                   const nrOSInterna = m.Nr_OS_OPP || m.OC || ''
                   const dataMedicao = m.Data_Realizacao || m.Data_Prevista || m.Data_Previsao || ''
                   const linkProduto = m.Link_Produto || m.Link_Contrato || ''
@@ -250,10 +252,14 @@ export default function Medicoes() {
                       <td style={{ padding: "11px 14px", textAlign: "center", fontSize: 12, color: T.text2 }}>
                         {dataMedicao ? formatDate(dataMedicao) : <span style={{ color: "#CBD5E1" }}>—</span>}
                       </td>
-                      <td style={{ padding: "11px 14px", textAlign: "center" }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: "#7C3AED" }}>
-                          {m.Nr_Medicao || <span style={{ color: "#CBD5E1", fontWeight: 400 }}>—</span>}
-                        </span>
+                      <td style={{ padding: "11px 14px", textAlign: "center", maxWidth: 160 }}>
+                        {nrMedicao ? (
+                          <span style={{ fontSize: 12, fontWeight: 700, color: "#7C3AED" }}>{nrMedicao}</span>
+                        ) : descricaoMed ? (
+                          <span style={{ fontSize: 11, color: "#64748B", fontStyle: "italic", whiteSpace: "normal", display: "block", maxWidth: 150, textOverflow: "ellipsis", overflow: "hidden" }} title={descricaoMed}>
+                            {descricaoMed}
+                          </span>
+                        ) : <span style={{ color: "#CBD5E1" }}>—</span>}
                       </td>
                       <td style={{ padding: "11px 14px", textAlign: "center" }}>
                         {nrOSInterna ? (
@@ -282,8 +288,11 @@ export default function Medicoes() {
                       </td>
                       <td style={{ padding: "11px 14px", textAlign: "center" }}>
                         <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: finSt.bg, color: finSt.color }}>
-                          {m.Status_Financeiro || 'Pendente'}
+                          {finSt.label}
                         </span>
+                        {m._doPlanejamento && (
+                          <div style={{ fontSize: 9, color: "#94A3B8", marginTop: 2 }}>do planejamento</div>
+                        )}
                       </td>
                       <td style={{ padding: "11px 14px", textAlign: "right" }}>
                         <button onClick={() => { setEditItem(m); setShowModal(true) }}
