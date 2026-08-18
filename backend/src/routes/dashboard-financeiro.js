@@ -145,16 +145,25 @@ router.get('/', async (req, res, next) => {
     const aReceberPorMesMap = Object.fromEntries(todosOsMeses.map(m => [m, 0]));
     const aPagePorMesMap    = Object.fromEntries(todosOsMeses.map(m => [m, 0]));
 
-    // Mapa idProjeto → percentuais do planejamento
-    const percPorProjeto = {};
+    // Mapa idProjeto → custos absolutos do planejamento
+    const custosPorProjeto = {};
     aprovados.forEach(plan => {
       let dados = {};
       try { dados = JSON.parse(plan.Dados_JSON || '{}'); } catch {}
       const d = dados._baseline || dados;
+      const V   = pBR(d.valorContrato || plan.Valor_Contrato);
       const imp = Math.max(pBR(d.impostosPerc) || 20, 16.33);
       const ta  = Math.max(pBR(d.taxaAdmPerc)  || 12, 5);
       const co  = 7.5;
-      percPorProjeto[plan.ID_Projeto] = (imp + ta + co) / 100;
+      const deducoes = V * (imp + ta + co) / 100;
+      const terc  = (d.terceirizados  || []).reduce((s, t) => s + pBR(t.custo),  0);
+      const equipe = (d.equipe        || []).reduce((s, e) => s + pBR(e.horas) * (pBR(e.mediaHora) || 36.4), 0);
+      const desp  = (d.despesas       || []).reduce((s, x) => s + pBR(x.valor),  0);
+      const despInt = (d.despesasInternas || []).reduce((s, x) => s + pBR(x.custo), 0);
+      custosPorProjeto[plan.ID_Projeto] = {
+        V,
+        totalCusto: deducoes + terc + equipe + desp + despInt,
+      };
     });
 
     // Recebidos = medições com Status_Financeiro = 'Recebido' (Data_Recebimento ou Data_Previsao)
@@ -168,14 +177,20 @@ router.get('/', async (req, res, next) => {
       });
 
     // A Receber = medições pendentes agrupadas por Data_Previsao
-    // A Pagar   = A Receber × percentual de deduções do planejamento do projeto
+    // A Pagar   = proporção do custo total do projeto (deduções + terc + equipe + despesas)
+    //             distribuída pela participação de cada medição no valor total do contrato
     todasMedicoes.forEach(m => {
       if (m.statusFinanceiro === 'Recebido' || !m.dataPrevisao) return;
       const mes = mesYM(m.dataPrevisao);
       if (!mes || aReceberPorMesMap[mes] === undefined) return;
       aReceberPorMesMap[mes] += m.valor;
-      const perc = percPorProjeto[m.idProjeto] || 0.355; // fallback ~35.5%
-      aPagePorMesMap[mes] += m.valor * perc;
+      const proj = custosPorProjeto[m.idProjeto];
+      if (proj && proj.V > 0) {
+        // proporção desta medição no contrato × custo total planejado
+        aPagePorMesMap[mes] += (m.valor / proj.V) * proj.totalCusto;
+      } else {
+        aPagePorMesMap[mes] += m.valor * 0.355; // fallback ~35.5%
+      }
     });
 
     // Acumula tudo antes do mês atual no primeiro ponto (mês atual)

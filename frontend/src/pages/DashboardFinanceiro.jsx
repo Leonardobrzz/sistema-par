@@ -263,7 +263,7 @@ export default function DashboardFinanceiro() {
         {/* A Receber vs A Pagar */}
         <Secao titulo="A Receber vs. A Pagar — mês atual + 12 meses futuros" T={T}>
           <div style={{ fontSize: 10, color: T.text3, marginBottom: 8 }}>
-            Mês atual acumula tudo dos meses anteriores · A Receber = medições pendentes · A Pagar = deduções (imp. + taxa adm. + comissão)
+            Mês atual acumula tudo dos meses anteriores · A Receber = medições pendentes · A Pagar = todas despesas previstas (imp. + taxa adm. + comissão + terceirizados + equipe + despesas)
           </div>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={receitaMensal} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
