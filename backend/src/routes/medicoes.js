@@ -28,11 +28,29 @@ router.get('/', async (req, res, next) => {
     if (projeto) rows = rows.filter((r) => r.ID_Projeto === projeto);
     if (status) rows = rows.filter((r) => r.Status_Financeiro === status);
 
+    // Busca receitas do OPP via API (todos os registros, sem limite de 12 meses)
+    async function fetchReceitasOPP() {
+      try {
+        const { oppRequest } = require('../services/oppService');
+        let offset = 0, todos = [];
+        while (true) {
+          const r = await oppRequest('GET', `/contas-receber?limit=250&offset=${offset}&lixeira=Nao`);
+          const lista = Array.isArray(r) ? r : (r?.data || []);
+          if (lista.length === 0) break;
+          todos.push(...lista);
+          if (lista.length < 250) break;
+          offset += 250;
+          if (offset > 10000) break;
+        }
+        return todos;
+      } catch { return []; }
+    }
+
     // Carrega projetos, planejamentos e receitas OPP em paralelo
-    const [projects, planejamentos, finOPP] = await Promise.all([
+    const [projects, planejamentos, receitasOPP] = await Promise.all([
       db.readSheet('Projetos_Contratos'),
       db.readSheet('Planejamentos'),
-      db.readSheet('Financeiro_OPP').catch(() => []),
+      fetchReceitasOPP(),
     ]);
     const projMap = {};
     for (const p of projects) { projMap[p.ID_Projeto] = p; }
@@ -47,26 +65,32 @@ router.get('/', async (req, res, next) => {
 
     const pBR = (v) => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0;
 
-    // Total recebido do OPP por projeto (CC matching igual ao baseline-real)
-    // Financeiro_OPP: Profissional = centro de custo, Situacao = Liquidado
+    // Mapa ccNome → totalRecebido (igual ao baseline-real)
+    const recebidoPorCC = {};
+    const nfPorCC = {};
+    for (const r of receitasOPP) {
+      if (r.liquidado_rec !== 'Sim') continue;
+      const cc = (r.centro_custos_rec || r.centro_custo || '').toLowerCase().trim();
+      if (!cc) continue;
+      recebidoPorCC[cc] = (recebidoPorCC[cc] || 0) + parseFloat(r.valor_rec || 0);
+      if (!nfPorCC[cc] && r.n_documento_rec) nfPorCC[cc] = r.n_documento_rec;
+    }
+
+    // Total recebido do OPP por projeto via Nr_Contrato_OS → CC matching
     const totalRecebidoPorProjeto = {};
     const nfPorProjeto = {};
-    const osPorProjeto = {};
     for (const plan of planejamentos) {
       const cc = (plan.Nr_Contrato_OS || '').trim().toLowerCase();
       if (!cc || !plan.ID_Projeto) continue;
-      let total = 0;
-      for (const f of finOPP) {
-        if (f.Tipo !== 'Receita') continue;
-        const fcc = (f.Profissional || '').trim().toLowerCase();
-        if (fcc !== cc && !fcc.includes(cc) && !cc.includes(fcc)) continue;
-        total += pBR(f.Valor);
-        if (f.Situacao === 'Liquidado') {
-          if (f.Nr_Documento && !nfPorProjeto[plan.ID_Projeto]) nfPorProjeto[plan.ID_Projeto] = f.Nr_Documento;
-          if (f.Nr_OS_OPP && !osPorProjeto[plan.ID_Projeto]) osPorProjeto[plan.ID_Projeto] = f.Nr_OS_OPP;
+      let total = recebidoPorCC[cc] || 0;
+      if (!total) {
+        // fuzzy match
+        for (const [k, v] of Object.entries(recebidoPorCC)) {
+          if (cc.includes(k) || k.includes(cc)) { total = v; break; }
         }
       }
       totalRecebidoPorProjeto[plan.ID_Projeto] = total;
+      if (nfPorCC[cc]) nfPorProjeto[plan.ID_Projeto] = nfPorCC[cc];
     }
 
     // Agrupa medições por projeto para aplicar lógica de cobertura acumulada
