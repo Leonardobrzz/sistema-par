@@ -165,13 +165,13 @@ router.get('/', async (req, res, next) => {
       };
     });
 
-    // Recebidos = medições com Status_Financeiro = 'Recebido' (Data_Recebimento ou Data_Previsao)
-    medicoesTabela
-      .filter(m => m.Status_Financeiro === 'Recebido')
-      .forEach(m => {
-        const dataRef = m.Data_Recebimento || m.Data_Previsao;
+    // Recebidos = receitas liquidadas no OPP agrupadas por data de competência/vencimento
+    oppReceitas
+      .filter(r => r.liquidado_rec === 'Sim')
+      .forEach(r => {
+        const dataRef = r.data_competencia_rec || r.data_vencimento_rec;
         const mes = mesYM(dataRef);
-        const valor = pBR(m.Valor);
+        const valor = parseFloat(r.valor_rec || 0);
         if (mes && recebidoPorMes[mes] !== undefined) recebidoPorMes[mes] += valor;
       });
 
@@ -246,9 +246,7 @@ router.get('/', async (req, res, next) => {
 
     // ── KPIs ──────────────────────────────────────────────────────────────
     const totalCarteira  = aprovados.reduce((s, p) => s + pBR(p.Valor_Contrato), 0);
-    const totalRecebido  = medicoesTabela
-      .filter(m => m.Status_Financeiro === 'Recebido')
-      .reduce((s, m) => s + pBR(m.Valor), 0);
+    const totalRecebido  = Object.values(recebidoOPPPorProjeto).reduce((s, v) => s + v, 0);
     const totalAReceber  = todasMedicoes.filter(m => m.statusFinanceiro !== 'Recebido').reduce((s, m) => s + m.valor, 0);
     const totalAtrasado  = aging.total;
 
