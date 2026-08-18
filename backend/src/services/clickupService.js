@@ -572,13 +572,10 @@ async function gerarAlertasProjeto(tasks, projeto) {
   // Alertas ClickUp já existentes só deste projeto
   const existentes = await db.findRows('Alertas', a => a.ID_Projeto === projeto.ID_Projeto && CLICKUP_TIPOS.has(a.Tipo_Alerta));
 
-  // Preserva os que o usuário já viu e não fazem mais parte do desejado (não apaga silenciosamente)
-  const lidosClickUp = existentes.filter(a => a.Visto_Por && a.Visto_Por.trim() !== '' && !desired.has(a.ID));
-  const lidosIds = new Set(lidosClickUp.map(a => a.ID));
-
-  // Remove os antigos (exceto os "lidos" preservados) antes de reinserir os atuais
+  // Remove todos os alertas antigos deste projeto antes de reinserir os atuais
+  // (alertas vistos também são removidos — se a condição não existe mais, o alerta some)
   for (const a of existentes) {
-    if (!lidosIds.has(a.ID)) await db.deleteRowById('Alertas', 'ID', a.ID);
+    await db.deleteRowById('Alertas', 'ID', a.ID);
   }
 
   const desiredNormalized = [...desired.values()].map(a => ({ ...a, Status: 'ativo' }));
