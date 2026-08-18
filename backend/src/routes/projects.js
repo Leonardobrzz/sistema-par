@@ -336,6 +336,43 @@ router.put('/:id', audit, async (req, res, next) => {
 
 
 
+// POST /api/projetos/:id/vincular-clickup — força vínculo com ClickUp list ID e atualiza dados
+router.post('/:id/vincular-clickup', async (req, res, next) => {
+  try {
+    const { clickupId } = req.body;
+    if (!clickupId) return res.status(400).json({ error: 'clickupId obrigatório' });
+
+    const project = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === req.params.id);
+    if (!project) return res.status(404).json({ error: 'Projeto não encontrado' });
+
+    // Busca dados reais do ClickUp para esse list ID
+    const { getListInfo } = require('../services/clickupService');
+    let nome = project.Nome;
+    let dataEntrega = project.Data_Entrega_Planejada;
+
+    try {
+      const info = await getListInfo(clickupId);
+      if (info?.name) nome = info.name;
+      if (info?.due_date) dataEntrega = new Date(parseInt(info.due_date)).toISOString().split('T')[0];
+    } catch (e) {
+      console.warn('[vincular-clickup] Não conseguiu buscar info da lista:', e.message);
+    }
+
+    const updated = { ...project, ID_ClickUp: clickupId, Nome: nome, Data_Entrega_Planejada: dataEntrega };
+    await db.updateRowById('Projetos_Contratos', 'ID_Projeto', req.params.id, updated);
+
+    // Propaga nome para Planejamentos
+    if (nome !== project.Nome) {
+      const plans = await db.findRows('Planejamentos', p => p.ID_Projeto === req.params.id);
+      for (const plan of plans) {
+        await db.updateRowById('Planejamentos', 'ID_Planejamento', plan.ID_Planejamento, { ...plan, Nome_Projeto: nome });
+      }
+    }
+
+    res.json({ ok: true, nome, dataEntrega, clickupId });
+  } catch (err) { next(err); }
+});
+
 router.delete('/:id', audit, async (req, res, next) => {
   try {
     const project = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === req.params.id);

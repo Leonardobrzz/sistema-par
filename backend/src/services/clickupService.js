@@ -67,6 +67,11 @@ async function getListFields(listId) {
   return res.data.fields || [];
 }
 
+async function getListInfo(listId) {
+  const res = await axios.get(`${BASE_URL}/list/${listId}`, { headers: getHeaders() });
+  return res.data || null;
+}
+
 async function getTimeEntries(teamId, startDate, endDate) {
   // A API ClickUp limita time_entries a 100 por request e não tem paginação real.
   // Solução: dividir em chunks de 30 dias e acumular, deduplicando por entry.id
@@ -1554,6 +1559,7 @@ module.exports = {
   registerWebhook,
   processWebhookEvent,
   getProjectProgressFromClickUp,
+  getListInfo,
   criarComentarioTask,
   extrairTaskId,
 };
