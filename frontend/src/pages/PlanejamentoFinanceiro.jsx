@@ -640,8 +640,10 @@ export default function PlanejamentoFinanceiro() {
     const cabecalho = ['Projeto','Cliente','Setor','Vl. Contrato','Total Recebido',
       ...Array.from({length: maxMed}, (_,i) => [`${i+1}ª Med. Valor`,`${i+1}ª Med. Data`,`${i+1}ª Med. Status`]).flat()
     ]
-    let totRecebido=0, totPendente=0, totAtrasada=0
+    let totRecebido=0, totPendente=0, totAtrasada=0, totContratoPDF=0, totRecOPPPDF=0
     const linhas = lista.map(p => {
+      totContratoPDF += p.valorContrato || 0
+      totRecOPPPDF += p.totalRecebido || 0
       let acum=0
       const cols = [p.nome, p.cliente||'', p.setor||'', fmtFn(p.valorContrato), fmtFn(p.totalRecebido)]
       ;(Array.from({length: maxMed}, (_,i) => (p.cronograma||[])[i]||null)).forEach(m => {
@@ -676,10 +678,17 @@ export default function PlanejamentoFinanceiro() {
       <span style="font-size:11px;color:#64748B">Gerado em: ${agora} | ${lista.length} projetos aprovados</span>
     </div>
     <table>${headerRow}${dataRows}</table>
-    <div style="margin-top:16px;display:flex;gap:16px;font-size:11px">
-      <span style="background:#DCFCE7;color:#15803D;padding:4px 10px;border-radius:6px;font-weight:700">✓ Recebido: ${fmtFn(totRecebido)}</span>
-      <span style="background:#FEF9C3;color:#92400E;padding:4px 10px;border-radius:6px;font-weight:700">⏳ Pendente: ${fmtFn(totPendente)}</span>
-      <span style="background:#FEE2E2;color:#DC2626;padding:4px 10px;border-radius:6px;font-weight:700">⚠ Atrasada: ${fmtFn(totAtrasada)}</span>
+    <div style="margin-top:16px;font-size:11px">
+      <div style="margin-bottom:6px;display:flex;gap:12px;flex-wrap:wrap">
+        <span style="font-weight:700;color:#0F172A">Total Contratos: ${fmtFn(totContratoPDF)}</span>
+        <span style="color:#15803D;font-weight:700">Rec. OPP: ${fmtFn(totRecOPPPDF)}</span>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <span style="background:#DCFCE7;color:#15803D;padding:4px 10px;border-radius:6px;font-weight:700">✓ Recebido: ${fmtFn(totRecebido)}</span>
+        <span style="background:#FEF9C3;color:#92400E;padding:4px 10px;border-radius:6px;font-weight:700">⏳ Pendente: ${fmtFn(totPendente)}</span>
+        <span style="background:#FEE2E2;color:#DC2626;padding:4px 10px;border-radius:6px;font-weight:700">⚠ Atrasada: ${fmtFn(totAtrasada)}</span>
+        <span style="background:#EFF6FF;color:#1D4ED8;padding:4px 10px;border-radius:6px;font-weight:700;border-left:2px solid #3B82F6">Total Medições: ${fmtFn(totRecebido+totPendente+totAtrasada)}</span>
+      </div>
     </div>
     <script>window.onload=()=>window.print()</script></body></html>`
     const w = window.open('','_blank')
@@ -2371,9 +2380,10 @@ export default function PlanejamentoFinanceiro() {
                       })}
                       {/* Linha de totais por status */}
                       {(() => {
-                        let totRecebido = 0, totPendente = 0, totAtrasada = 0, totContrato = 0
+                        let totRecebido = 0, totPendente = 0, totAtrasada = 0, totContrato = 0, totRecOPP = 0
                         lista.forEach(p => {
                           totContrato += p.valorContrato || 0
+                          totRecOPP += p.totalRecebido || 0
                           let acum = 0
                           ;(p.cronograma || []).forEach(m => {
                             acum += (m.valorPlan || 0)
@@ -2383,16 +2393,26 @@ export default function PlanejamentoFinanceiro() {
                             else if (st === 'Pendente') totPendente += (m.valorPlan || 0)
                           })
                         })
+                        const totMedicoes = totRecebido + totPendente + totAtrasada
                         return (
                           <tr style={{ borderTop: `2px solid ${T.border}`, background: isDark ? '#1E293B' : '#F1F5F9' }}>
                             <td colSpan={3} style={{ padding: '10px 12px', fontWeight: 800, color: T.text1, fontSize: 12 }}>TOTAIS ({lista.length} projetos)</td>
-                            <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, color: T.text1, whiteSpace: 'nowrap' }}>{fmt(totContrato)}</td>
-                            <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, color: '#15803D', whiteSpace: 'nowrap' }}>{fmt(lista.reduce((s,p) => s + (p.totalRecebido||0), 0))}</td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, color: T.text1, whiteSpace: 'nowrap' }}>
+                              <div style={{ fontSize: 9, color: T.text2, fontWeight: 600, marginBottom: 2 }}>TOTAL CONTRATOS</div>
+                              {fmt(totContrato)}
+                            </td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, color: '#15803D', whiteSpace: 'nowrap' }}>
+                              <div style={{ fontSize: 9, color: T.text2, fontWeight: 600, marginBottom: 2 }}>REC. OPP</div>
+                              {fmt(totRecOPP)}
+                            </td>
                             <td colSpan={maxMed * 2} style={{ padding: '10px 16px' }}>
-                              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                                <span style={{ padding: '3px 10px', borderRadius: 6, background: '#DCFCE7', color: '#15803D', fontWeight: 800, fontSize: 12 }}>✓ Recebido: {fmt(totRecebido)}</span>
-                                <span style={{ padding: '3px 10px', borderRadius: 6, background: '#FEF9C3', color: '#92400E', fontWeight: 800, fontSize: 12 }}>⏳ Pendente: {fmt(totPendente)}</span>
-                                <span style={{ padding: '3px 10px', borderRadius: 6, background: '#FEE2E2', color: '#DC2626', fontWeight: 800, fontSize: 12 }}>⚠ Atrasada: {fmt(totAtrasada)}</span>
+                              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                                <span style={{ padding: '3px 10px', borderRadius: 6, background: isDark?'#14532D':'#DCFCE7', color: '#4ADE80', fontWeight: 800, fontSize: 12 }}>✓ Recebido: {fmt(totRecebido)}</span>
+                                <span style={{ padding: '3px 10px', borderRadius: 6, background: isDark?'#78350F':'#FEF9C3', color: '#FCD34D', fontWeight: 800, fontSize: 12 }}>⏳ Pendente: {fmt(totPendente)}</span>
+                                <span style={{ padding: '3px 10px', borderRadius: 6, background: isDark?'#7F1D1D':'#FEE2E2', color: '#F87171', fontWeight: 800, fontSize: 12 }}>⚠ Atrasada: {fmt(totAtrasada)}</span>
+                                <span style={{ padding: '3px 10px', borderRadius: 6, background: isDark?'#1E3A5F':'#EFF6FF', color: '#3B82F6', fontWeight: 800, fontSize: 12, borderLeft: `2px solid #3B82F6` }}>
+                                  Total Medições: {fmt(totMedicoes)}
+                                </span>
                               </div>
                             </td>
                           </tr>
