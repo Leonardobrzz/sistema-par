@@ -254,7 +254,7 @@ export default function PlanejamentoFinanceiro() {
   const [filtroPlan, setFiltroPlan] = useState("")  // "aprovado" | "sem_plan" | ""
 
   useEffect(() => {
-    api.get("/projetos").then(r => setProjetos(r.data?.projetos || r.data || [])).catch(() => []).finally(() => setLoadingProjetos(false))
+    api.get("/projetos?incluirTodos=true").then(r => setProjetos(r.data?.projetos || r.data || [])).catch(() => []).finally(() => setLoadingProjetos(false))
 
   }, [])
 
