@@ -200,7 +200,7 @@ export default function Aprovacao() {
   let dadosSelected = null
   try { dadosSelected = selected?.Dados_JSON ? JSON.parse(selected.Dados_JSON) : null } catch {}
   const tercPerc = dadosSelected && selected?.Valor_Contrato
-    ? (dadosSelected.terceirizados || []).reduce((s, t) => s + parseFloat(t.custo || 0), 0) / parseFloat(selected.Valor_Contrato) * 100
+    ? (dadosSelected.terceirizados || []).reduce((s, t) => s + parseBR(t.custo), 0) / parseBR(selected.Valor_Contrato) * 100
     : 0
 
   return (
@@ -266,7 +266,7 @@ export default function Aprovacao() {
                     <div style={{ fontWeight: 700, fontSize: 13, color: T.text1 }}>{p.Nome_Projeto || p.ID_Projeto}</div>
                     <div style={{ fontSize: 11, color: T.text2, marginTop: 2 }}>{p.Resp_Planejamento} · {p.Setor}</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: "#7C3AED" }}>{fmt(p.Valor_Contrato)}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "#7C3AED" }}>{fmt(parseBR(p.Valor_Contrato))}</span>
                       {temRessalva && (
                         <span style={{ fontSize: 10, fontWeight: 700, color: "#DC2626", background: isDark ? "#2a0f0f" : "#FEF2F2", padding: "2px 8px", borderRadius: 20, border: "1px solid #FECACA" }}>
                           ⚠ Ressalva PAR
@@ -599,7 +599,7 @@ export default function Aprovacao() {
                       transition: "all 0.18s" }}>
                     <div style={{ fontWeight: 700, fontSize: 13, color: T.text1 }}>{p.Nome_Projeto || p.ID_Projeto}</div>
                     <div style={{ fontSize: 11, color: T.text2, marginTop: 2 }}>{p.Setor}</div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#15803D", marginTop: 4 }}>{fmt(p.Valor_Contrato)}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#15803D", marginTop: 4 }}>{fmt(parseBR(p.Valor_Contrato))}</div>
                   </div>
                 ))}
               </div>
