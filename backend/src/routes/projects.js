@@ -122,8 +122,9 @@ router.get('/', async (req, res, next) => {
         return p.Setor || ''
       })()
 
-      const valorPlanejamento = parseFloat(plan?.Valor_Contrato || 0);
-      const valorExibido = valorPlanejamento > 0 ? valorPlanejamento : parseFloat(p.Valor_Global || 0);
+      const parseBR = (v) => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0;
+      const valorPlanejamento = parseBR(plan?.Valor_Contrato);
+      const valorExibido = valorPlanejamento > 0 ? valorPlanejamento : parseBR(p.Valor_Global);
 
       return {
         ...p,
