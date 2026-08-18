@@ -280,6 +280,7 @@ async function checkAllAlerts() {
     // 2g. MARGEM_ABAIXO_MINIMO
     // Planejamentos aprovados onde lucroPerc < 23%
     // ─────────────────────────────────────────
+    const parseBR = (v) => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0;
     const planejamentos = await db.readSheet('Planejamentos');
     const planMap = {};
     for (const pl of planejamentos) planMap[pl.ID_Projeto] = pl;
@@ -290,16 +291,16 @@ async function checkAllAlerts() {
       if (!pl) { toResolveIds.add(a.ID); continue; }
       let dados = {};
       try { dados = JSON.parse(pl.Dados_JSON || '{}'); } catch {}
-      const V = parseFloat(dados.valorContrato || pl.Valor_Contrato || 0);
+      const V = parseBR(dados.valorContrato || pl.Valor_Contrato);
       if (V === 0) { toResolveIds.add(a.ID); continue; }
       // recalcula margem simplificada
-      const ip = Math.max(parseFloat(dados.impostosPerc || 20), 16.33);
-      const ta = Math.max(parseFloat(dados.taxaAdmPerc || 12), 5);
+      const ip = Math.max(parseBR(dados.impostosPerc || 20), 16.33);
+      const ta = Math.max(parseBR(dados.taxaAdmPerc || 12), 5);
       const deductPct = ip + ta + 7.5;
       const recLiq = V * (1 - deductPct / 100);
-      const custos = (dados.terceirizados || []).reduce((s, t) => s + parseFloat(t.custo || 0), 0)
-        + (dados.equipe || []).reduce((s, e) => s + parseFloat(e.horas || 0) * 36.4, 0)
-        + (dados.despesas || []).reduce((s, d) => s + parseFloat(d.valor || 0), 0);
+      const custos = (dados.terceirizados || []).reduce((s, t) => s + parseBR(t.custo), 0)
+        + (dados.equipe || []).reduce((s, e) => s + parseBR(e.horas) * 36.4, 0)
+        + (dados.despesas || []).reduce((s, d) => s + parseBR(d.valor), 0);
       const lucroPerc = V > 0 ? ((recLiq - custos) / V) * 100 : 0;
       if (lucroPerc >= MARGEM_MINIMA) toResolveIds.add(a.ID);
     }
@@ -308,15 +309,15 @@ async function checkAllAlerts() {
       if (activeIndex[`MARGEM_ABAIXO_MINIMO|${pl.ID_Projeto}`]) continue;
       let dados = {};
       try { dados = JSON.parse(pl.Dados_JSON || '{}'); } catch {}
-      const V = parseFloat(dados.valorContrato || pl.Valor_Contrato || 0);
+      const V = parseBR(dados.valorContrato || pl.Valor_Contrato);
       if (V === 0) continue;
-      const ip = Math.max(parseFloat(dados.impostosPerc || 20), 16.33);
-      const ta = Math.max(parseFloat(dados.taxaAdmPerc || 12), 5);
+      const ip = Math.max(parseBR(dados.impostosPerc || 20), 16.33);
+      const ta = Math.max(parseBR(dados.taxaAdmPerc || 12), 5);
       const deductPct = ip + ta + 7.5;
       const recLiq = V * (1 - deductPct / 100);
-      const custos = (dados.terceirizados || []).reduce((s, t) => s + parseFloat(t.custo || 0), 0)
-        + (dados.equipe || []).reduce((s, e) => s + parseFloat(e.horas || 0) * 36.4, 0)
-        + (dados.despesas || []).reduce((s, d) => s + parseFloat(d.valor || 0), 0);
+      const custos = (dados.terceirizados || []).reduce((s, t) => s + parseBR(t.custo), 0)
+        + (dados.equipe || []).reduce((s, e) => s + parseBR(e.horas) * 36.4, 0)
+        + (dados.despesas || []).reduce((s, d) => s + parseBR(d.valor), 0);
       const lucroPerc = V > 0 ? ((recLiq - custos) / V) * 100 : 0;
       if (lucroPerc < MARGEM_MINIMA) {
         const proj = projectMap[pl.ID_Projeto];
@@ -338,10 +339,10 @@ async function checkAllAlerts() {
       if (!pl) { toResolveIds.add(a.ID); continue; }
       let dados = {};
       try { dados = JSON.parse(pl.Dados_JSON || '{}'); } catch {}
-      const V = parseFloat(dados.valorContrato || pl.Valor_Contrato || 0);
+      const V = parseBR(dados.valorContrato || pl.Valor_Contrato);
       if (V === 0) { toResolveIds.add(a.ID); continue; }
-      const prod = (dados.equipe || []).reduce((s, e) => s + parseFloat(e.horas || 0) * 36.4, 0)
-        + (dados.terceirizados || []).reduce((s, t) => s + parseFloat(t.custo || 0), 0);
+      const prod = (dados.equipe || []).reduce((s, e) => s + parseBR(e.horas) * 36.4, 0)
+        + (dados.terceirizados || []).reduce((s, t) => s + parseBR(t.custo), 0);
       if ((prod / V) * 100 <= TETO_CUSTO_PROD) toResolveIds.add(a.ID);
     }
     for (const pl of planejamentos) {
@@ -349,10 +350,10 @@ async function checkAllAlerts() {
       if (activeIndex[`CUSTO_PRODUCAO_ULTRAPASSOU|${pl.ID_Projeto}`]) continue;
       let dados = {};
       try { dados = JSON.parse(pl.Dados_JSON || '{}'); } catch {}
-      const V = parseFloat(dados.valorContrato || pl.Valor_Contrato || 0);
+      const V = parseBR(dados.valorContrato || pl.Valor_Contrato);
       if (V === 0) continue;
-      const prod = (dados.equipe || []).reduce((s, e) => s + parseFloat(e.horas || 0) * 36.4, 0)
-        + (dados.terceirizados || []).reduce((s, t) => s + parseFloat(t.custo || 0), 0);
+      const prod = (dados.equipe || []).reduce((s, e) => s + parseBR(e.horas) * 36.4, 0)
+        + (dados.terceirizados || []).reduce((s, t) => s + parseBR(t.custo), 0);
       const prodPerc = (prod / V) * 100;
       if (prodPerc > TETO_CUSTO_PROD) {
         const proj = projectMap[pl.ID_Projeto];
