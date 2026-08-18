@@ -1169,6 +1169,19 @@ export default function PlanejamentoFinanceiro() {
 
       {projetoId && !loading && (<>
 
+        {/* Banner: projeto sem planejamento financeiro salvo */}
+        {!planId && (
+          <div style={{ marginBottom: 16, padding: '12px 16px', borderRadius: 10, background: isDark ? '#1C1917' : '#FFFBEB', border: `1.5px solid ${isDark ? '#78350F' : '#FDE68A'}`, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <span style={{ fontSize: 18 }}>⚠️</span>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 13, color: isDark ? '#FCD34D' : '#92400E', marginBottom: 2 }}>Planejamento financeiro ainda não salvo</div>
+              <div style={{ fontSize: 12, color: isDark ? '#D4A017' : '#78350F' }}>
+                Este projeto não possui planejamento financeiro registrado. O valor do contrato exibido (se houver) vem do cadastro em <strong>Gestão de Projetos</strong>. Preencha os dados abaixo e salve para criar o planejamento.
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Tabs ── */}
         <div style={{ display: "flex", gap: 4, background: T.cardAlt, padding: 4, borderRadius: 12, marginBottom: 24, width: "fit-content" }}>
           {[
