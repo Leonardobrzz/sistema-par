@@ -157,12 +157,11 @@ router.get('/', async (req, res, next) => {
       const co  = 7.5;
       const deducoes = V * (imp + ta + co) / 100;
       const terc  = (d.terceirizados  || []).reduce((s, t) => s + pBR(t.custo),  0);
-      const equipe = (d.equipe        || []).reduce((s, e) => s + pBR(e.horas) * (pBR(e.mediaHora) || 36.4), 0);
       const desp  = (d.despesas       || []).reduce((s, x) => s + pBR(x.valor),  0);
       const despInt = (d.despesasInternas || []).reduce((s, x) => s + pBR(x.custo), 0);
       custosPorProjeto[plan.ID_Projeto] = {
         V,
-        totalCusto: deducoes + terc + equipe + desp + despInt,
+        totalCusto: deducoes + terc + desp + despInt,
       };
     });
 
