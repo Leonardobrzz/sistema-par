@@ -516,7 +516,7 @@ async function gerarAlertasProjeto(tasks, projeto) {
         Link_ClickUp: taskUrl,
       });
     }
-    const cliente = getCustomField(task, 'Cliente')
+    const cliente = getCustomField(task, 'Cliente') || getCustomField(task, 'CLIENTE') || projeto.Cliente || projeto.Nome_Cliente
     if (!isClosed(task) && !cliente) {
       const id = `SEM_CLIENTE_${task.id}`;
       desired.set(id, {
