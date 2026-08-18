@@ -128,17 +128,17 @@ router.get('/', async (req, res, next) => {
     // ── Receita mensal — mês atual + próximos 12 meses (passado acumulado) ─
     const hoje = new Date();
     const mesAtual = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
-    // Janela completa: 12 passados + atual + 12 futuros (para calcular acumulado)
+    // Janela completa: 12 passados + atual + 6 futuros (para calcular acumulado)
     const todosOsMeses = [];
     for (let i = 12; i >= 0; i--) {
       const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
       todosOsMeses.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
     }
-    for (let i = 1; i <= 12; i++) {
+    for (let i = 1; i <= 6; i++) {
       const d = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
       todosOsMeses.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
     }
-    // Janela de exibição: apenas mês atual + 12 futuros
+    // Janela de exibição: apenas mês atual + 6 futuros
     const meses = todosOsMeses.filter(m => m >= mesAtual);
 
     const recebidoPorMes    = Object.fromEntries(todosOsMeses.map(m => [m, 0]));
