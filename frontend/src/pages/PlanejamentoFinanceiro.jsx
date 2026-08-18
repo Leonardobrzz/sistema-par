@@ -459,6 +459,28 @@ export default function PlanejamentoFinanceiro() {
       )
       return
     }
+    // Valida soma das medições vs valor do contrato
+    if ((form.medicoes || []).length > 0) {
+      const vc = parseBR(form.valorContrato)
+      const somaMed = (form.medicoes || []).reduce((s, m) => {
+        const val = parseBR(m.valor)
+        // se valor não definido, calcula pelo percentual
+        return s + (val > 0 ? val : parseBR(m.percentual) * vc / 100)
+      }, 0)
+      const diff = Math.abs(somaMed - vc)
+      if (vc > 0 && diff > 0.05) {
+        toast.error(
+          <div>
+            <div style={{ fontWeight: 700, marginBottom: 4 }}>Soma das medições diverge do contrato</div>
+            <div>Valor do Contrato: {fmt(vc)}</div>
+            <div>Soma das Medições: {fmt(somaMed)}</div>
+            <div style={{ marginTop: 4, fontSize: 12 }}>Corrija os valores antes de salvar.</div>
+          </div>,
+          { duration: 8000 }
+        )
+        return
+      }
+    }
     const proj = projetoSelecionado || {}
     setSaving(true)
     try {
