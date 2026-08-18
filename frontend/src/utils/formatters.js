@@ -2,7 +2,7 @@
  * Formata valor para moeda BRL
  */
 export function formatBRL(value) {
-  const num = parseFloat(value) || 0
+  const num = parseBRL(value)
   return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 

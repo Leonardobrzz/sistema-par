@@ -2,7 +2,7 @@
 import { toast } from 'react-hot-toast'
 import { PlusIcon, TrashIcon, ArrowPathIcon, UsersIcon, DocumentIcon, LinkIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import api from '../utils/api'
-import { formatDate, formatBRL } from '../utils/formatters'
+import { formatDate, formatBRL, parseBRL } from '../utils/formatters'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import { useTheme } from '../contexts/ThemeContext'
 
@@ -367,9 +367,9 @@ export default function Terceirizados() {
                     </td>
                   </tr>
                 ) : tercFiltrados.map(t => {
-                  const valorC = parseFloat(t.Valor_Contratado || 0)
-                  const valorL = parseFloat(t.Valor_Liquidado || 0)
-                  const saldo  = parseFloat(t.Saldo ?? (valorC - valorL))
+                  const valorC = parseBRL(t.Valor_Contratado || 0)
+                  const valorL = parseBRL(t.Valor_Liquidado || 0)
+                  const saldo  = parseBRL(t.Saldo ?? (valorC - valorL))
                   const saldoNeg = saldo < 0
                   const sCUp = t.Status_ClickUp || t.Status || ''
                   const sSt = statusStyle(sCUp)
@@ -522,8 +522,8 @@ function TerceirizadoModal({ item, projetos, onClose, onSaved }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   const projetoSel = projetos.find(p => p.ID_Projeto === form.ID_Projeto)
-  const valorGlobal = parseFloat(projetoSel?.Valor_Global || 0)
-  const valorC = parseFloat(form.Valor_Contratado || 0)
+  const valorGlobal = parseBRL(projetoSel?.Valor_Global || 0)
+  const valorC = parseBRL(form.Valor_Contratado || 0)
   const percCalc = valorGlobal > 0 && valorC > 0 ? ((valorC / valorGlobal) * 100).toFixed(1) : null
 
   async function onSubmit(e) {

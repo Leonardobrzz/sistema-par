@@ -4,6 +4,7 @@ import { ArrowPathIcon, XMarkIcon, BuildingOffice2Icon, BanknotesIcon, FolderIco
 import api from "../utils/api"
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0)
+const parseBR = (v) => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0
 
 function Chip({ label, active, onClick }) {
   return (
@@ -129,8 +130,8 @@ export default function Comercial() {
         const mapa = {}
         for (const t of lista) {
           const chave = t.Nr_Documento || t.ID_OPP
-          if (!mapa[chave]) { mapa[chave] = { ...t, Valor: parseFloat(t.Valor) || 0 } }
-          else { mapa[chave].Valor += parseFloat(t.Valor) || 0 }
+          if (!mapa[chave]) { mapa[chave] = { ...t, Valor: parseBR(t.Valor) } }
+          else { mapa[chave].Valor += parseBR(t.Valor) }
         }
         return Object.values(mapa).map(t => ({ ...t, Valor: t.Valor.toString() }))
       }
@@ -372,12 +373,12 @@ export default function Comercial() {
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
                     <div style={{ background: "#F0FDF4", borderRadius: 10, padding: "12px 14px", border: "1px solid #BBF7D0" }}>
                       <div style={{ fontSize: 10, fontWeight: 700, color: "#15803D", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Receitas OPP</div>
-                      <div style={{ fontSize: 20, fontWeight: 900, color: "#15803D" }}>{fmt(detalhe.receitas.reduce((s, t) => s + (parseFloat(t.Valor) || 0), 0))}</div>
+                      <div style={{ fontSize: 20, fontWeight: 900, color: "#15803D" }}>{fmt(detalhe.receitas.reduce((s, t) => s + parseBR(t.Valor), 0))}</div>
                       <div style={{ fontSize: 11, color: "#4ADE80" }}>{detalhe.receitas.length} lancamentos</div>
                     </div>
                     <div style={{ background: "#FFF7ED", borderRadius: 10, padding: "12px 14px", border: "1px solid #FED7AA" }}>
                       <div style={{ fontSize: 10, fontWeight: 700, color: "#C2410C", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Despesas OPP</div>
-                      <div style={{ fontSize: 20, fontWeight: 900, color: "#C2410C" }}>{fmt(detalhe.despesas.reduce((s, t) => s + (parseFloat(t.Valor) || 0), 0))}</div>
+                      <div style={{ fontSize: 20, fontWeight: 900, color: "#C2410C" }}>{fmt(detalhe.despesas.reduce((s, t) => s + parseBR(t.Valor), 0))}</div>
                       <div style={{ fontSize: 11, color: "#FB923C" }}>{detalhe.despesas.length} lancamentos</div>
                     </div>
                     <div style={{ background: "#EEF2FF", borderRadius: 10, padding: "12px 14px", border: "1px solid #C7D2FE" }}>
@@ -401,7 +402,7 @@ export default function Comercial() {
                               <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A" }}>{p.Nome || p.ID_Projeto}</div>
                               <div style={{ fontSize: 11, color: "#64748B" }}>{[p.Setor, p.Status_Projeto].filter(Boolean).join(" · ")}</div>
                             </div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: "#7C3AED" }}>{fmt(p.Valor_Contrato)}</div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: "#7C3AED" }}>{fmt(parseBR(p.Valor_Contrato))}</div>
                           </div>
                         ))}
                       </div>

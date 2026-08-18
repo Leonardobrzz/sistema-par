@@ -19,6 +19,7 @@ import ProjetosClickUp from '../components/ProjetosClickUp'
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumFractionDigits: 1 }).format(v || 0)
 const fmtFull = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0)
 const fmtN = (v, dec = 1) => Number(v || 0).toFixed(dec)
+const parseBR = (v) => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0
 
 const STATUS_COLORS = {
   'Em Andamento':            '#22C55E',
@@ -70,15 +71,15 @@ function savePrefs(secoes) {
 function calcKpisFromPlan(plan) {
   try {
     const d = JSON.parse(plan.Dados_JSON || '{}')
-    const V = parseFloat(d.valorContrato || plan.Valor_Contrato || 0)
+    const V = parseBR(d.valorContrato || plan.Valor_Contrato || 0)
     if (V === 0) return null
-    const ip = Math.max(parseFloat(d.impostosPerc || 20), 16.33)
-    const ta = Math.max(parseFloat(d.taxaAdmPerc || 12), 5)
+    const ip = Math.max(parseBR(d.impostosPerc || 20), 16.33)
+    const ta = Math.max(parseBR(d.taxaAdmPerc || 12), 5)
     const co = 7.5
     const recLiq = V * (1 - (ip + ta + co) / 100)
-    const custoEquipe = (d.equipe || []).reduce((s, e) => s + parseFloat(e.horas || 0) * parseFloat(e.mediaHora || 36.40), 0)
-    const custoTerc = (d.terceirizados || []).reduce((s, t) => s + parseFloat(t.custo || 0), 0)
-    const despesas = (d.despesas || []).reduce((s, dsp) => s + parseFloat(dsp.valor || 0), 0)
+    const custoEquipe = (d.equipe || []).reduce((s, e) => s + parseBR(e.horas || 0) * parseBR(e.mediaHora || 36.40), 0)
+    const custoTerc = (d.terceirizados || []).reduce((s, t) => s + parseBR(t.custo || 0), 0)
+    const despesas = (d.despesas || []).reduce((s, dsp) => s + parseBR(dsp.valor || 0), 0)
     const custoTotal = custoEquipe + custoTerc + despesas
     const lucro = recLiq - custoTotal
     return { V, lucroPerc: (lucro / V) * 100, tercPerc: (custoTerc / V) * 100, prodPerc: ((custoEquipe + custoTerc) / V) * 100 }
@@ -409,13 +410,13 @@ export default function Dashboard() {
     }
   })()
 
-  const totalContrato = aprovados.reduce((s, p) => s + parseFloat(p.Valor_Contrato || 0), 0)
+  const totalContrato = aprovados.reduce((s, p) => s + parseBR(p.Valor_Contrato || 0), 0)
   const totalAPagar = aprovados.reduce((s, plan) => {
     try {
       const d = JSON.parse(plan.Dados_JSON || '{}')
-      const equipe = (d.equipe || []).reduce((a, e) => a + parseFloat(e.horas || 0) * parseFloat(e.mediaHora || 36.40), 0)
-      const terc = (d.terceirizados || []).reduce((a, t) => a + parseFloat(t.custo || 0), 0)
-      const desp = (d.despesas || []).reduce((a, dsp) => a + parseFloat(dsp.valor || 0), 0)
+      const equipe = (d.equipe || []).reduce((a, e) => a + parseBR(e.horas || 0) * parseBR(e.mediaHora || 36.40), 0)
+      const terc = (d.terceirizados || []).reduce((a, t) => a + parseBR(t.custo || 0), 0)
+      const desp = (d.despesas || []).reduce((a, dsp) => a + parseBR(dsp.valor || 0), 0)
       return s + equipe + terc + desp
     } catch { return s }
   }, 0)
@@ -427,10 +428,10 @@ export default function Dashboard() {
     if (periodoRecebido.fim && d > periodoRecebido.fim) return false
     return true
   })
-  const totalRecebido = medicoesPeriodo.reduce((s, m) => s + parseFloat(m.Valor_Medicao || m.Valor || 0), 0)
+  const totalRecebido = medicoesPeriodo.reduce((s, m) => s + parseBR(m.Valor_Medicao || m.Valor || 0), 0)
 
   // A Receber: soma medições da tabela + medições planejadas dos planejamentos aprovados
-  const totalAReceberTabela = medicoesFiltradas.filter(m => m.Status_Financeiro !== 'Recebido' && m.Status !== 'Cancelada').reduce((s, m) => s + parseFloat(m.Valor_Medicao || m.Valor || 0), 0)
+  const totalAReceberTabela = medicoesFiltradas.filter(m => m.Status_Financeiro !== 'Recebido' && m.Status !== 'Cancelada').reduce((s, m) => s + parseBR(m.Valor_Medicao || m.Valor || 0), 0)
   const totalAReceberPlanejado = aprovados.reduce((s, plan) => {
     // IDs já em Medicoes — evita dupla contagem
     const idsNaTabela = new Set(medicoesFiltradas.map(m => m.ID_Projeto))
