@@ -45,53 +45,70 @@ router.get('/', async (req, res, next) => {
       if (pl.Nome_Projeto) planNomeMap[pl.ID_Projeto] = pl.Nome_Projeto;
     }
 
-    // Mapa: Nr_Contrato_OS → receitas OPP (apenas Receitas)
-    const receitasPorCC = {};
-    for (const f of finOPP) {
-      if (f.Tipo !== 'Receita') continue;
-      const cc = (f.Profissional || '').trim();
-      if (!cc) continue;
-      if (!receitasPorCC[cc]) receitasPorCC[cc] = [];
-      receitasPorCC[cc].push(f);
-    }
-
     const pBR = (v) => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0;
 
+    // Total recebido do OPP por projeto (CC matching igual ao baseline-real)
+    // Financeiro_OPP: Profissional = centro de custo, Situacao = Liquidado
+    const totalRecebidoPorProjeto = {};
+    const nfPorProjeto = {};
+    const osPorProjeto = {};
+    for (const plan of planejamentos) {
+      const cc = (plan.Nr_Contrato_OS || '').trim().toLowerCase();
+      if (!cc || !plan.ID_Projeto) continue;
+      let total = 0;
+      for (const f of finOPP) {
+        if (f.Tipo !== 'Receita') continue;
+        const fcc = (f.Profissional || '').trim().toLowerCase();
+        if (fcc !== cc && !fcc.includes(cc) && !cc.includes(fcc)) continue;
+        total += pBR(f.Valor);
+        if (f.Situacao === 'Liquidado') {
+          if (f.Nr_Documento && !nfPorProjeto[plan.ID_Projeto]) nfPorProjeto[plan.ID_Projeto] = f.Nr_Documento;
+          if (f.Nr_OS_OPP && !osPorProjeto[plan.ID_Projeto]) osPorProjeto[plan.ID_Projeto] = f.Nr_OS_OPP;
+        }
+      }
+      totalRecebidoPorProjeto[plan.ID_Projeto] = total;
+    }
+
+    // Agrupa medições por projeto para aplicar lógica de cobertura acumulada
+    const medsPorProjeto = {};
+    for (const m of rows) {
+      if (!medsPorProjeto[m.ID_Projeto]) medsPorProjeto[m.ID_Projeto] = [];
+      medsPorProjeto[m.ID_Projeto].push(m);
+    }
+
+    const hoje = new Date();
     const enriched = rows.map((m) => {
       const proj = projMap[m.ID_Projeto] || {};
       const plan = planMap[m.ID_Projeto] || {};
-      // Nr_Contrato_OS fica em Planejamentos, não em Projetos_Contratos
-      const cc = (plan.Nr_Contrato_OS || '').trim();
+      const totalRecebido = totalRecebidoPorProjeto[m.ID_Projeto] || 0;
 
-      // Tenta enriquecer com dados do OPP se ainda não tem Nr_NF
-      let nrNF = m.Nr_NF || '';
-      let nrOS = m.Nr_OS_OPP || '';
-      let statusFin = m.Status_Financeiro || '';
-      let linkOPP = m.Link_Produto || m.Link_Contrato || '';
-
-      if (cc && !nrNF) {
-        const receitas = receitasPorCC[cc] || [];
-        const valorMed = pBR(m.Valor_Medicao || m.Valor || 0);
-        // Tenta casar por valor (tolerância de R$1)
-        const match = receitas.find(r => Math.abs(pBR(r.Valor) - valorMed) < 1);
-        if (match) {
-          nrNF = match.Nr_Documento || '';
-          nrOS = nrOS || match.Nr_OS_OPP || '';
-          if (match.Situacao === 'Liquidado') statusFin = 'Recebido';
-          else if (!statusFin || statusFin === 'Pendente') statusFin = 'NF Emitida';
-        }
+      // Calcula acumulado até esta medição (ordem de inserção)
+      const medsOrdenadas = medsPorProjeto[m.ID_Projeto] || [];
+      let acumulado = 0;
+      for (const med of medsOrdenadas) {
+        acumulado += pBR(med.Valor_Medicao || med.Valor || 0);
+        if (med === m || med.ID_Medicao === m.ID_Medicao) break;
       }
+
+      // Status: Recebido se já foi marcado manualmente OU se OPP cobre o acumulado
+      let statusFin = m.Status_Financeiro || '';
+      const cobertoPeloOPP = totalRecebido > 0 && acumulado <= totalRecebido + 0.5;
+      if (cobertoPeloOPP && statusFin !== 'Recebido') statusFin = 'Recebido';
+      else if (!statusFin) statusFin = 'Pendente';
+
+      const nrNF = m.Nr_NF || (cobertoPeloOPP ? (nfPorProjeto[m.ID_Projeto] || '') : '');
+      const nrOS = m.Nr_OS_OPP || (cobertoPeloOPP ? (osPorProjeto[m.ID_Projeto] || '') : '');
 
       return {
         ...m,
         nomeProjeto: proj.Nome || m.nomeProjeto || planNomeMap[m.ID_Projeto] || '',
         cliente: proj.Cliente || proj.Nome_Cliente || '',
         setor: proj.Setor || '',
-        atrasada: statusFin !== 'Recebido' && m.Data_Previsao && new Date(m.Data_Previsao) < new Date(),
+        atrasada: statusFin !== 'Recebido' && m.Data_Previsao && new Date(m.Data_Previsao) < hoje,
         Nr_NF: nrNF,
         Nr_OS_OPP: nrOS,
         Status_Financeiro: statusFin,
-        Link_Produto: linkOPP,
+        Link_Produto: m.Link_Produto || m.Link_Contrato || '',
       };
     });
 
