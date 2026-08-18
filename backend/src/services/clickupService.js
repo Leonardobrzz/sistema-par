@@ -495,7 +495,8 @@ async function gerarAlertasProjeto(tasks, projeto) {
         Link_ClickUp: taskUrl,
       });
     }
-    const fase = getCustomField(task, 'FASE')
+    // Aceita qualquer campo de fase por setor (Fase Arq, Fase San, Fase Inf) ou genérico "Fase"
+    const fase = getCustomField(task, 'Fase') || getCustomField(task, 'Fase Arq') || getCustomField(task, 'Fase San') || getCustomField(task, 'Fase Inf') || getCustomField(task, 'FASE')
     if (!isClosed(task) && !fase) {
       const id = `SEM_FASE_${task.id}`;
       desired.set(id, {
@@ -527,11 +528,13 @@ async function gerarAlertasProjeto(tasks, projeto) {
     });
   }
 
-  if (!projeto.Data_Inicio && projeto.Status?.includes('Em Andamento')) {
+  // Data inicial: verifica start_date nas tarefas (Data_Inicio não existe em Projetos_Contratos)
+  const algumStartDate = tasks.some(t => t.start_date);
+  if (!algumStartDate && projeto.Status?.includes('Em Andamento')) {
     const id = `SEM_DATA_INICIAL_${projeto.ID_Projeto}`;
     desired.set(id, {
       ID: id, Tipo_Alerta: 'DATA_INICIAL_NAO_DEFINIDA', ID_Projeto: projeto.ID_Projeto,
-      Mensagem: `[SEM DATA INICIAL] Projeto "${projeto.Nome}" não tem data inicial`,
+      Mensagem: `[SEM DATA INICIAL] Nenhuma tarefa de "${projeto.Nome}" tem data de início definida`,
       Data_Geracao: agora, Setor_Destino: 'Comercial', Visto_Por: '', Status: 'Ativo', Nivel: 'warning',
       Link_ClickUp: projeto.Link_ClickUp || '',
     });
