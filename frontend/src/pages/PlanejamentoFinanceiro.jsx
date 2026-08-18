@@ -662,7 +662,7 @@ export default function PlanejamentoFinanceiro() {
     const cabecalho = ['Projeto','Cliente','Setor','Vl. Contrato','Total Recebido',
       ...Array.from({length: maxMed}, (_,i) => [`${i+1}ª Med. Valor`,`${i+1}ª Med. Data`,`${i+1}ª Med. Status`]).flat()
     ]
-    let totRecebido=0, totPendente=0, totAtrasada=0, totContratoPDF=0, totRecOPPPDF=0
+    let totPendente=0, totAtrasada=0, totContratoPDF=0, totRecOPPPDF=0
     const linhas = lista.map(p => {
       totContratoPDF += p.valorContrato || 0
       totRecOPPPDF += p.totalRecebido || 0
@@ -671,8 +671,7 @@ export default function PlanejamentoFinanceiro() {
       ;(Array.from({length: maxMed}, (_,i) => (p.cronograma||[])[i]||null)).forEach(m => {
         if (m) acum += (m.valorPlan||0)
         const st = statusMedFn(m, p.totalRecebido, acum)
-        if(st==='Recebido') totRecebido+=(m?.valorPlan||0)
-        else if(st==='Atrasada') totAtrasada+=(m?.valorPlan||0)
+        if(st==='Atrasada') totAtrasada+=(m?.valorPlan||0)
         else if(st==='Pendente') totPendente+=(m?.valorPlan||0)
         cols.push(m ? fmtFn(m.valorPlan) : '—')
         cols.push(m?.dataPrevista ? new Date(m.dataPrevista+'T00:00:00').toLocaleDateString('pt-BR') : '—')
@@ -706,10 +705,10 @@ export default function PlanejamentoFinanceiro() {
         <span style="color:#15803D;font-weight:700">Rec. OPP: ${fmtFn(totRecOPPPDF)}</span>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <span style="background:#DCFCE7;color:#15803D;padding:4px 10px;border-radius:6px;font-weight:700">✓ Recebido: ${fmtFn(totRecebido)}</span>
-        <span style="background:#FEF9C3;color:#92400E;padding:4px 10px;border-radius:6px;font-weight:700">⏳ Pendente: ${fmtFn(totPendente)}</span>
+        <span style="background:#DCFCE7;color:#15803D;padding:4px 10px;border-radius:6px;font-weight:700">✓ Recebido: ${fmtFn(totRecOPPPDF)}</span>
+        <span style="background:#FEF9C3;color:#92400E;padding:4px 10px;border-radius:6px;font-weight:700">⏳ A Faturar: ${fmtFn(totPendente)}</span>
         <span style="background:#FEE2E2;color:#DC2626;padding:4px 10px;border-radius:6px;font-weight:700">⚠ Atrasada: ${fmtFn(totAtrasada)}</span>
-        <span style="background:#EFF6FF;color:#1D4ED8;padding:4px 10px;border-radius:6px;font-weight:700;border-left:2px solid #3B82F6">Total Medições: ${fmtFn(totRecebido+totPendente+totAtrasada)}</span>
+        <span style="background:#EFF6FF;color:#1D4ED8;padding:4px 10px;border-radius:6px;font-weight:700;border-left:2px solid #3B82F6">Total Medições: ${fmtFn(totRecOPPPDF+totPendente+totAtrasada)}</span>
       </div>
     </div>
     <script>window.onload=()=>window.print()</script></body></html>`
@@ -2415,7 +2414,7 @@ export default function PlanejamentoFinanceiro() {
                       })}
                       {/* Linha de totais por status */}
                       {(() => {
-                        let totRecebido = 0, totPendente = 0, totAtrasada = 0, totContrato = 0, totRecOPP = 0
+                        let totPendente = 0, totAtrasada = 0, totContrato = 0, totRecOPP = 0
                         lista.forEach(p => {
                           totContrato += p.valorContrato || 0
                           totRecOPP += p.totalRecebido || 0
@@ -2423,12 +2422,11 @@ export default function PlanejamentoFinanceiro() {
                           ;(p.cronograma || []).forEach(m => {
                             acum += (m.valorPlan || 0)
                             const st = statusMed(m, p.totalRecebido, acum)
-                            if (st === 'Recebido') totRecebido += (m.valorPlan || 0)
-                            else if (st === 'Atrasada') totAtrasada += (m.valorPlan || 0)
+                            if (st === 'Atrasada') totAtrasada += (m.valorPlan || 0)
                             else if (st === 'Pendente') totPendente += (m.valorPlan || 0)
                           })
                         })
-                        const totMedicoes = totRecebido + totPendente + totAtrasada
+                        const totMedicoes = totRecOPP + totPendente + totAtrasada
                         return (
                           <tr style={{ borderTop: `2px solid ${T.border}`, background: isDark ? '#1E293B' : '#F1F5F9' }}>
                             <td colSpan={3} style={{ padding: '10px 12px', fontWeight: 800, color: T.text1, fontSize: 12 }}>TOTAIS ({lista.length} projetos)</td>
@@ -2442,8 +2440,8 @@ export default function PlanejamentoFinanceiro() {
                             </td>
                             <td colSpan={maxMed * 2} style={{ padding: '10px 16px' }}>
                               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                                <span style={{ padding: '3px 10px', borderRadius: 6, background: isDark?'#14532D':'#DCFCE7', color: '#4ADE80', fontWeight: 800, fontSize: 12 }}>✓ Recebido: {fmt(totRecebido)}</span>
-                                <span style={{ padding: '3px 10px', borderRadius: 6, background: isDark?'#78350F':'#FEF9C3', color: '#FCD34D', fontWeight: 800, fontSize: 12 }}>⏳ Pendente: {fmt(totPendente)}</span>
+                                <span style={{ padding: '3px 10px', borderRadius: 6, background: isDark?'#14532D':'#DCFCE7', color: '#4ADE80', fontWeight: 800, fontSize: 12 }}>✓ Recebido: {fmt(totRecOPP)}</span>
+                                <span style={{ padding: '3px 10px', borderRadius: 6, background: isDark?'#78350F':'#FEF9C3', color: '#FCD34D', fontWeight: 800, fontSize: 12 }}>⏳ A Faturar: {fmt(totPendente)}</span>
                                 <span style={{ padding: '3px 10px', borderRadius: 6, background: isDark?'#7F1D1D':'#FEE2E2', color: '#F87171', fontWeight: 800, fontSize: 12 }}>⚠ Atrasada: {fmt(totAtrasada)}</span>
                                 <span style={{ padding: '3px 10px', borderRadius: 6, background: isDark?'#1E3A5F':'#EFF6FF', color: '#3B82F6', fontWeight: 800, fontSize: 12, borderLeft: `2px solid #3B82F6` }}>
                                   Total Medições: {fmt(totMedicoes)}
