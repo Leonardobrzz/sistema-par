@@ -380,7 +380,8 @@ export default function Dashboard() {
   const setoresDisponiveis = [...new Set(projetos.map(p => p.Setor).filter(Boolean))].sort()
 
   // Aplica filtro de setor nos projetos
-  const projetosFiltrados = filtroSetor ? projetos.filter(p => p.Setor === filtroSetor) : projetos
+  const projetosFiltrados = (filtroSetor ? projetos.filter(p => p.Setor === filtroSetor) : projetos)
+    .filter(p => p.Status !== 'Concluído' && p.Status !== 'Arquivado')
   const medicoesFiltradas = filtroSetor
     ? medicoes.filter(m => {
         const proj = projetos.find(p => p.ID_Projeto === m.ID_Projeto)
@@ -659,7 +660,7 @@ export default function Dashboard() {
       {/* ── 4 KPI Cards ── */}
       {vis('kpis') && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-          <StatCard label="Projetos em Andamento" value={emAndamento.length} sub={`${projetosFiltrados.length} total · ${concluidos.length} concluídos`} icon={<FolderOpen size={20} />} bg="#22C55E" onClick={() => navigate('/projetos')} />
+          <StatCard label="Projetos em Andamento" value={emAndamento.length} sub={`${projetosFiltrados.length} projetos ativos`} icon={<FolderOpen size={20} />} bg="#22C55E" onClick={() => navigate('/projetos')} />
           <StatCard label="Carteira Aprovada" value={fmt(totalContrato)} sub={`${aprovados.length} planejamento(s) aprovado(s)`} icon={<Briefcase size={20} />} bg="#EF4444" />
           <StatCard label="Total a Pagar" value={fmt(totalAPagar)} sub="custo total dos planejamentos aprovados" icon={<CheckCircle2 size={20} />} bg="#0EA5E9" />
           <StatCard label="A Receber" value={fmt(totalAReceber)} sub="medições pendentes/em andamento" icon={<BadgeDollarSign size={20} />} bg="#F59E0B"
