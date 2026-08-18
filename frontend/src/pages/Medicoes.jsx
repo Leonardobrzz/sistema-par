@@ -79,9 +79,9 @@ export default function Medicoes() {
             doPlanejamento.push({
               ID_Medicao: `plan_${plan.ID_Projeto}_${idx}`,
               ID_Projeto: plan.ID_Projeto,
-              nomeProjeto: proj.Nome || plan.ID_Projeto,
-              cliente: proj.Cliente || proj.Nome_Cliente || '',
-              setor: proj.Setor || '',
+              nomeProjeto: proj.Nome || plan.Nome_Projeto || '(projeto não encontrado)',
+              cliente: proj.Cliente || proj.Nome_Cliente || plan.Cliente || '',
+              setor: proj.Setor || plan.Setor || '',
               Data_Previsao: dataPrevisao,
               Valor: parseBRval(m.valor || m.valorPlanejado || 0),
               Descricao: m.descricao || m.etapa || `Medição ${idx + 1}`,

@@ -36,9 +36,14 @@ router.get('/', async (req, res, next) => {
     ]);
     const projMap = {};
     for (const p of projects) { projMap[p.ID_Projeto] = p; }
-    // Fallback: mapa de nome via planejamento (para medições cujo projeto foi removido)
+    // Mapa de planejamento por projeto (Nr_Contrato_OS fica aqui, não em Projetos_Contratos)
+    const planMap = {};
     const planNomeMap = {};
-    for (const pl of planejamentos) { if (pl.ID_Projeto && pl.Nome_Projeto) planNomeMap[pl.ID_Projeto] = pl.Nome_Projeto; }
+    for (const pl of planejamentos) {
+      if (!pl.ID_Projeto) continue;
+      if (!planMap[pl.ID_Projeto]) planMap[pl.ID_Projeto] = pl;
+      if (pl.Nome_Projeto) planNomeMap[pl.ID_Projeto] = pl.Nome_Projeto;
+    }
 
     // Mapa: Nr_Contrato_OS → receitas OPP (apenas Receitas)
     const receitasPorCC = {};
@@ -54,7 +59,9 @@ router.get('/', async (req, res, next) => {
 
     const enriched = rows.map((m) => {
       const proj = projMap[m.ID_Projeto] || {};
-      const cc = proj.Nr_Contrato_OS || '';
+      const plan = planMap[m.ID_Projeto] || {};
+      // Nr_Contrato_OS fica em Planejamentos, não em Projetos_Contratos
+      const cc = (plan.Nr_Contrato_OS || '').trim();
 
       // Tenta enriquecer com dados do OPP se ainda não tem Nr_NF
       let nrNF = m.Nr_NF || '';
