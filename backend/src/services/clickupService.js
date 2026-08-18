@@ -495,8 +495,18 @@ async function gerarAlertasProjeto(tasks, projeto) {
         Link_ClickUp: taskUrl,
       });
     }
-    // Aceita qualquer campo de fase por setor (Fase Arq, Fase San, Fase Inf) ou genérico "Fase"
-    const fase = getCustomField(task, 'Fase') || getCustomField(task, 'Fase Arq') || getCustomField(task, 'Fase San') || getCustomField(task, 'Fase Inf') || getCustomField(task, 'FASE')
+    // Aceita qualquer campo de fase — nomes variam por lista no ClickUp
+    const fase = getCustomField(task, 'FASE')
+      || getCustomField(task, 'Fase')
+      || getCustomField(task, 'FASE (ARQ)')
+      || getCustomField(task, 'Fase Arq')
+      || getCustomField(task, 'Fase ARQ')
+      || getCustomField(task, 'FASES (SAN)')
+      || getCustomField(task, 'Fase San')
+      || getCustomField(task, 'FASE (SAN)')
+      || getCustomField(task, 'FASES (INF)')
+      || getCustomField(task, 'Fase Inf')
+      || getCustomField(task, 'FASE (INF)')
     if (!isClosed(task) && !fase) {
       const id = `SEM_FASE_${task.id}`;
       desired.set(id, {
