@@ -62,6 +62,21 @@ function getCustomField(task, nome) {
   return field.value || '';
 }
 
+function getAnyFieldContaining(task, substring) {
+  const sub = substring.toLowerCase();
+  for (const f of (task.custom_fields || [])) {
+    if (!f.name?.toLowerCase().includes(sub)) continue;
+    if (f.value === null || f.value === undefined || f.value === '') continue;
+    if (f.type === 'drop_down') {
+      const val = f.type_config?.options?.find(o => o.orderindex === f.value)?.name || '';
+      if (val) return val;
+    } else if (f.value) {
+      return String(f.value);
+    }
+  }
+  return '';
+}
+
 async function getListFields(listId) {
   const res = await axios.get(`${BASE_URL}/list/${listId}/field`, { headers: getHeaders() });
   return res.data.fields || [];
@@ -495,18 +510,8 @@ async function gerarAlertasProjeto(tasks, projeto) {
         Link_ClickUp: taskUrl,
       });
     }
-    // Aceita qualquer campo de fase — nomes variam por lista no ClickUp
-    const fase = getCustomField(task, 'FASE')
-      || getCustomField(task, 'Fase')
-      || getCustomField(task, 'FASE (ARQ)')
-      || getCustomField(task, 'Fase Arq')
-      || getCustomField(task, 'Fase ARQ')
-      || getCustomField(task, 'FASES (SAN)')
-      || getCustomField(task, 'Fase San')
-      || getCustomField(task, 'FASE (SAN)')
-      || getCustomField(task, 'FASES (INF)')
-      || getCustomField(task, 'Fase Inf')
-      || getCustomField(task, 'FASE (INF)')
+    // Aceita qualquer campo cujo nome contenha "fase" (FASE, FASE ARQ, FASES SAN, etc.)
+    const fase = getAnyFieldContaining(task, 'fase')
     if (!isClosed(task) && !fase) {
       const id = `SEM_FASE_${task.id}`;
       desired.set(id, {
@@ -516,7 +521,7 @@ async function gerarAlertasProjeto(tasks, projeto) {
         Link_ClickUp: taskUrl,
       });
     }
-    const cliente = getCustomField(task, 'Cliente') || getCustomField(task, 'CLIENTE') || projeto.Cliente || projeto.Nome_Cliente
+    const cliente = getAnyFieldContaining(task, 'cliente') || projeto.Cliente || projeto.Nome_Cliente
     if (!isClosed(task) && !cliente) {
       const id = `SEM_CLIENTE_${task.id}`;
       desired.set(id, {
