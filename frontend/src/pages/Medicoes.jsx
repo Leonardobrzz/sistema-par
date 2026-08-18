@@ -280,11 +280,28 @@ export default function Medicoes() {
                         ) : <span style={{ color: "#CBD5E1" }}>—</span>}
                       </td>
                       <td style={{ padding: "11px 14px", textAlign: "center" }}>
-                        {linkProduto ? (
-                          <a href={linkProduto} target="_blank" rel="noopener noreferrer" style={{ color: "#7C3AED", display: "inline-flex", alignItems: "center" }}>
-                            <LinkIcon style={{ width: 15, height: 15 }} />
-                          </a>
-                        ) : <span style={{ color: "#E2E8F0" }}>—</span>}
+                        {(() => {
+                          const osNum = m.Nr_OS_OPP || nrOSInterna
+                          const nfNum = m.Nr_NF
+                          const urlOS = 'https://erp.opportune.com.br/index.php?Secao=Servicos.Ordem&Modulo=Servicos'
+                          const urlFin = 'https://erp.opportune.com.br/index.php?Secao=Financeiro.ContasReceber&Modulo=Financeiro'
+                          if (linkProduto) {
+                            return <a href={linkProduto} target="_blank" rel="noopener noreferrer" title="Abrir link" style={{ color: "#7C3AED", display: "inline-flex", alignItems: "center" }}><LinkIcon style={{ width: 15, height: 15 }} /></a>
+                          }
+                          if (nfNum) {
+                            return <a href={urlFin} target="_blank" rel="noopener noreferrer" title={`NF Nº ${nfNum} — abre Contas a Receber no OPP`} style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 2, textDecoration: "none" }}>
+                              <LinkIcon style={{ width: 13, height: 13, color: "#1D4ED8" }} />
+                              <span style={{ fontSize: 9, color: "#1D4ED8", fontWeight: 700 }}>NF {nfNum}</span>
+                            </a>
+                          }
+                          if (osNum) {
+                            return <a href={urlOS} target="_blank" rel="noopener noreferrer" title={`OS Nº ${osNum} — abre lista de OS no OPP`} style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 2, textDecoration: "none" }}>
+                              <LinkIcon style={{ width: 13, height: 13, color: "#7C3AED" }} />
+                              <span style={{ fontSize: 9, color: "#7C3AED", fontWeight: 700 }}>OS {osNum}</span>
+                            </a>
+                          }
+                          return <span style={{ color: "#CBD5E1" }}>—</span>
+                        })()}
                       </td>
                       <td style={{ padding: "11px 14px", textAlign: "center" }}>
                         <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: finSt.bg, color: finSt.color }}>
