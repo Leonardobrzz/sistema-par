@@ -125,22 +125,25 @@ router.get('/', async (req, res, next) => {
       return info ? info.setor : 'Outros';
     }
 
-    // ── Receita mensal — últimos 12 meses + próximos 12 meses ─────────────
+    // ── Receita mensal — mês atual + próximos 12 meses (passado acumulado) ─
     const hoje = new Date();
     const mesAtual = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
-    const meses = [];
-    for (let i = 11; i >= 0; i--) {
+    // Janela completa: 12 passados + atual + 12 futuros (para calcular acumulado)
+    const todosOsMeses = [];
+    for (let i = 12; i >= 0; i--) {
       const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
-      meses.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+      todosOsMeses.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
     }
     for (let i = 1; i <= 12; i++) {
       const d = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
-      meses.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+      todosOsMeses.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
     }
+    // Janela de exibição: apenas mês atual + 12 futuros
+    const meses = todosOsMeses.filter(m => m >= mesAtual);
 
-    const recebidoPorMes  = Object.fromEntries(meses.map(m => [m, 0]));
-    const aReceberPorMesMap = Object.fromEntries(meses.map(m => [m, 0]));
-    const aPagePorMesMap    = Object.fromEntries(meses.map(m => [m, 0]));
+    const recebidoPorMes    = Object.fromEntries(todosOsMeses.map(m => [m, 0]));
+    const aReceberPorMesMap = Object.fromEntries(todosOsMeses.map(m => [m, 0]));
+    const aPagePorMesMap    = Object.fromEntries(todosOsMeses.map(m => [m, 0]));
 
     // Mapa idProjeto → percentuais do planejamento
     const percPorProjeto = {};
@@ -175,11 +178,17 @@ router.get('/', async (req, res, next) => {
       aPagePorMesMap[mes] += m.valor * perc;
     });
 
-    const receitaMensal = meses.map(mes => ({
+    // Acumula tudo antes do mês atual no primeiro ponto (mês atual)
+    const mesesPassados = todosOsMeses.filter(m => m < mesAtual);
+    const acumRecebido  = mesesPassados.reduce((s, m) => s + recebidoPorMes[m], 0);
+    const acumAReceber  = mesesPassados.reduce((s, m) => s + aReceberPorMesMap[m], 0);
+    const acumAPagar    = mesesPassados.reduce((s, m) => s + aPagePorMesMap[m], 0);
+
+    const receitaMensal = meses.map((mes, idx) => ({
       mes,
-      recebido:  Math.round(recebidoPorMes[mes]),
-      aReceber:  Math.round(aReceberPorMesMap[mes]),
-      aPagar:    Math.round(aPagePorMesMap[mes]),
+      recebido:  Math.round(recebidoPorMes[mes] + (idx === 0 ? acumRecebido : 0)),
+      aReceber:  Math.round(aReceberPorMesMap[mes] + (idx === 0 ? acumAReceber : 0)),
+      aPagar:    Math.round(aPagePorMesMap[mes] + (idx === 0 ? acumAPagar : 0)),
       isFuture:  mes > mesAtual,
     }));
 
