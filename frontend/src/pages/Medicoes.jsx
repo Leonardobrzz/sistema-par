@@ -238,8 +238,8 @@ export default function Medicoes() {
                   const finSt = statusFinBadge(m.Status_Financeiro)
                   const pBR = v => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0
                   const valorTotal = pBR(m.Valor_Medicao || m.Valor || 0)
-                  const valorRecebido = m.valorRecebidoOPP != null ? m.valorRecebidoOPP : (m.Status_Financeiro === 'Recebido' ? valorTotal : 0)
-                  const saldo = valorTotal - valorRecebido
+                  const valorRecebido = m.Status_Financeiro === 'Recebido' ? valorTotal : (m.valorRecebidoOPP || 0)
+                  const saldo = Math.max(0, valorTotal - valorRecebido)
                   const nrMedicao = m.Nr_Medicao || null
                   const descricaoMed = m.Etapa || m.Descricao || ''
                   const nrOSInterna = m.Nr_OS_OPP || m.OC || ''
