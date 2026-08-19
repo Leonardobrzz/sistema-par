@@ -59,6 +59,20 @@ function getCustomField(task, nome) {
     return field.type_config?.options?.find(o => o.orderindex === field.value)?.name || '';
   }
   if (field.type === 'number') return String(field.value);
+  // Campos do tipo people retornam array de objetos — extrair username
+  if (Array.isArray(field.value)) {
+    return field.value.map(u => u.username || u.name || u.email || '').filter(Boolean).join(', ');
+  }
+  // Valor pode ser objeto JSON serializado (string)
+  if (typeof field.value === 'string') {
+    try {
+      const parsed = JSON.parse(field.value);
+      if (parsed && typeof parsed === 'object') {
+        if (Array.isArray(parsed)) return parsed.map(u => u.username || u.name || u.email || '').filter(Boolean).join(', ');
+        return parsed.username || parsed.name || parsed.email || field.value;
+      }
+    } catch {}
+  }
   return field.value || '';
 }
 

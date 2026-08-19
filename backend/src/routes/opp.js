@@ -4,25 +4,16 @@ const opp = require('../services/oppService');
 
 const router = express.Router();
 
-// GET /api/opp/diagnostico-cc — endpoint público para provar limitação do OPP
+// GET /api/opp/diagnostico-cc — diagnóstico dos campos reais de contas-pagar
 router.get('/diagnostico-cc', async (req, res, next) => {
   try {
-    const amostra = await opp.oppRequest('GET', '/contas-pagar?limit=10&offset=0');
+    const amostra = await opp.oppRequest('GET', '/contas-pagar?limit=5&offset=0');
     const lista = Array.isArray(amostra) ? amostra : (amostra?.data || []);
+    // Retorna TODOS os campos do primeiro registro para debug completo
     res.json({
-      total_registros_amostrados: lista.length,
-      conclusao: lista.every(d => !d.id_centro_custos || d.id_centro_custos == 0)
-        ? 'CONFIRMADO: campo id_centro_custos é 0 ou ausente em todos os registros amostrados'
-        : 'Alguns registros têm id_centro_custos preenchido',
-      registros: lista.map(d => ({
-        id_conta_pag: d.id_conta_pag,
-        nome_conta: d.nome_conta,
-        nome_fornecedor: d.nome_fornecedor,
-        valor_pag: d.valor_pag,
-        id_centro_custos: d.id_centro_custos,
-        centro_custos_pag: d.centro_custos_pag,
-        situacao: d.situacao,
-      })),
+      total_amostrado: lista.length,
+      campos_primeiro_registro: lista[0] ? Object.keys(lista[0]) : [],
+      registros: lista.map(d => d),  // completo, sem filtrar campos
     });
   } catch (err) { next(err); }
 });
