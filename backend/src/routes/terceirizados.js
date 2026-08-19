@@ -25,7 +25,7 @@ async function calcPercTerceiros(idProjeto, valorGlobal, excludeId = null) {
 }
 
 // Busca contas-pagar do OPP ao vivo
-// Campos reais da API: nome_fornecedor, centro_custos_pag, valor_pag, valor_pago, situacao
+// centro_custos_pag é sempre vazio no OPP — matching por OC (observacoes_pag) ou nome_fornecedor
 async function fetchDespesasOPP() {
   try {
     const { oppRequest } = require('../services/oppService');
@@ -40,32 +40,41 @@ async function fetchDespesasOPP() {
       if (offset > 10000) break;
     }
 
-    const porCCForn = {};  // key: `${ccNome}||${fornNome}`
-    const porCC = {};      // key: ccNome (fallback projeto inteiro)
+    // Mapa por OC (extraído de observacoes_pag: "Ref. a ordem de compra nº 1234...")
+    const porOC = {};
+    // Mapa por nome_fornecedor (normalizado)
+    const porForn = {};
+
+    const ocRegex = /ordem de compra\s*n[º°]?\s*(\d+)/i;
 
     for (const d of despesas) {
       if (d.lixeira === 'Sim') continue;
       if ((d.situacao || '').toLowerCase().includes('estornada')) continue;
-      const ccNome = (d.centro_custos_pag || '').toLowerCase().trim();
-      if (!ccNome) continue;
-      const forn = (d.nome_fornecedor || '').toLowerCase().trim();
       const vTotal = parseFloat(d.valor_pag || 0);
       const vPago  = parseFloat(d.valor_pago || 0);
+      if (vTotal === 0 && vPago === 0) continue;
 
-      if (!porCC[ccNome]) porCC[ccNome] = { total: 0, pago: 0 };
-      porCC[ccNome].total += vTotal;
-      porCC[ccNome].pago  += vPago;
+      // Tenta extrair OC das observações
+      const obs = d.observacoes_pag || '';
+      const matchOC = obs.match(ocRegex);
+      if (matchOC) {
+        const ocNum = matchOC[1];
+        if (!porOC[ocNum]) porOC[ocNum] = { total: 0, pago: 0, nome_fornecedor: d.nome_fornecedor || '' };
+        porOC[ocNum].total += vTotal;
+        porOC[ocNum].pago  += vPago;
+      }
 
+      // Agrupa por fornecedor (fallback)
+      const forn = (d.nome_fornecedor || '').toLowerCase().trim();
       if (forn) {
-        const key = `${ccNome}||${forn}`;
-        if (!porCCForn[key]) porCCForn[key] = { total: 0, pago: 0 };
-        porCCForn[key].total += vTotal;
-        porCCForn[key].pago  += vPago;
+        if (!porForn[forn]) porForn[forn] = { total: 0, pago: 0 };
+        porForn[forn].total += vTotal;
+        porForn[forn].pago  += vPago;
       }
     }
 
-    return { porCC, porCCForn };
-  } catch { return { porCC: {}, porCCForn: {} }; }
+    return { porOC, porForn };
+  } catch { return { porOC: {}, porForn: {} }; }
 }
 
 // GET /api/terceirizados?projeto=ID
@@ -74,10 +83,9 @@ router.get('/', async (req, res, next) => {
     const { projeto, idProjeto, status } = req.query;
     const filtroId = projeto || idProjeto;
 
-    const [rows0, projetos, planejamentos, oppData] = await Promise.all([
+    const [rows0, projetos, oppData] = await Promise.all([
       db.readSheet('Terceirizados'),
       db.readSheet('Projetos_Contratos'),
-      db.readSheet('Planejamentos'),
       fetchDespesasOPP(),
     ]);
 
@@ -86,55 +94,33 @@ router.get('/', async (req, res, next) => {
     if (status) rows = rows.filter((r) => r.Status === status);
 
     const projMap = Object.fromEntries(projetos.map(p => [p.ID_Projeto, p]));
-
-    // Mapa idProjeto → CC nome (vem do Nr_Contrato_OS no Planejamento)
-    const ccPorProjeto = {};
-    for (const pl of planejamentos) {
-      if (pl.ID_Projeto && pl.Nr_Contrato_OS) {
-        ccPorProjeto[pl.ID_Projeto] = pl.Nr_Contrato_OS.toLowerCase().trim();
-      }
-    }
-
-    const { porCC, porCCForn } = oppData;
+    const { porOC, porForn } = oppData;
     const pBR = (v) => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0;
-
-    function matchCC(ccNome, map) {
-      if (!ccNome) return null;
-      if (map[ccNome]) return map[ccNome];
-      for (const [k, v] of Object.entries(map)) {
-        if (ccNome.includes(k) || k.includes(ccNome)) return v;
-      }
-      return null;
-    }
 
     rows = rows.map(r => {
       const proj = projMap[r.ID_Projeto];
-      const ccNome = ccPorProjeto[r.ID_Projeto] || '';
-      const fornNorm = (r.Fornecedor || r.Responsavel || '').toLowerCase().trim();
 
-      // Tenta match CC+Fornecedor primeiro, depois só CC
-      let oppEntry = null;
-      if (ccNome && fornNorm) {
-        const key = `${ccNome}||${fornNorm}`;
-        oppEntry = porCCForn[key] || null;
-        if (!oppEntry) {
-          // fuzzy: percorre chaves do mapa
-          for (const [k, v] of Object.entries(porCCForn)) {
-            const [kCC, kForn] = k.split('||');
-            const ccOk = ccNome.includes(kCC) || kCC.includes(ccNome);
-            const fornOk = fornNorm.includes(kForn) || kForn.includes(fornNorm);
-            if (ccOk && fornOk) { oppEntry = v; break; }
+      // Match 1: por OC (mais preciso)
+      let oppEntry = r.OC ? (porOC[String(r.OC).trim()] || null) : null;
+
+      // Match 2: por nome do fornecedor (fallback, soma todos os pagamentos desse fornecedor)
+      if (!oppEntry) {
+        const fornNorm = (r.Fornecedor || r.Responsavel || '').toLowerCase().trim();
+        if (fornNorm) {
+          oppEntry = porForn[fornNorm] || null;
+          if (!oppEntry) {
+            // fuzzy match
+            for (const [k, v] of Object.entries(porForn)) {
+              if (fornNorm.includes(k) || k.includes(fornNorm)) { oppEntry = v; break; }
+            }
           }
         }
       }
-      // Fallback: apenas CC (projeto inteiro) quando sem fornecedor no OPP
-      const oppCC = ccNome ? matchCC(ccNome, porCC) : null;
 
       const valorContratadoOPP = oppEntry?.total || 0;
       const valorPagoOPP       = oppEntry?.pago  || 0;
       const valorContratadoPAR = pBR(r.Valor_Contratado || r.Valor_Estimado || 0);
 
-      // Prioridade: OPP individual > PAR manual
       const valorContratado = valorContratadoOPP || valorContratadoPAR;
       const valorLiquidado  = valorPagoOPP;
       const saldo = Math.max(0, valorContratado - valorLiquidado);
@@ -159,7 +145,6 @@ router.get('/', async (req, res, next) => {
         ID_Terceirizado: r.ID_Terceirizado || r.ID || '',
         Link_Contrato: r.Link_Contrato || '',
         Nr_Contrato: r.Nr_Contrato || '',
-        _oppCC: oppCC ? { total: oppCC.total, pago: oppCC.pago } : null,
       };
     });
 
