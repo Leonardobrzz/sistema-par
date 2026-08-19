@@ -24,57 +24,38 @@ async function calcPercTerceiros(idProjeto, valorGlobal, excludeId = null) {
   return { total, perc, count: tercs.length };
 }
 
-// Busca contas-pagar do OPP ao vivo + centros de custo
+// Busca contas-pagar do OPP ao vivo
+// Campos reais da API: nome_fornecedor, centro_custos_pag, valor_pag, valor_pago, situacao
 async function fetchDespesasOPP() {
   try {
     const { oppRequest } = require('../services/oppService');
-    const [ccRes, ...batches] = await Promise.all([
-      oppRequest('GET', '/centros-custo?limit=500').catch(() => []),
-      (async () => {
-        let offset = 0, todos = [];
-        while (true) {
-          const r = await oppRequest('GET', `/contas-pagar?limit=250&offset=${offset}&lixeira=Nao`);
-          const lista = Array.isArray(r) ? r : (r?.data || []);
-          if (lista.length === 0) break;
-          todos.push(...lista);
-          if (lista.length < 250) break;
-          offset += 250;
-          if (offset > 10000) break;
-        }
-        return todos;
-      })(),
-    ]);
-    const listaCC = Array.isArray(ccRes) ? ccRes : (ccRes?.data || []);
-    const despesas = batches[0] || [];
-
-    // Mapa ccId → nome (para resolver id_centro_custos → nome legível)
-    const ccIdToNome = {};
-    for (const cc of listaCC) {
-      const id = String(cc.id_centro_custos || cc.id || '');
-      const nome = (cc.desc_centro_custos || cc.nome || '').toLowerCase().trim();
-      if (id && nome) ccIdToNome[id] = nome;
+    let offset = 0, despesas = [];
+    while (true) {
+      const r = await oppRequest('GET', `/contas-pagar?limit=250&offset=${offset}&lixeira=Nao`);
+      const lista = Array.isArray(r) ? r : (r?.data || []);
+      if (lista.length === 0) break;
+      despesas.push(...lista);
+      if (lista.length < 250) break;
+      offset += 250;
+      if (offset > 10000) break;
     }
 
-    // Agrupa por (ccNome, fornecedorNome): { total, pago }
     const porCCForn = {};  // key: `${ccNome}||${fornNome}`
     const porCC = {};      // key: ccNome (fallback projeto inteiro)
 
     for (const d of despesas) {
       if (d.lixeira === 'Sim') continue;
       if ((d.situacao || '').toLowerCase().includes('estornada')) continue;
-      const ccId = String(d.id_centro_custos || '');
-      const ccNome = ccIdToNome[ccId] || (d.centro_custos_pag || d.centro_custo || '').toLowerCase().trim();
+      const ccNome = (d.centro_custos_pag || '').toLowerCase().trim();
       if (!ccNome) continue;
-      const forn = (d.nome_fornecedor_pag || d.razao_social_forn || d.fornecedor || '').toLowerCase().trim();
-      const vTotal = parseFloat(d.valor_pag || d.valor || 0);
-      const vPago  = parseFloat(d.valor_pago || d.valor_pago_pag || 0);
+      const forn = (d.nome_fornecedor || '').toLowerCase().trim();
+      const vTotal = parseFloat(d.valor_pag || 0);
+      const vPago  = parseFloat(d.valor_pago || 0);
 
-      // Agrupa por CC (soma de todas as despesas do projeto)
       if (!porCC[ccNome]) porCC[ccNome] = { total: 0, pago: 0 };
       porCC[ccNome].total += vTotal;
       porCC[ccNome].pago  += vPago;
 
-      // Agrupa por CC+Fornecedor (para matching individual)
       if (forn) {
         const key = `${ccNome}||${forn}`;
         if (!porCCForn[key]) porCCForn[key] = { total: 0, pago: 0 };
