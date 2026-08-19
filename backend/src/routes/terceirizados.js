@@ -24,77 +24,161 @@ async function calcPercTerceiros(idProjeto, valorGlobal, excludeId = null) {
   return { total, perc, count: tercs.length };
 }
 
+// Busca contas-pagar do OPP ao vivo + centros de custo
+async function fetchDespesasOPP() {
+  try {
+    const { oppRequest } = require('../services/oppService');
+    const [ccRes, ...batches] = await Promise.all([
+      oppRequest('GET', '/centros-custo?limit=500').catch(() => []),
+      (async () => {
+        let offset = 0, todos = [];
+        while (true) {
+          const r = await oppRequest('GET', `/contas-pagar?limit=250&offset=${offset}&lixeira=Nao`);
+          const lista = Array.isArray(r) ? r : (r?.data || []);
+          if (lista.length === 0) break;
+          todos.push(...lista);
+          if (lista.length < 250) break;
+          offset += 250;
+          if (offset > 10000) break;
+        }
+        return todos;
+      })(),
+    ]);
+    const listaCC = Array.isArray(ccRes) ? ccRes : (ccRes?.data || []);
+    const despesas = batches[0] || [];
+
+    // Mapa ccId → nome (para resolver id_centro_custos → nome legível)
+    const ccIdToNome = {};
+    for (const cc of listaCC) {
+      const id = String(cc.id_centro_custos || cc.id || '');
+      const nome = (cc.desc_centro_custos || cc.nome || '').toLowerCase().trim();
+      if (id && nome) ccIdToNome[id] = nome;
+    }
+
+    // Agrupa por (ccNome, fornecedorNome): { total, pago }
+    const porCCForn = {};  // key: `${ccNome}||${fornNome}`
+    const porCC = {};      // key: ccNome (fallback projeto inteiro)
+
+    for (const d of despesas) {
+      if (d.lixeira === 'Sim') continue;
+      if ((d.situacao || '').toLowerCase().includes('estornada')) continue;
+      const ccId = String(d.id_centro_custos || '');
+      const ccNome = ccIdToNome[ccId] || (d.centro_custos_pag || d.centro_custo || '').toLowerCase().trim();
+      if (!ccNome) continue;
+      const forn = (d.nome_fornecedor_pag || d.razao_social_forn || d.fornecedor || '').toLowerCase().trim();
+      const vTotal = parseFloat(d.valor_pag || d.valor || 0);
+      const vPago  = parseFloat(d.valor_pago || d.valor_pago_pag || 0);
+
+      // Agrupa por CC (soma de todas as despesas do projeto)
+      if (!porCC[ccNome]) porCC[ccNome] = { total: 0, pago: 0 };
+      porCC[ccNome].total += vTotal;
+      porCC[ccNome].pago  += vPago;
+
+      // Agrupa por CC+Fornecedor (para matching individual)
+      if (forn) {
+        const key = `${ccNome}||${forn}`;
+        if (!porCCForn[key]) porCCForn[key] = { total: 0, pago: 0 };
+        porCCForn[key].total += vTotal;
+        porCCForn[key].pago  += vPago;
+      }
+    }
+
+    return { porCC, porCCForn };
+  } catch { return { porCC: {}, porCCForn: {} }; }
+}
+
 // GET /api/terceirizados?projeto=ID
 router.get('/', async (req, res, next) => {
   try {
     const { projeto, idProjeto, status } = req.query;
     const filtroId = projeto || idProjeto;
-    let rows = await db.readSheet('Terceirizados');
+
+    const [rows0, projetos, planejamentos, oppData] = await Promise.all([
+      db.readSheet('Terceirizados'),
+      db.readSheet('Projetos_Contratos'),
+      db.readSheet('Planejamentos'),
+      fetchDespesasOPP(),
+    ]);
+
+    let rows = rows0;
     if (filtroId) rows = rows.filter((r) => r.ID_Projeto === filtroId);
     if (status) rows = rows.filter((r) => r.Status === status);
 
-    // Enriquece com nome do projeto e nome do fornecedor via OC
-    const projetos = await db.readSheet('Projetos_Contratos');
-    const ocs = await db.readSheet('OrdensCompra_OPP');
-    const financeiro = await db.readSheet('Financeiro_OPP');
     const projMap = Object.fromEntries(projetos.map(p => [p.ID_Projeto, p]));
-    const ocMap = Object.fromEntries(ocs.map(o => [String(o.ID_OC), o]));
 
-    // Mapa OC -> valor já liquidado:
-    // Fonte 1: Financeiro_OPP com OC preenchido e Situacao=Liquidado
-    const liquidadoMap = {};
-    for (const f of financeiro) {
-      if (f.OC && (f.Situacao === 'Liquidado' || f.Situacao === 'Pago')) {
-        const key = String(f.OC);
-        liquidadoMap[key] = (liquidadoMap[key] || 0) + parseFloat(f.Valor || 0);
+    // Mapa idProjeto → CC nome (vem do Nr_Contrato_OS no Planejamento)
+    const ccPorProjeto = {};
+    for (const pl of planejamentos) {
+      if (pl.ID_Projeto && pl.Nr_Contrato_OS) {
+        ccPorProjeto[pl.ID_Projeto] = pl.Nr_Contrato_OS.toLowerCase().trim();
       }
     }
-    // Fonte 2: OrdensCompra_OPP — usa Valor_Liquidado quando já sincronizado, ou
-    // fallback para Valor_Total quando Situacao = 'Atendido' (100% pago)
-    for (const oc of ocs) {
-      const key = String(oc.ID_OC);
-      if (!liquidadoMap[key]) {
-        if (oc.Valor_Liquidado && parseFloat(oc.Valor_Liquidado) > 0) {
-          liquidadoMap[key] = parseFloat(oc.Valor_Liquidado);
-        } else {
-          const sit = (oc.Situacao || '').toLowerCase();
-          if (sit.includes('atendido')) {
-            liquidadoMap[key] = parseFloat(oc.Valor_Total || 0);
-          }
-        }
+
+    const { porCC, porCCForn } = oppData;
+    const pBR = (v) => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0;
+
+    function matchCC(ccNome, map) {
+      if (!ccNome) return null;
+      if (map[ccNome]) return map[ccNome];
+      for (const [k, v] of Object.entries(map)) {
+        if (ccNome.includes(k) || k.includes(ccNome)) return v;
       }
+      return null;
     }
 
     rows = rows.map(r => {
       const proj = projMap[r.ID_Projeto];
-      const oc = r.OC ? ocMap[String(r.OC)] : null;
-      // OPP tem prioridade quando há OC vinculada — fonte mais confiável
-      const valorContratado = parseFloat(oc?.Valor_Total || r.Valor_Contratado || 0);
-      const valorEstimado = parseFloat(r.Valor_Estimado || r.Valor_Contratado || oc?.Valor_Total || 0);
+      const ccNome = ccPorProjeto[r.ID_Projeto] || '';
+      const fornNorm = (r.Fornecedor || r.Responsavel || '').toLowerCase().trim();
+
+      // Tenta match CC+Fornecedor primeiro, depois só CC
+      let oppEntry = null;
+      if (ccNome && fornNorm) {
+        const key = `${ccNome}||${fornNorm}`;
+        oppEntry = porCCForn[key] || null;
+        if (!oppEntry) {
+          // fuzzy: percorre chaves do mapa
+          for (const [k, v] of Object.entries(porCCForn)) {
+            const [kCC, kForn] = k.split('||');
+            const ccOk = ccNome.includes(kCC) || kCC.includes(ccNome);
+            const fornOk = fornNorm.includes(kForn) || kForn.includes(fornNorm);
+            if (ccOk && fornOk) { oppEntry = v; break; }
+          }
+        }
+      }
+      // Fallback: apenas CC (projeto inteiro) quando sem fornecedor no OPP
+      const oppCC = ccNome ? matchCC(ccNome, porCC) : null;
+
+      const valorContratadoOPP = oppEntry?.total || 0;
+      const valorPagoOPP       = oppEntry?.pago  || 0;
+      const valorContratadoPAR = pBR(r.Valor_Contratado || r.Valor_Estimado || 0);
+
+      // Prioridade: OPP individual > PAR manual
+      const valorContratado = valorContratadoOPP || valorContratadoPAR;
+      const valorLiquidado  = valorPagoOPP;
+      const saldo = Math.max(0, valorContratado - valorLiquidado);
+
       const valorGlobal = parseFloat(proj?.Valor_Global || 0);
       const percCalc = valorGlobal > 0 && valorContratado > 0
         ? ((valorContratado / valorGlobal) * 100).toFixed(2)
         : (r.Percentual_Contrato || r.Percentual_do_Total || '0');
-      // Fornecedor: OPP (quando tem OC) > manual > ClickUp responsável
-      const fornecedor = (oc ? oc.Nome_Fornecedor : null) || r.Fornecedor || r.Responsavel || '';
-      const valorLiquidado = r.OC ? (liquidadoMap[String(r.OC)] || 0) : 0;
-      const saldo = valorContratado - valorLiquidado;
+
       return {
         ...r,
         nomeProjeto: proj?.Nome || r.ID_Projeto || '',
         Cliente: r.Cliente || proj?.Cliente || proj?.Nome_Cliente || '',
         Setor: proj?.Setor || r.Setor || '',
         Descricao_Servico: r.Descricao_Servico || r.Servico || '',
-        Fornecedor: fornecedor,
-        Valor_Contratado: String(valorContratado || ''),
+        Fornecedor: r.Fornecedor || r.Responsavel || '',
+        Valor_Contratado: String(valorContratado),
         Valor_Liquidado: String(valorLiquidado),
         Saldo: String(saldo),
-        Valor_Estimado: String(valorEstimado || ''),
         Percentual_Contrato: percCalc,
         Data_Vencimento: r.Data_Vencimento || r.Data_Entrega_Prevista || '',
         ID_Terceirizado: r.ID_Terceirizado || r.ID || '',
         Link_Contrato: r.Link_Contrato || '',
         Nr_Contrato: r.Nr_Contrato || '',
+        _oppCC: oppCC ? { total: oppCC.total, pago: oppCC.pago } : null,
       };
     });
 
