@@ -117,18 +117,22 @@ router.get('/', async (req, res, next) => {
       // Status: Recebido se já foi marcado manualmente OU se OPP cobre o acumulado
       let statusFin = m.Status_Financeiro || '';
       const cobertoPeloOPP = totalRecebido > 0 && acumulado <= totalRecebido + 0.5;
-      if (cobertoPeloOPP && statusFin !== 'Recebido') statusFin = 'Recebido';
-      else if (!statusFin) statusFin = 'Pendente';
+      const isAtrasada = m.Data_Previsao && new Date(m.Data_Previsao) < hoje;
+      if (cobertoPeloOPP) {
+        statusFin = 'Recebido';
+      } else if (!statusFin || statusFin === 'Pendente') {
+        statusFin = isAtrasada ? 'Atrasado' : 'Pendente';
+      }
 
       const nrNF = m.Nr_NF || (cobertoPeloOPP ? (nfPorProjeto[m.ID_Projeto] || '') : '');
-      const nrOS = m.Nr_OS_OPP || (cobertoPeloOPP ? (osPorProjeto[m.ID_Projeto] || '') : '');
 
       return {
         ...m,
         nomeProjeto: proj.Nome || m.nomeProjeto || planNomeMap[m.ID_Projeto] || '',
         cliente: proj.Cliente || proj.Nome_Cliente || '',
         setor: proj.Setor || '',
-        atrasada: statusFin !== 'Recebido' && m.Data_Previsao && new Date(m.Data_Previsao) < hoje,
+        atrasada: statusFin !== 'Recebido' && isAtrasada,
+        valorRecebidoOPP: cobertoPeloOPP ? pBR(m.Valor_Medicao || m.Valor || 0) : 0,
         Nr_NF: nrNF,
         Nr_OS_OPP: nrOS,
         Status_Financeiro: statusFin,

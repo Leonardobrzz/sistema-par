@@ -200,6 +200,7 @@ export default function Medicoes() {
                     { h: "Nº OS Interna", align: "center" },
                     { h: "Valor Total", align: "right" },
                     { h: "Valor Recebido", align: "right" },
+                    { h: "Saldo a Receber", align: "right" },
                     { h: "Nº NF", align: "center" },
                     { h: "Link", align: "center" },
                     { h: "Situação", align: "center" },
@@ -214,7 +215,7 @@ export default function Medicoes() {
               <tbody>
                 {medicoesFiltradas.length === 0 ? (
                   <tr>
-                    <td colSpan={11} style={{ textAlign: "center", padding: 48, color: T.text2, fontSize: 13 }}>
+                    <td colSpan={12} style={{ textAlign: "center", padding: 48, color: T.text2, fontSize: 13 }}>
                       <ChartBarIcon style={{ width: 36, height: 36, margin: "0 auto 10px", opacity: 0.3 }} />
                       <div>Nenhuma medição encontrada</div>
                     </td>
@@ -225,8 +226,10 @@ export default function Medicoes() {
                   const setorSigla = setor.startsWith('Arq') ? 'ARQ' : setor.startsWith('San') ? 'SAN' : setor.startsWith('Inf') ? 'INF' : setor.startsWith('Adm') ? 'ADM' : setor.slice(0, 3).toUpperCase() || '—'
                   const setorColor = setor.startsWith('Arq') ? { bg: '#F0F9FF', color: '#0369A1' } : setor.startsWith('San') ? { bg: '#F0FDF4', color: '#15803D' } : setor.startsWith('Inf') ? { bg: '#FEF3C7', color: '#B45309' } : { bg: '#F5F3FF', color: '#7C3AED' }
                   const finSt = statusFinBadge(m.Status_Financeiro)
-                  const valorTotal = parseFloat(m.Valor_Medicao || m.Valor || 0)
-                  const valorRecebido = m.Status_Financeiro === 'Recebido' ? valorTotal : 0
+                  const pBR = v => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0
+                  const valorTotal = pBR(m.Valor_Medicao || m.Valor || 0)
+                  const valorRecebido = m.valorRecebidoOPP != null ? m.valorRecebidoOPP : (m.Status_Financeiro === 'Recebido' ? valorTotal : 0)
+                  const saldo = valorTotal - valorRecebido
                   const nrMedicao = m.Nr_Medicao || null
                   const descricaoMed = m.Etapa || m.Descricao || ''
                   const nrOSInterna = m.Nr_OS_OPP || m.OC || ''
@@ -273,6 +276,9 @@ export default function Medicoes() {
                       </td>
                       <td style={{ padding: "11px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: valorRecebido > 0 ? "#15803D" : "#CBD5E1" }}>
                         {valorRecebido > 0 ? formatBRL(valorRecebido) : '—'}
+                      </td>
+                      <td style={{ padding: "11px 14px", textAlign: "right", fontSize: 13, fontWeight: 700, color: saldo > 0.5 ? "#DC2626" : saldo < -0.5 ? "#7C3AED" : "#CBD5E1" }}>
+                        {valorTotal > 0 ? (saldo > 0.5 ? formatBRL(saldo) : saldo < -0.5 ? `(${formatBRL(Math.abs(saldo))})` : '—') : '—'}
                       </td>
                       <td style={{ padding: "11px 14px", textAlign: "center" }}>
                         {m.Nr_NF ? (
