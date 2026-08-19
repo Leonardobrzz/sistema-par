@@ -97,25 +97,22 @@ router.get('/', async (req, res, next) => {
     const { porOC, porForn } = oppData;
     const pBR = (v) => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0;
 
+    // Limpa valor de fornecedor que pode ter sido salvo como JSON do ClickUp
+    function parseFornecedor(raw) {
+      if (!raw) return '';
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.map(u => u.username || u.name || u.email || '').filter(Boolean).join(', ');
+        if (parsed && typeof parsed === 'object') return parsed.username || parsed.name || parsed.email || raw;
+      } catch {}
+      return raw;
+    }
+
     rows = rows.map(r => {
       const proj = projMap[r.ID_Projeto];
 
-      // Match 1: por OC (mais preciso)
-      let oppEntry = r.OC ? (porOC[String(r.OC).trim()] || null) : null;
-
-      // Match 2: por nome do fornecedor (fallback, soma todos os pagamentos desse fornecedor)
-      if (!oppEntry) {
-        const fornNorm = (r.Fornecedor || r.Responsavel || '').toLowerCase().trim();
-        if (fornNorm) {
-          oppEntry = porForn[fornNorm] || null;
-          if (!oppEntry) {
-            // fuzzy match
-            for (const [k, v] of Object.entries(porForn)) {
-              if (fornNorm.includes(k) || k.includes(fornNorm)) { oppEntry = v; break; }
-            }
-          }
-        }
-      }
+      // Matching APENAS por OC (preciso) — fallback por fornecedor removido pois soma todos projetos
+      const oppEntry = r.OC ? (porOC[String(r.OC).trim()] || null) : null;
 
       const valorContratadoOPP = oppEntry?.total || 0;
       const valorPagoOPP       = oppEntry?.pago  || 0;
@@ -136,7 +133,7 @@ router.get('/', async (req, res, next) => {
         Cliente: r.Cliente || proj?.Cliente || proj?.Nome_Cliente || '',
         Setor: proj?.Setor || r.Setor || '',
         Descricao_Servico: r.Descricao_Servico || r.Servico || '',
-        Fornecedor: r.Fornecedor || r.Responsavel || '',
+        Fornecedor: parseFornecedor(r.Fornecedor) || parseFornecedor(r.Responsavel) || '',
         Valor_Contratado: String(valorContratado),
         Valor_Liquidado: String(valorLiquidado),
         Saldo: String(saldo),
