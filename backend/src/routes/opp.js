@@ -60,6 +60,132 @@ router.get('/diagnostico-receitas', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── GET /api/opp/os-para-vincular — projetos PAR + OS do OPP para tela de vínculo ──
+router.get('/os-para-vincular', authMiddleware, async (req, res, next) => {
+  try {
+    const db = process.env.USE_POSTGRES === 'true'
+      ? require('../services/postgresService')
+      : require('../services/googleSheetsService');
+
+    const [planejamentos, oppData] = await Promise.all([
+      db.readSheet('Planejamentos'),
+      (async () => {
+        let offset = 0, todos = [];
+        while (true) {
+          const r = await opp.oppRequest('GET', `/contas-receber?limit=250&offset=${offset}&lixeira=Nao`);
+          const lista = Array.isArray(r) ? r : (r?.data || []);
+          if (lista.length === 0) break;
+          todos.push(...lista);
+          if (lista.length < 250) break;
+          offset += 250;
+          if (offset > 5000) break;
+        }
+        return todos;
+      })(),
+    ]);
+
+    const osRegex = /(?:OS\s+nro?\.\s*|ordem de servi[cç]o\s*n[º°]?\s*)(\d+)/i;
+    const porOS = {};
+    for (const r of oppData) {
+      const match = (r.observacoes_rec || '').match(osRegex);
+      if (!match) continue;
+      const osNum = match[1];
+      if (!porOS[osNum]) porOS[osNum] = { os: osNum, cliente: r.nome_cliente || '', totalRecebido: 0, totalPendente: 0 };
+      const v = parseFloat(r.valor_rec || 0);
+      if (r.liquidado_rec === 'Sim') porOS[osNum].totalRecebido += v;
+      else porOS[osNum].totalPendente += v;
+    }
+    const osLista = Object.values(porOS).sort((a, b) => Number(b.os) - Number(a.os));
+
+    // Normaliza string para comparação: sem acento, maiúsculo, só letras/números
+    const norm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
+      .replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim()
+
+    // Tenta casar automaticamente projeto PAR com OS do OPP por nome do cliente
+    function sugerirOS(parCliente, parNome, parValor) {
+      const cliNorm = norm(parCliente)
+      const projNorm = norm(parNome)
+      const val = parseFloat(String(parValor || '0').replace(/\./g, '').replace(',', '.')) || 0
+
+      let melhor = null, melhorScore = 0
+      for (const os of osLista) {
+        const osCliNorm = norm(os.cliente)
+        if (!osCliNorm) continue
+
+        let score = 0
+        // Palavras do cliente PAR presentes no cliente OPP (e vice-versa)
+        const palavrasPAR = cliNorm.split(' ').filter(w => w.length > 3)
+        const palavrasOPP = osCliNorm.split(' ').filter(w => w.length > 3)
+        for (const w of palavrasPAR) if (osCliNorm.includes(w)) score += 2
+        for (const w of palavrasOPP) if (cliNorm.includes(w)) score += 1
+        // Bônus se nenhum outro projeto já usa essa OS
+        // Penalidade se OS já está vinculada a outro
+        if (score > melhorScore) { melhorScore = score; melhor = os }
+      }
+      return melhorScore >= 2 ? { os: melhor.os, cliente: melhor.cliente, score: melhorScore } : null
+    }
+
+    const aprovados = planejamentos
+      .filter(p => p.Status === 'Aprovado')
+      .map(p => ({
+        id: p.ID,
+        idProjeto: p.ID_Projeto,
+        nome: p.Nome_Projeto,
+        cliente: p.Cliente || '',
+        setor: p.Setor || '',
+        valorContrato: p.Valor_Contrato || '',
+        nrOsOpp: p.Nr_OS_OPP || '',
+        sugestao: p.Nr_OS_OPP ? null : sugerirOS(p.Cliente, p.Nome_Projeto, p.Valor_Contrato),
+      }));
+
+    res.json({ projetos: aprovados, osOpp: osLista });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/opp/vincular-os — salva Nr_OS_OPP em um planejamento ───────────
+router.post('/vincular-os', authMiddleware, async (req, res, next) => {
+  try {
+    const db = process.env.USE_POSTGRES === 'true'
+      ? require('../services/postgresService')
+      : require('../services/googleSheetsService');
+    const { idPlanejamento, nrOsOpp } = req.body;
+    if (!idPlanejamento) return res.status(400).json({ error: 'idPlanejamento obrigatório' });
+
+    const rows = await db.readSheet('Planejamentos');
+    const plan = rows.find(p => p.ID === idPlanejamento);
+    if (!plan) return res.status(404).json({ error: 'Planejamento não encontrado' });
+
+    await db.updateRowById('Planejamentos', 'ID', idPlanejamento, { ...plan, Nr_OS_OPP: String(nrOsOpp || '') });
+    res.json({ ok: true, idPlanejamento, nrOsOpp });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/opp/auto-vincular — aplica sugestões automáticas em lote ───────
+router.post('/auto-vincular', authMiddleware, async (req, res, next) => {
+  try {
+    const db = process.env.USE_POSTGRES === 'true'
+      ? require('../services/postgresService')
+      : require('../services/googleSheetsService');
+
+    // vinculos: [{ idPlanejamento, nrOsOpp }]
+    const { vinculos } = req.body;
+    if (!Array.isArray(vinculos) || vinculos.length === 0)
+      return res.status(400).json({ error: 'vinculos[] obrigatório' });
+
+    const rows = await db.readSheet('Planejamentos');
+    const mapa = Object.fromEntries(rows.map(p => [p.ID, p]));
+
+    const resultados = []
+    for (const { idPlanejamento, nrOsOpp } of vinculos) {
+      const plan = mapa[idPlanejamento]
+      if (!plan) { resultados.push({ idPlanejamento, ok: false, erro: 'Não encontrado' }); continue }
+      await db.updateRowById('Planejamentos', 'ID', idPlanejamento, { ...plan, Nr_OS_OPP: String(nrOsOpp || '') })
+      resultados.push({ idPlanejamento, nrOsOpp, ok: true })
+    }
+    res.json({ ok: true, total: resultados.length, resultados });
+  } catch (err) { next(err); }
+});
+
 router.use(authMiddleware);
 
 // ── GET /api/opp/status — testa conexão com o OPP ───────────────────────────

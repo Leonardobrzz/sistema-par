@@ -44,6 +44,7 @@ const NAV_GROUPS = [
     items: [
       { to: '/alertas',        label: 'Central de Alertas',     icon: BellAlertIcon },
       { to: '/auditoria',      label: 'Auditoria',              icon: ClockIcon,                perfis: ['Admin','Diretoria'] },
+      { to: '/vincular-os',    label: 'Vincular OS OPP',        icon: KeyIcon,                  perfis: ['Admin','Diretoria'] },
       { to: '/configuracoes',  label: 'Configurações',          icon: Cog6ToothIcon,            perfis: ['Admin','Coordenador','Diretoria'] },
     ],
   },
