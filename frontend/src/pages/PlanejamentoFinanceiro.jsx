@@ -2361,7 +2361,7 @@ export default function PlanejamentoFinanceiro() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
                 <TrendingUp size={20} color="#0EA5E9" />
                 <span style={{ fontWeight: 900, fontSize: 17, color: T.text1 }}>Relatório de Medições</span>
-                <span style={{ fontSize: 12, color: T.text2, marginLeft: 4 }}>Projetos Aprovados</span>
+                <span style={{ fontSize: 11, color: '#0369A1', background: '#E0F2FE', padding: '3px 8px', borderRadius: 6, fontWeight: 700 }}>🔄 Dados ao vivo do OPP</span>
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
                   {setores.map(s => (
                     <button key={s} onClick={() => setRelMedSetor(s)}
@@ -2369,6 +2369,10 @@ export default function PlanejamentoFinanceiro() {
                       {s}
                     </button>
                   ))}
+                  <button onClick={() => { setRelMedData([]); setRelMedLoading(true); api.get('/baseline-real').then(r => setRelMedData(r.data?.projetos || [])).catch(() => toast.error('Erro ao atualizar')).finally(() => setRelMedLoading(false)) }}
+                    style={{ padding: '5px 12px', borderRadius: 7, border: '1.5px solid #0EA5E9', background: '#E0F2FE', color: '#0369A1', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+                    🔄 Atualizar
+                  </button>
                   <button onClick={() => exportarRelMed(lista, maxMed)}
                     style={{ padding: '5px 14px', borderRadius: 7, border: '1.5px solid #16A34A', background: '#DCFCE7', color: '#15803D', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <FileSpreadsheet size={14} /> Exportar Excel
@@ -2398,6 +2402,7 @@ export default function PlanejamentoFinanceiro() {
                         <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: T.text2, whiteSpace: 'nowrap', borderBottom: `2px solid ${T.border}` }}>Setor</th>
                         <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: T.text2, whiteSpace: 'nowrap', borderBottom: `2px solid ${T.border}` }}>Vl. Contrato</th>
                         <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: T.text2, whiteSpace: 'nowrap', borderBottom: `2px solid ${T.border}` }}>Total Recebido</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: T.text2, whiteSpace: 'nowrap', borderBottom: `2px solid ${T.border}` }}>Saldo a Receber</th>
                         {Array.from({ length: maxMed }, (_, i) => (
                           <th key={i} colSpan={2} style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 700, color: T.text2, borderBottom: `2px solid ${T.border}`, borderLeft: `1px solid ${T.border}` }}>
                             {i + 1}ª Medição
@@ -2405,7 +2410,7 @@ export default function PlanejamentoFinanceiro() {
                         ))}
                       </tr>
                       <tr style={{ background: isDark ? '#1E293B' : '#F8FAFC' }}>
-                        <th colSpan={5} style={{ borderBottom: `1px solid ${T.border}` }} />
+                        <th colSpan={6} style={{ borderBottom: `1px solid ${T.border}` }} />
                         {Array.from({ length: maxMed }, (_, i) => (
                           <>
                             <th key={`v${i}`} style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 600, color: T.text2, fontSize: 11, borderLeft: `1px solid ${T.border}` }}>Valor / Data</th>
@@ -2424,6 +2429,7 @@ export default function PlanejamentoFinanceiro() {
                             <td style={{ padding: '10px 12px', color: T.text2 }}>{p.setor || '—'}</td>
                             <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: T.text1, whiteSpace: 'nowrap' }}>{fmt(p.valorContrato)}</td>
                             <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#15803D', whiteSpace: 'nowrap' }}>{fmt(p.totalRecebido)}</td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: (p.saldoReceber || 0) > 0 ? '#DC2626' : '#15803D', whiteSpace: 'nowrap' }}>{fmt(p.saldoReceber || Math.max(0, (p.valorContrato || 0) - (p.totalRecebido || 0)))}</td>
                             {Array.from({ length: maxMed }, (_, i) => {
                               const m = (p.cronograma || [])[i] || null
                               if (m) acumulado += (m.valorPlan || 0)

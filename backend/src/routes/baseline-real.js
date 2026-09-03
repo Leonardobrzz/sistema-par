@@ -5,7 +5,14 @@ const db = process.env.USE_POSTGRES === 'true' ? require('../services/postgresSe
 const router = express.Router()
 router.use(authMiddleware)
 
-const pBR = (v) => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0
+// Detecta formato americano (1234.56) vs BR (1.234,56 ou 1.234.567)
+const pBR = (v) => {
+  const s = String(v || 0).trim()
+  if (s.includes(',')) return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0
+  const parts = s.split('.')
+  if (parts.length === 2 && parts[1].length <= 2) return parseFloat(s) || 0
+  return parseFloat(s.replace(/\./g, '')) || 0
+}
 
 async function fetchOppBatch() {
   try {
@@ -44,18 +51,30 @@ async function fetchOppBatch() {
       porCC[ccId].totalPago += parseFloat(d.valor_pago || 0)
     }
 
-    // Mapa ccNome → totalRecebido (receitas liquidadas por CC nome)
-    const recebidoPorCC = {}
-    for (const r of receitas) {
-      if (r.liquidado_rec !== 'Sim') continue
-      const cc = (r.centro_custos_rec || r.centro_custo || '').toLowerCase().trim()
-      if (!cc) continue
-      recebidoPorCC[cc] = (recebidoPorCC[cc] || 0) + parseFloat(r.valor_rec || 0)
+    // Normaliza string para matching: remove acentos, minúsculas, colapsa espaços
+    function norm(s) {
+      return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim()
     }
 
-    return { listaCC, porCC, recebidoPorCC }
+    // Mapa ccNomeNorm → { total, nome } (receitas liquidadas + pendentes por CC nome)
+    const recebidoPorCC = {}        // liquidado
+    const pendentesPorCC = {}       // não liquidado ainda
+    const valorContratoPorCC = {}   // valor total do contrato OPP por CC
+    for (const r of receitas) {
+      const cc = norm(r.centro_custos_rec || r.centro_custo || '')
+      if (!cc) continue
+      const v = parseFloat(r.valor_rec || 0)
+      if (r.liquidado_rec === 'Sim') {
+        recebidoPorCC[cc] = (recebidoPorCC[cc] || 0) + v
+      } else {
+        pendentesPorCC[cc] = (pendentesPorCC[cc] || 0) + v
+      }
+      valorContratoPorCC[cc] = (valorContratoPorCC[cc] || 0) + parseFloat(r.valor_total_rec || r.valor_rec || 0)
+    }
+
+    return { listaCC, porCC, recebidoPorCC, pendentesPorCC, valorContratoPorCC, norm }
   } catch {
-    return { listaCC: [], porCC: {}, recebidoPorCC: {} }
+    return { listaCC: [], porCC: {}, recebidoPorCC: {}, pendentesPorCC: {}, valorContratoPorCC: {}, norm: s => String(s||'').toLowerCase().trim() }
   }
 }
 
@@ -84,7 +103,7 @@ router.get('/', async (req, res, next) => {
       horasPorProjeto[id] += parseFloat(h.Horas_Logadas || h.Horas || h.horas || 0)
     })
 
-    const { listaCC, porCC, recebidoPorCC } = oppData
+    const { listaCC, porCC, recebidoPorCC, pendentesPorCC, valorContratoPorCC, norm } = oppData
 
     function findCC(nome) {
       if (!nome) return null
@@ -132,20 +151,31 @@ router.get('/', async (req, res, next) => {
       const medsPlan  = d.medicoesCronograma || d.medicoes || []
       const medsReais = medPorProjeto[plan.ID_Projeto] || []
 
-      // totalRecebido vem do OPP (contas-receber liquidadas, por CC nome)
-      const ccNome = (plan.Nr_Contrato_OS || '').toLowerCase().trim()
-      let totalRecebido = 0
-      if (ccNome) {
-        if (recebidoPorCC[ccNome] !== undefined) {
-          totalRecebido = recebidoPorCC[ccNome]
-        } else {
-          // fuzzy match
-          for (const [k, v] of Object.entries(recebidoPorCC)) {
-            if (ccNome.includes(k) || k.includes(ccNome)) { totalRecebido = v; break }
-          }
+      // totalRecebido vem do OPP (contas-receber) — tenta múltiplos campos de identificação
+      function buscarNoMapa(mapa, chave) {
+        if (!chave) return undefined
+        const k = norm(chave)
+        if (mapa[k] !== undefined) return mapa[k]
+        // fuzzy: uma contém a outra
+        for (const [mk, mv] of Object.entries(mapa)) {
+          if (k.includes(mk) || mk.includes(k)) return mv
         }
+        return undefined
       }
-      const totalPendente  = medsReais.filter(m => m.Status_Financeiro !== 'Recebido').reduce((s, m) => s + pBR(m.Valor), 0)
+      // Tenta: Nr_Contrato_OS → Nome_Projeto → Nr_OS_OPP
+      const chaves = [plan.Nr_Contrato_OS, plan.Nome_Projeto, plan.Nr_OS_OPP].filter(Boolean)
+      let totalRecebido = 0
+      let totalPendenteOPP = 0
+      for (const ch of chaves) {
+        const r = buscarNoMapa(recebidoPorCC, ch)
+        if (r !== undefined) { totalRecebido = r; break }
+      }
+      for (const ch of chaves) {
+        const p = buscarNoMapa(pendentesPorCC, ch)
+        if (p !== undefined) { totalPendenteOPP = p; break }
+      }
+      const totalPendente = totalPendenteOPP ||
+        medsReais.filter(m => m.Status_Financeiro !== 'Recebido').reduce((s, m) => s + pBR(m.Valor), 0)
       const percRecebido   = V > 0 ? totalRecebido / V * 100 : 0
 
       const maxLen = Math.max(medsPlan.length, medsReais.length)
@@ -184,9 +214,10 @@ router.get('/', async (req, res, next) => {
         custoRealTotal:  Math.round(custoRealTotal),
         horasPlan:       Math.round(horasPlan),
         horasRastreadas: parseFloat(horasRastreadas.toFixed(1)),
-        // medições (faturamento)
+        // medições (faturamento) — dados ao vivo do OPP
         totalRecebido:  Math.round(totalRecebido),
         totalPendente:  Math.round(totalPendente),
+        saldoReceber:   Math.max(0, Math.round(V - totalRecebido)),
         percRecebido:   parseFloat(percRecebido.toFixed(1)),
         qtdMedPlan:     medsPlan.length,
         qtdMedReais:    medsReais.length,

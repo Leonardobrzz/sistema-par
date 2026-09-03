@@ -9,11 +9,28 @@ router.get('/diagnostico-cc', async (req, res, next) => {
   try {
     const amostra = await opp.oppRequest('GET', '/contas-pagar?limit=5&offset=0');
     const lista = Array.isArray(amostra) ? amostra : (amostra?.data || []);
-    // Retorna TODOS os campos do primeiro registro para debug completo
     res.json({
       total_amostrado: lista.length,
       campos_primeiro_registro: lista[0] ? Object.keys(lista[0]) : [],
-      registros: lista.map(d => d),  // completo, sem filtrar campos
+      registros: lista.map(d => d),
+    });
+  } catch (err) { next(err); }
+});
+
+// GET /api/opp/diagnostico-receitas — mostra contas-receber do OPP para debug de matching
+router.get('/diagnostico-receitas', async (req, res, next) => {
+  try {
+    const { cc } = req.query; // filtro opcional por nome/trecho do CC
+    const amostra = await opp.oppRequest('GET', '/contas-receber?limit=50&offset=0');
+    const lista = Array.isArray(amostra) ? amostra : (amostra?.data || []);
+    const filtrada = cc
+      ? lista.filter(r => (r.centro_custos_rec || r.centro_custo || '').toLowerCase().includes(cc.toLowerCase()))
+      : lista;
+    res.json({
+      total_encontrado: filtrada.length,
+      campos: filtrada[0] ? Object.keys(filtrada[0]) : [],
+      centros_custo_unicos: [...new Set(lista.map(r => r.centro_custos_rec || r.centro_custo || '').filter(Boolean))].sort(),
+      registros: filtrada.slice(0, 20),
     });
   } catch (err) { next(err); }
 });
