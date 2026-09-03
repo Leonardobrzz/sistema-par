@@ -60,8 +60,12 @@ export default function VincularOS() {
     if (!window.confirm("Corrigir automaticamente valores de medição com decimal errado (ex: R$25,02 → R$25.020) e remover OS incorreta do CORES VALE?")) return
     setSalvando(true)
     try {
-      const { data } = await api.post("/opp/corrigir-medicoes")
-      toast.success(`${data.total_medicoes_corrigidas} medição(ões) corrigida(s)!${data.cores_vale_os_removida ? ' OS do Cores Vale removida.' : ''}`)
+      const [r1, r2] = await Promise.all([
+        api.post("/opp/corrigir-medicoes"),
+        api.post("/opp/fix-especificos"),
+      ])
+      const total = (r1.data.total_medicoes_corrigidas || 0) + (r2.data.resultados?.filter(r => r.de || r.acao).length || 0)
+      toast.success(`${total} correção(ões) aplicada(s)!`)
       await carregar()
     } catch {
       toast.error("Erro ao corrigir medições")
