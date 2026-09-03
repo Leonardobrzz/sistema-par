@@ -219,6 +219,7 @@ export default function PlanejamentoFinanceiro() {
   const [planId, setPlanId] = useState(null)          // ID interno do planejamento
   const [planStatus, setPlanStatus] = useState(null)
   const [planComentario, setPlanComentario] = useState("")
+  const [planJustificativaReplan, setPlanJustificativaReplan] = useState("")
   const [planTravado, setPlanTravado] = useState(false)
   const isDiretor = ['Diretoria', 'Admin'].includes(user?.perfil)
   const [travandoOPP, setTravandoOPP] = useState(false)
@@ -273,6 +274,7 @@ export default function PlanejamentoFinanceiro() {
       setPlanStatus(p.Status || null)
       setPlanTravado(!!(p.Travado))
       setPlanComentario(p.Comentario_Aprovacao || "")
+      setPlanJustificativaReplan(p.Justificativa_Replanejamento || "")
       setBaseline(d._baseline || null)
       setHistoricoBaselines(d._historicoBaselines || [])
       setForm({
@@ -753,6 +755,19 @@ export default function PlanejamentoFinanceiro() {
     }
   }
 
+  async function rejeitarReplanejamento() {
+    if (!planId) return
+    const motivo = window.prompt("Motivo da rejeição (opcional):")
+    if (motivo === null) return // cancelado
+    try {
+      await api.post(`/planejamento/${planId}/aprovar`, { acao: "rejeitar_replanejamento", comentario: motivo })
+      toast.success("Replanejamento rejeitado. Planejamento restaurado ao estado anterior.")
+      carregar(projetoId)
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Erro ao rejeitar replanejamento")
+    }
+  }
+
   function solicitarReplanejamento() {
     if (!planId) return toast.error("Nenhum planejamento encontrado")
     setModalReplan({ open: true, justificativa: "" })
@@ -1230,10 +1245,20 @@ export default function PlanejamentoFinanceiro() {
                 <div style={{ fontSize: 12, color: isDark ? '#94A3B8' : '#64748B', marginTop: 4 }}>
                   {planStatus === 'Pendente Replanejamento' ? 'A diretoria precisa aprovar a solicitação de replanejamento.' : 'A diretoria precisa aprovar antes de liberar edição.'}
                 </div>
+                {planStatus === 'Pendente Replanejamento' && planJustificativaReplan && (
+                  <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 8, background: '#FEF9C3', border: '1px solid #FDE68A', fontSize: 12, color: '#78350F', textAlign: 'left' }}>
+                    <strong>Justificativa:</strong> {planJustificativaReplan}
+                  </div>
+                )}
                 {planStatus === 'Pendente Replanejamento' && isDiretor && (
-                  <button onClick={() => aprovarReplanejamento()} style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 8, border: '1.5px solid #16A34A', background: '#DCFCE7', color: '#15803D', fontWeight: 700, fontSize: 13, cursor: 'pointer', margin: '14px auto 0' }}>
-                    <CheckCircle size={15} /> Aprovar Replanejamento
-                  </button>
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 14 }}>
+                    <button onClick={() => aprovarReplanejamento()} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 8, border: '1.5px solid #16A34A', background: '#DCFCE7', color: '#15803D', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                      <CheckCircle size={15} /> Aprovar Replanejamento
+                    </button>
+                    <button onClick={() => rejeitarReplanejamento()} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 8, border: '1.5px solid #DC2626', background: '#FEE2E2', color: '#DC2626', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                      Rejeitar
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -1710,14 +1735,26 @@ export default function PlanejamentoFinanceiro() {
                 </span>
               </div>
             ) : planStatus === "Pendente Replanejamento" ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 13, color: "#92400E", background: "#FEF3C7", padding: "10px 18px", borderRadius: 10, fontWeight: 700, border: "1.5px solid #FDE68A" }}>
-                  ⏳ Aguardando aprovação da diretoria para replanejamento
-                </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <span style={{ fontSize: 13, color: "#92400E", background: "#FEF3C7", padding: "10px 18px", borderRadius: 10, fontWeight: 700, border: "1.5px solid #FDE68A" }}>
+                    ⏳ Aguardando aprovação da diretoria para replanejamento
+                  </span>
+                  {planJustificativaReplan && (
+                    <span style={{ fontSize: 12, color: "#78350F", background: "#FEF9C3", padding: "6px 14px", borderRadius: 8, border: "1px solid #FDE68A" }}>
+                      <strong>Justificativa:</strong> {planJustificativaReplan}
+                    </span>
+                  )}
+                </div>
                 {isDiretor && (
-                  <button onClick={aprovarReplanejamento} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", borderRadius: 10, border: "none", background: "#22C55E", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                    <CheckCircle size={15} /> Aprovar Replanejamento
-                  </button>
+                  <>
+                    <button onClick={aprovarReplanejamento} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", borderRadius: 10, border: "none", background: "#22C55E", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                      <CheckCircle size={15} /> Aprovar Replanejamento
+                    </button>
+                    <button onClick={rejeitarReplanejamento} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", borderRadius: 10, border: "1.5px solid #DC2626", background: "#FEE2E2", color: "#DC2626", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                      Rejeitar
+                    </button>
+                  </>
                 )}
               </div>
             ) : planStatus === "Aprovado" ? (

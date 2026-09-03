@@ -12,6 +12,8 @@ const CUSTO_HORA_INTERNA      = 36.40; // R$/hora — equipe técnica interna
 const MAX_HORAS_TAREFA        = 16;    // horas — acima disso exige particionamento
 const PRAZO_MAX_PLANEJAMENTO  = 7;     // dias — máximo para sair do status "A PLANEJAR"
 
+const { createAlert } = require('../services/alertService');
+
 const router = express.Router();
 router.use(authMiddleware);
 const audit = auditMiddleware('Planejamentos');
@@ -306,6 +308,12 @@ router.post('/', audit, async (req, res, next) => {
     };
 
     if (existing) {
+      // Guarda snapshot do estado aprovado antes da primeira edição (para rollback de replanejamento rejeitado)
+      if (existing.Status === 'Aprovado' && !existing.Snapshot_Anterior) {
+        planData.Snapshot_Anterior = existing.Dados_JSON;
+      } else {
+        planData.Snapshot_Anterior = existing.Snapshot_Anterior || '';
+      }
       await db.updateRowById('Planejamentos', 'ID', existing.ID, planData);
     } else {
       await db.insertRow('Planejamentos', planData);
@@ -343,8 +351,26 @@ async function handleAprovar(req, res, next, acaoForced) {
       if (plan.Status !== 'Aprovado') {
         return res.status(409).json({ error: 'Somente planejamentos "Aprovados" podem solicitar replanejamento.' });
       }
-      const updated = { ...plan, Status: 'Pendente Replanejamento', Comentario_Aprovacao: comentario };
+      // Guarda snapshot para possível rollback caso rejeitado
+      const snapshot = plan.Snapshot_Anterior || plan.Dados_JSON || '';
+      const updated = {
+        ...plan,
+        Status: 'Pendente Replanejamento',
+        Comentario_Aprovacao: comentario,
+        Justificativa_Replanejamento: comentario,
+        Snapshot_Anterior: snapshot,
+      };
       await db.updateRowById('Planejamentos', 'ID', plan.ID, updated);
+      // Notifica diretoria
+      try {
+        await createAlert({
+          tipo: 'REPLANEJAMENTO_SOLICITADO',
+          idProjeto: plan.ID_Projeto,
+          mensagem: `Solicitação de replanejamento para "${plan.Nome_Projeto}". Justificativa: ${comentario || '(sem justificativa)'}`,
+          nivel: 'warning',
+          setorDestino: ['Diretoria', 'Admin'],
+        });
+      } catch (e) { console.error('[Replanejamento] Falha ao criar alerta:', e.message); }
       return res.json({ ok: true, message: 'Solicitação de replanejamento enviada para a diretoria.' });
     }
 
@@ -356,14 +382,60 @@ async function handleAprovar(req, res, next, acaoForced) {
       if (plan.Status !== 'Pendente Replanejamento') {
         return res.status(409).json({ error: 'Planejamento não está aguardando replanejamento.' });
       }
-      const updated = { ...plan, Status: 'Em Elaboração', Aprovado_Por: req.user.nome, Aprovado_Em: new Date().toISOString() };
+      const updated = {
+        ...plan,
+        Status: 'Em Elaboração',
+        Aprovado_Por: req.user.nome,
+        Aprovado_Em: new Date().toISOString(),
+        Snapshot_Anterior: '', // Limpa snapshot — alterações foram aprovadas
+      };
       await db.updateRowById('Planejamentos', 'ID', plan.ID, updated);
+      try {
+        await createAlert({
+          tipo: 'REPLANEJAMENTO_APROVADO',
+          idProjeto: plan.ID_Projeto,
+          mensagem: `Replanejamento de "${plan.Nome_Projeto}" aprovado por ${req.user.nome}. Planejamento liberado para edição.`,
+          nivel: 'info',
+          setorDestino: ['PO', 'Coordenador'],
+        });
+      } catch (e) { console.error('[Replanejamento] Falha ao criar alerta:', e.message); }
       return res.json({ ok: true, message: 'Replanejamento aprovado. Planejamento liberado para edição.' });
+    }
+
+    // Diretoria rejeita solicitação de replanejamento: restaura estado anterior
+    if (acao === 'rejeitar_replanejamento') {
+      if (!['Admin', 'Diretoria'].includes(req.user.perfil)) {
+        return res.status(403).json({ error: 'Somente Diretoria pode rejeitar o replanejamento.' });
+      }
+      if (plan.Status !== 'Pendente Replanejamento') {
+        return res.status(409).json({ error: 'Planejamento não está aguardando replanejamento.' });
+      }
+      // Restaura Dados_JSON do snapshot (estado antes das alterações propostas)
+      const updated = {
+        ...plan,
+        Status: 'Aprovado',
+        Dados_JSON: plan.Snapshot_Anterior || plan.Dados_JSON,
+        Snapshot_Anterior: '',
+        Justificativa_Replanejamento: '',
+        Comentario_Aprovacao: comentario || '',
+      };
+      await db.updateRowById('Planejamentos', 'ID', plan.ID, updated);
+      try {
+        await createAlert({
+          tipo: 'REPLANEJAMENTO_REJEITADO',
+          idProjeto: plan.ID_Projeto,
+          mensagem: `Replanejamento de "${plan.Nome_Projeto}" rejeitado por ${req.user.nome}.${comentario ? ' Motivo: ' + comentario : ''} Planejamento restaurado ao estado aprovado.`,
+          nivel: 'error',
+          setorDestino: ['PO', 'Coordenador'],
+        });
+      } catch (e) { console.error('[Replanejamento] Falha ao criar alerta:', e.message); }
+      return res.json({ ok: true, message: 'Replanejamento rejeitado. Planejamento restaurado ao estado aprovado anterior.' });
     }
 
     // Se o plano está Aprovado, trata como solicitação de replanejamento
     if (plan.Status === 'Aprovado') {
-      const updated = { ...plan, Status: 'Pendente Replanejamento', Comentario_Aprovacao: comentario };
+      const snapshot = plan.Snapshot_Anterior || plan.Dados_JSON || '';
+      const updated = { ...plan, Status: 'Pendente Replanejamento', Comentario_Aprovacao: comentario, Justificativa_Replanejamento: comentario, Snapshot_Anterior: snapshot };
       await db.updateRowById('Planejamentos', 'ID', plan.ID, updated);
       return res.json({ ok: true, message: 'Solicitação de replanejamento enviada para a diretoria.' });
     }
@@ -373,7 +445,7 @@ async function handleAprovar(req, res, next, acaoForced) {
       if (!['Admin', 'Diretoria'].includes(req.user.perfil)) {
         return res.status(403).json({ error: 'Somente Diretoria pode aprovar o replanejamento.' });
       }
-      const updated = { ...plan, Status: 'Em Elaboração', Aprovado_Por: req.user.nome, Aprovado_Em: new Date().toISOString() };
+      const updated = { ...plan, Status: 'Em Elaboração', Aprovado_Por: req.user.nome, Aprovado_Em: new Date().toISOString(), Snapshot_Anterior: '' };
       await db.updateRowById('Planejamentos', 'ID', plan.ID, updated);
       return res.json({ ok: true, message: 'Replanejamento aprovado. Planejamento liberado para edição.' });
     }
