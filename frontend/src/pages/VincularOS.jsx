@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Link2, Check, Search, RefreshCw, X, AlertCircle, Zap, Plus } from "lucide-react"
+import { Link2, Check, Search, RefreshCw, X, AlertCircle, Zap, Plus, Database } from "lucide-react"
 import api from "../utils/api"
 import { useTheme } from "../contexts/ThemeContext"
 import toast from "react-hot-toast"
@@ -52,6 +52,19 @@ export default function VincularOS() {
       setProjetos(prev => prev.map(p => p.id === selecionado ? { ...p, nrOsOpp: nova.join(',') } : p))
     } catch {
       toast.error("Erro ao salvar")
+    }
+    setSalvando(false)
+  }
+
+  async function aplicarMapeamentos() {
+    if (!window.confirm("Aplicar todos os mapeamentos pré-definidos (OS por nome de projeto)?\n\nIsso sobrescreverá os vínculos atuais dos projetos mapeados.")) return
+    setSalvando(true)
+    try {
+      const { data } = await api.post("/opp/aplicar-mapeamentos")
+      toast.success(`${data.total} vínculo(s) aplicados!`)
+      await carregar()
+    } catch {
+      toast.error("Erro ao aplicar mapeamentos")
     }
     setSalvando(false)
   }
@@ -120,6 +133,10 @@ export default function VincularOS() {
             </p>
           </div>
           <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+            <button onClick={aplicarMapeamentos} disabled={salvando}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "#7C3AED", border: "none", borderRadius: 8, color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+              <Database size={14} /> Aplicar mapeamentos
+            </button>
             {projetos.filter(p => !p.nrOsOpp && p.sugestao).length > 0 && (
               <button onClick={autoVincularTudo} disabled={salvando}
                 style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "#2563EB", border: "none", borderRadius: 8, color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>

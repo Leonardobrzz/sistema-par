@@ -203,6 +203,86 @@ router.post('/auto-vincular', authMiddleware, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/opp/aplicar-mapeamentos — aplica mapeamentos por nome parcial ──
+router.post('/aplicar-mapeamentos', authMiddleware, async (req, res, next) => {
+  try {
+    const db = process.env.USE_POSTGRES === 'true'
+      ? require('../services/postgresService')
+      : require('../services/googleSheetsService');
+
+    // mapeamentos: [{ nomeContém: string, os: string }]
+    const MAPEAMENTOS = [
+      // CODEVASF
+      { nomeContém: 'CANAPI',                     os: '79' },
+      { nomeContém: 'ABATEDOURO FRIGORÍ',          os: '95' },
+      { nomeContém: 'MERCADO DO PRODUTOR',         os: '92' },
+      { nomeContém: 'UNID. PESCADOS',              os: '91' },
+      { nomeContém: 'UNID. DE LEITE',              os: '91' },
+      { nomeContém: 'PRODUÇÃO DE ABELHAS',         os: '91' },
+      { nomeContém: 'DERIVADOS DA MANDIOCA',       os: '93' },
+      // Polícia Federal
+      { nomeContém: 'DELEGACIA DE POLÍCIA FEDERAL', os: '90' },
+      // EMBASA
+      { nomeContém: 'SAA INEMA E PIMENTEIRA',      os: '78' },
+      { nomeContém: 'SAA WENCESLAU',               os: '115' },
+      { nomeContém: 'SAA RIO REAL',                os: '72' },
+      { nomeContém: 'SAA LAFAIETE',                os: '73' },
+      { nomeContém: 'SIAA SANTANA',                os: '3,77' },
+      { nomeContém: 'SIAA FERRAZNÓPOLIS',          os: '77' },
+      { nomeContém: 'SAA COMANDATUBA',             os: '160' },
+      // Hospitais SESAB
+      { nomeContém: 'HOSPITAL REGIONAL DE JUAZEIRO',         os: '40' },
+      { nomeContém: 'HOSPITAL REGIONAL DE SANTO ANTÔNIO',   os: '38' },
+      { nomeContém: 'HOSPITAL GERAL MANOEL VICTORINO',      os: '39' },
+      // Fortim
+      { nomeContém: 'REFORMA E.E.F. EMÍLIA QUEIROZ',        os: '127' },
+      { nomeContém: 'LEVANTAMENTOS TOPOGRÁFICOS LOC. DE BARRO VERMELHO', os: '155' },
+      { nomeContém: 'MANUTENÇÃO DE ARENINHAS',              os: '161' },
+      // Apuiarés
+      { nomeContém: 'CALÇADÃO DA RUA JOSÉ LOPES FILHO',     os: '152' },
+      { nomeContém: 'LEVANTAMENTO TOPOGRÁFICO EM RUAS DA SEDE', os: '164' },
+      { nomeContém: 'ARENINHA SÃO FRANCISCO',               os: '144' },
+      { nomeContém: 'PP014275',                             os: '164' },
+      // Nova Mamoré
+      { nomeContém: 'CLUBE DOS SERVIDORES',                 os: '145' },
+      { nomeContém: 'ESPAÇO ALTERNATIVO',                   os: '117' },
+      { nomeContém: 'ESCOLA MUNICIPAL ONORINA',             os: '120' },
+      { nomeContém: 'ESCOLA MUNICIPAL OZEIAS',              os: '120' },
+      { nomeContém: 'ESCOLA MUNICIPAL EDUARDO VALVERDE',    os: '98' },
+      { nomeContém: 'ESCOLA 5 SALAS',                      os: '162' },
+      // Bezerros
+      { nomeContém: 'DRENAGEM URBANA',                      os: '119' },
+      // SENAR
+      { nomeContém: 'AGUA BOA-MT',                          os: '149' },
+      // DER/SE
+      { nomeContém: 'REFORMA DA SEDE DO DER',               os: '43,62,63' },
+      { nomeContém: 'LABORATÓRIO DER',                      os: '143' },
+      // SEC CIDADES / UMARI
+      { nomeContém: 'SAA UMARI',                            os: '87,88' },
+      // Croatá
+      { nomeContém: 'CV 993598',                            os: '104,105' },
+      { nomeContém: 'CV 993599',                            os: '105' },
+      // Solonópole
+      { nomeContém: 'MONTE CASTELO',                        os: '49,50,65' },
+    ];
+
+    const rows = await db.readSheet('Planejamentos');
+    const aprovados = rows.filter(p => p.Status === 'Aprovado');
+    const norm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+
+    const resultados = [];
+    for (const map of MAPEAMENTOS) {
+      const busca = norm(map.nomeContém);
+      const proj = aprovados.find(p => norm(p.Nome_Projeto).includes(busca));
+      if (!proj) { resultados.push({ nomeContém: map.nomeContém, ok: false, erro: 'Não encontrado' }); continue; }
+      if (proj.Nr_OS_OPP === map.os) { resultados.push({ nome: proj.Nome_Projeto, os: map.os, ok: true, status: 'ja_correto' }); continue; }
+      await db.updateRowById('Planejamentos', 'ID', proj.ID, { ...proj, Nr_OS_OPP: map.os });
+      resultados.push({ nome: proj.Nome_Projeto, osAntes: proj.Nr_OS_OPP, os: map.os, ok: true, status: 'atualizado' });
+    }
+    res.json({ ok: true, total: resultados.filter(r => r.status === 'atualizado').length, resultados });
+  } catch (err) { next(err); }
+});
+
 router.use(authMiddleware);
 
 // ── GET /api/opp/status — testa conexão com o OPP ───────────────────────────
