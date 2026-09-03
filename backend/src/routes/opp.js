@@ -54,7 +54,7 @@ router.get('/diagnostico-receitas', async (req, res, next) => {
       total_os_encontradas: resultado.length,
       total_sem_padrao_os: semOS.length,
       aviso: 'centro_custos_rec é sempre null no OPP — matching é feito pelo número da OS em observacoes_rec',
-      os_agrupadas: filtrado.slice(0, 50),
+      os_agrupadas: filtrado,
       amostra_observacoes_sem_os: amostrasObservacoes,
     });
   } catch (err) { next(err); }
@@ -101,25 +101,42 @@ router.get('/os-para-vincular', authMiddleware, async (req, res, next) => {
     const norm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
       .replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim()
 
-    // Tenta casar automaticamente projeto PAR com OS do OPP por nome do cliente
+    const pBRlocal = v => {
+      const s = String(v || '0').trim()
+      if (s.includes(',')) return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0
+      const parts = s.split('.')
+      if (parts.length === 2 && parts[1].length <= 2) return parseFloat(s) || 0
+      return parseFloat(s.replace(/\./g, '')) || 0
+    }
+
+    // Tenta casar automaticamente projeto PAR com OS do OPP
+    // Critérios: nome do cliente (palavras em comum) + similaridade de valor total
     function sugerirOS(parCliente, parNome, parValor) {
       const cliNorm = norm(parCliente)
-      const projNorm = norm(parNome)
-      const val = parseFloat(String(parValor || '0').replace(/\./g, '').replace(',', '.')) || 0
+      const val = pBRlocal(parValor)
 
       let melhor = null, melhorScore = 0
       for (const os of osLista) {
         const osCliNorm = norm(os.cliente)
-        if (!osCliNorm) continue
+        if (!osCliNorm || osCliNorm === 'TESTE') continue
 
         let score = 0
-        // Palavras do cliente PAR presentes no cliente OPP (e vice-versa)
+        // Palavras do cliente PAR presentes no cliente OPP
         const palavrasPAR = cliNorm.split(' ').filter(w => w.length > 3)
         const palavrasOPP = osCliNorm.split(' ').filter(w => w.length > 3)
         for (const w of palavrasPAR) if (osCliNorm.includes(w)) score += 2
         for (const w of palavrasOPP) if (cliNorm.includes(w)) score += 1
-        // Bônus se nenhum outro projeto já usa essa OS
-        // Penalidade se OS já está vinculada a outro
+        if (score < 2) continue
+
+        // Bônus por similaridade de valor (rec + pend vs valorContrato)
+        if (val > 0) {
+          const osTotal = os.totalRecebido + os.totalPendente
+          const diff = Math.abs(osTotal - val) / val
+          if (diff < 0.05) score += 10      // dentro de 5% — match quase certo
+          else if (diff < 0.15) score += 5  // dentro de 15%
+          else if (diff < 0.30) score += 2  // dentro de 30%
+        }
+
         if (score > melhorScore) { melhorScore = score; melhor = os }
       }
       return melhorScore >= 2 ? { os: melhor.os, cliente: melhor.cliente, score: melhorScore } : null
