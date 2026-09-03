@@ -930,6 +930,69 @@ router.post('/corrigir-medicoes', authMiddleware, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// POST /api/opp/fix-especificos — corrige casos específicos que o algoritmo geral não captura
+router.post('/fix-especificos', authMiddleware, async (req, res, next) => {
+  try {
+    const db = process.env.USE_POSTGRES === 'true'
+      ? require('../services/postgresService')
+      : require('../services/googleSheetsService');
+
+    const planejamentos = await db.readSheet('Planejamentos');
+    const resultados = [];
+
+    // Casos específicos: nome parcial → campo valor incorreto → valor correto
+    const FIXES_MEDICAO = [
+      { nomeParcial: 'MONTE CASTELO',  valorErrado: 41.18,  valorCerto: 41180  },
+      { nomeParcial: 'MIRANTE DO CAMARÁ', valorErrado: 2.49,   valorCerto: 2490   },
+      { nomeParcial: 'PORTICO DE ENTRADA', valorErrado: 52.2,   valorCerto: 52200  },
+      { nomeParcial: 'PORTICO DE ENTRADA', valorErrado: 52.20,  valorCerto: 52200  },
+    ];
+
+    for (const fix of FIXES_MEDICAO) {
+      const plan = planejamentos.find(p =>
+        (p.Nome_Projeto || '').toUpperCase().includes(fix.nomeParcial.toUpperCase())
+      );
+      if (!plan) { resultados.push({ fix: fix.nomeParcial, erro: 'não encontrado' }); continue; }
+
+      let dados = {};
+      try { dados = JSON.parse(plan.Dados_JSON || '{}'); } catch { continue; }
+      const d = dados._baseline || dados;
+      const meds = d.medicoesCronograma || d.medicoes || [];
+
+      let alterou = false;
+      for (const mp of meds) {
+        const campo = mp.valor !== undefined ? 'valor' : 'valorPlanejado';
+        const v = typeof mp[campo] === 'number' ? mp[campo] : parseFloat(mp[campo] || 0);
+        if (Math.abs(v - fix.valorErrado) < 0.001) {
+          mp[campo] = fix.valorCerto;
+          alterou = true;
+        }
+      }
+
+      if (alterou) {
+        await db.updateRowById('Planejamentos', 'ID', plan.ID, { ...plan, Dados_JSON: JSON.stringify(dados) });
+        resultados.push({ fix: fix.nomeParcial, de: fix.valorErrado, para: fix.valorCerto });
+      } else {
+        resultados.push({ fix: fix.nomeParcial, info: 'valor não encontrado nas medições' });
+      }
+    }
+
+    // Remove OS 95 do CORES VALE (LEVANTAMENTOS TOPOGRÁFICOS — não é ABATEDOURO)
+    const coresVale = planejamentos.find(p =>
+      (p.Nome_Projeto || '').toUpperCase().includes('LEVANTAMENTOS TOPOGRÁFICOS') &&
+      (p.Nr_OS_OPP || '').trim() === '95'
+    );
+    if (coresVale) {
+      await db.updateRowById('Planejamentos', 'ID', coresVale.ID, { ...coresVale, Nr_OS_OPP: '' });
+      resultados.push({ fix: 'CORES VALE', acao: 'Nr_OS_OPP removida' });
+    } else {
+      resultados.push({ fix: 'CORES VALE', info: 'não encontrado ou já sem OS 95' });
+    }
+
+    res.json({ total: resultados.length, resultados });
+  } catch (err) { next(err); }
+});
+
 // GET /api/opp/centros-custo — lista centros de custo do OPP
 router.get('/centros-custo', async (req, res, next) => {
   try {
