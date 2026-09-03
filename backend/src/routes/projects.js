@@ -122,7 +122,13 @@ router.get('/', async (req, res, next) => {
         return p.Setor || ''
       })()
 
-      const parseBR = (v) => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0;
+      const parseBR = (v) => {
+        const s = String(v || 0).trim();
+        if (s.includes(',')) return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+        const parts = s.split('.');
+        if (parts.length === 2 && parts[1].length <= 2) return parseFloat(s) || 0;
+        return parseFloat(s.replace(/\./g, '')) || 0;
+      };
       const valorPlanejamento = parseBR(plan?.Valor_Contrato);
       const valorExibido = valorPlanejamento > 0 ? valorPlanejamento : parseBR(p.Valor_Global);
 

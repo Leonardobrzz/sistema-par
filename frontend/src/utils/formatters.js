@@ -106,8 +106,24 @@ export function tercPercColor(perc) {
 
 /**
  * Parse de input monetário BR (1.234,56 → 1234.56)
+ * Também trata formato americano: 1234.56 → 1234.56 (não remove ponto decimal)
  */
 export function parseBRL(str) {
-  if (!str) return 0
-  return parseFloat(String(str).replace(/\./g, '').replace(',', '.')) || 0
+  if (!str && str !== 0) return 0
+  const s = String(str).trim()
+  if (!s) return 0
+  // Tem vírgula → formato BR (vírgula é separador decimal)
+  if (s.includes(',')) {
+    return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0
+  }
+  // Só tem ponto: distingue 1.234.567 (BR milhar) de 1234.56 (americano decimal)
+  // Se o ponto está em posição de decimal (último grupo com 1 ou 2 dígitos) → americano
+  const dotParts = s.split('.')
+  if (dotParts.length === 2 && dotParts[1].length <= 2) {
+    // Ex: "281590.68" → decimal americano → 281590.68
+    return parseFloat(s) || 0
+  }
+  // Múltiplos pontos ou último grupo com 3 dígitos → milhar BR
+  // Ex: "28.159.068" → remove pontos → 28159068
+  return parseFloat(s.replace(/\./g, '')) || 0
 }
