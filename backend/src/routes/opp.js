@@ -871,7 +871,8 @@ router.post('/corrigir-medicoes', authMiddleware, async (req, res, next) => {
       try { dados = JSON.parse(plan.Dados_JSON || '{}'); } catch { continue; }
 
       const d = dados._baseline || dados;
-      const contrato = toNum(d.valorContrato) || toNum(plan.Valor_Contrato) || 0;
+      // valorContrato pode estar no _baseline ou no nível raiz do JSON
+      const contrato = toNum(d.valorContrato) || toNum(dados.valorContrato) || toNum(plan.Valor_Contrato) || 0;
       if (contrato <= 0) continue;
 
       // Campos onde ficam as medições planejadas
@@ -908,13 +909,14 @@ router.post('/corrigir-medicoes', authMiddleware, async (req, res, next) => {
       }
     }
 
-    // Limpa OS incorreta do projeto CORES VALE
-    const coresVale = planejamentos.find(p =>
-      (p.Nome_Projeto || '').toUpperCase().includes('CORES VALE') ||
-      (p.ID_Projeto || '').includes('INF-2026-3')
-    );
+    // Limpa OS incorreta do projeto CORES VALE — busca por OS 95 em projetos que não são o ABATEDOURO
+    const coresVale = planejamentos.find(p => {
+      if ((p.Nr_OS_OPP || '') !== '95') return false;
+      const nome = (p.Nome_Projeto || '').toUpperCase();
+      return !nome.includes('ABATEDOURO');
+    });
     let coresValeCorrigido = false;
-    if (coresVale && coresVale.Nr_OS_OPP) {
+    if (coresVale) {
       await db.updateRowById('Planejamentos', 'ID', coresVale.ID, { ...coresVale, Nr_OS_OPP: '' });
       coresValeCorrigido = true;
     }
