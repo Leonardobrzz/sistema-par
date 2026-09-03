@@ -53,7 +53,8 @@ async function fetchOppBatch() {
 
     // Agrupa receitas por número de OS (extraído de observacoes_rec)
     // centro_custos_rec é sempre null no OPP — mesma situação do contas-pagar
-    const osRegex = /ordem de servi[cç]o\s*n[º°]?\s*(\d+)/i
+    // Captura "OS nro. 79" (formato ativo) e "ordem de serviço nº 1791" (formato legado)
+    const osRegex = /(?:OS\s+nro?\.\s*|ordem de servi[cç]o\s*n[º°]?\s*)(\d+)/i
     const recebidoPorOS  = {}  // osNum → total liquidado
     const pendentesPorOS = {}  // osNum → total pendente
 

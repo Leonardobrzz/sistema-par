@@ -31,7 +31,7 @@ router.get('/diagnostico-receitas', async (req, res, next) => {
       offset += 250;
       if (offset > 5000) break;
     }
-    const osRegex = /ordem de servi[cç]o\s*n[º°]?\s*(\d+)/i;
+    const osRegex = /(?:OS\s+nro?\.\s*|ordem de servi[cç]o\s*n[º°]?\s*)(\d+)/i;
     const porOS = {};
     for (const r of todos) {
       const match = (r.observacoes_rec || '').match(osRegex);
