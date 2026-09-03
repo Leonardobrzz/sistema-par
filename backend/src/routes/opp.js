@@ -855,7 +855,11 @@ router.post('/corrigir-medicoes', authMiddleware, async (req, res, next) => {
       ? require('../services/postgresService')
       : require('../services/googleSheetsService');
 
-    const pBR = v => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0;
+    // Converte valor: se já for number JS usa direto; se string BR (25.020,00) converte
+    const toNum = v => {
+      if (typeof v === 'number') return v;
+      return parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0;
+    };
 
     const planejamentos = await db.readSheet('Planejamentos');
 
@@ -867,7 +871,7 @@ router.post('/corrigir-medicoes', authMiddleware, async (req, res, next) => {
       try { dados = JSON.parse(plan.Dados_JSON || '{}'); } catch { continue; }
 
       const d = dados._baseline || dados;
-      const contrato = pBR(d.valorContrato || plan.Valor_Contrato || 0);
+      const contrato = toNum(d.valorContrato) || toNum(plan.Valor_Contrato) || 0;
       if (contrato <= 0) continue;
 
       // Campos onde ficam as medições planejadas
@@ -880,8 +884,8 @@ router.post('/corrigir-medicoes', authMiddleware, async (req, res, next) => {
       for (const mp of meds) {
         const campoValor = mp.valor !== undefined ? 'valor' : (mp.valorPlanejado !== undefined ? 'valorPlanejado' : null);
         if (!campoValor) continue;
-        const v = pBR(mp[campoValor]);
-        // Regra: valor < 1000, valor×1000 dentro do contrato (±10%) e contrato > 1000
+        const v = toNum(mp[campoValor]);
+        // Regra: valor < 1000, valor×1000 dentro do contrato (±15%) e contrato > 1000
         if (v > 0 && v < 1000 && (v * 1000) <= (contrato * 1.15)) {
           const novo = parseFloat((v * 1000).toFixed(2));
           detalhes.push({ de: v, para: novo });
