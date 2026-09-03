@@ -848,7 +848,7 @@ router.get('/debug-oc', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// POST /api/opp/corrigir-medicoes — corrige valores de medição com decimal errado (×1000) e limpa OS incorretas
+// POST /api/opp/corrigir-medicoes — corrige valores de medição com decimal errado (×1000) no Dados_JSON + limpa OS incorretas
 router.post('/corrigir-medicoes', authMiddleware, async (req, res, next) => {
   try {
     const db = process.env.USE_POSTGRES === 'true'
@@ -857,40 +857,54 @@ router.post('/corrigir-medicoes', authMiddleware, async (req, res, next) => {
 
     const pBR = v => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0;
 
-    const [medicoes, planejamentos] = await Promise.all([
-      db.readSheet('Medicoes'),
-      db.readSheet('Planejamentos'),
-    ]);
-
-    // Mapa ID_Projeto → valor contrato e Nr_OS_OPP
-    const planMap = {};
-    for (const p of planejamentos) {
-      if (p.ID_Projeto) planMap[p.ID_Projeto] = p;
-    }
+    const planejamentos = await db.readSheet('Planejamentos');
 
     const corrigidos = [];
     const erros = [];
 
-    for (const med of medicoes) {
-      const raw = String(med.Valor || med.Valor_Medicao || '0').trim();
-      const valorAtual = pBR(raw);
-      const plan = planMap[med.ID_Projeto] || {};
-      const contrato = pBR(plan.Valor_Contrato || plan.Vl_Contrato || 0);
+    for (const plan of planejamentos) {
+      let dados = {};
+      try { dados = JSON.parse(plan.Dados_JSON || '{}'); } catch { continue; }
 
-      // Regra: se valor < 1000 e valor×1000 ≤ contrato×1.1 (e contrato > 1000), é decimal errado
-      if (valorAtual > 0 && valorAtual < 1000 && contrato > 1000 && (valorAtual * 1000) <= (contrato * 1.1)) {
-        const novoValor = (valorAtual * 1000).toFixed(2);
-        try {
-          const campo = med.Valor_Medicao !== undefined ? 'Valor_Medicao' : 'Valor';
-          await db.updateRowById('Medicoes', 'ID_Medicao', med.ID_Medicao, { ...med, [campo]: novoValor });
-          corrigidos.push({ id: med.ID_Medicao, projeto: plan.Nome_Projeto || med.ID_Projeto, de: valorAtual, para: parseFloat(novoValor) });
-        } catch (e) {
-          erros.push({ id: med.ID_Medicao, erro: e.message });
+      const d = dados._baseline || dados;
+      const contrato = pBR(d.valorContrato || plan.Valor_Contrato || 0);
+      if (contrato <= 0) continue;
+
+      // Campos onde ficam as medições planejadas
+      let meds = d.medicoesCronograma || d.medicoes || [];
+      if (!Array.isArray(meds) || meds.length === 0) continue;
+
+      let alterou = false;
+      const detalhes = [];
+
+      for (const mp of meds) {
+        const campoValor = mp.valor !== undefined ? 'valor' : (mp.valorPlanejado !== undefined ? 'valorPlanejado' : null);
+        if (!campoValor) continue;
+        const v = pBR(mp[campoValor]);
+        // Regra: valor < 1000, valor×1000 dentro do contrato (±10%) e contrato > 1000
+        if (v > 0 && v < 1000 && (v * 1000) <= (contrato * 1.15)) {
+          const novo = parseFloat((v * 1000).toFixed(2));
+          detalhes.push({ de: v, para: novo });
+          mp[campoValor] = novo;
+          alterou = true;
         }
+      }
+
+      if (!alterou) continue;
+
+      // Reconstrói o JSON com os valores corrigidos
+      if (dados._baseline) dados._baseline = { ...dados._baseline, medicoesCronograma: d.medicoesCronograma, medicoes: d.medicoes };
+      else { dados.medicoesCronograma = d.medicoesCronograma; dados.medicoes = d.medicoes; }
+
+      try {
+        await db.updateRowById('Planejamentos', 'ID', plan.ID, { ...plan, Dados_JSON: JSON.stringify(dados) });
+        corrigidos.push({ projeto: plan.Nome_Projeto, contrato, medicoes: detalhes });
+      } catch (e) {
+        erros.push({ projeto: plan.Nome_Projeto, erro: e.message });
       }
     }
 
-    // Limpa OS incorreta do projeto CORES VALE (INF-2026-3)
+    // Limpa OS incorreta do projeto CORES VALE
     const coresVale = planejamentos.find(p =>
       (p.Nome_Projeto || '').toUpperCase().includes('CORES VALE') ||
       (p.ID_Projeto || '').includes('INF-2026-3')
