@@ -51,30 +51,29 @@ async function fetchOppBatch() {
       porCC[ccId].totalPago += parseFloat(d.valor_pago || 0)
     }
 
-    // Normaliza string para matching: remove acentos, minúsculas, colapsa espaços
-    function norm(s) {
-      return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim()
-    }
+    // Agrupa receitas por número de OS (extraído de observacoes_rec)
+    // centro_custos_rec é sempre null no OPP — mesma situação do contas-pagar
+    const osRegex = /ordem de servi[cç]o\s*n[º°]?\s*(\d+)/i
+    const recebidoPorOS  = {}  // osNum → total liquidado
+    const pendentesPorOS = {}  // osNum → total pendente
 
-    // Mapa ccNomeNorm → { total, nome } (receitas liquidadas + pendentes por CC nome)
-    const recebidoPorCC = {}        // liquidado
-    const pendentesPorCC = {}       // não liquidado ainda
-    const valorContratoPorCC = {}   // valor total do contrato OPP por CC
     for (const r of receitas) {
-      const cc = norm(r.centro_custos_rec || r.centro_custo || '')
-      if (!cc) continue
+      if (r.lixeira === 'Sim') continue
+      const obs = r.observacoes_rec || ''
+      const match = obs.match(osRegex)
+      if (!match) continue
+      const osNum = match[1]
       const v = parseFloat(r.valor_rec || 0)
       if (r.liquidado_rec === 'Sim') {
-        recebidoPorCC[cc] = (recebidoPorCC[cc] || 0) + v
+        recebidoPorOS[osNum]  = (recebidoPorOS[osNum]  || 0) + v
       } else {
-        pendentesPorCC[cc] = (pendentesPorCC[cc] || 0) + v
+        pendentesPorOS[osNum] = (pendentesPorOS[osNum] || 0) + v
       }
-      valorContratoPorCC[cc] = (valorContratoPorCC[cc] || 0) + parseFloat(r.valor_total_rec || r.valor_rec || 0)
     }
 
-    return { listaCC, porCC, recebidoPorCC, pendentesPorCC, valorContratoPorCC, norm }
+    return { listaCC, porCC, recebidoPorOS, pendentesPorOS }
   } catch {
-    return { listaCC: [], porCC: {}, recebidoPorCC: {}, pendentesPorCC: {}, valorContratoPorCC: {}, norm: s => String(s||'').toLowerCase().trim() }
+    return { listaCC: [], porCC: {}, recebidoPorOS: {}, pendentesPorOS: {} }
   }
 }
 
@@ -103,7 +102,7 @@ router.get('/', async (req, res, next) => {
       horasPorProjeto[id] += parseFloat(h.Horas_Logadas || h.Horas || h.horas || 0)
     })
 
-    const { listaCC, porCC, recebidoPorCC, pendentesPorCC, valorContratoPorCC, norm } = oppData
+    const { listaCC, porCC, recebidoPorOS, pendentesPorOS } = oppData
 
     function findCC(nome) {
       if (!nome) return null
@@ -151,29 +150,11 @@ router.get('/', async (req, res, next) => {
       const medsPlan  = d.medicoesCronograma || d.medicoes || []
       const medsReais = medPorProjeto[plan.ID_Projeto] || []
 
-      // totalRecebido vem do OPP (contas-receber) — tenta múltiplos campos de identificação
-      function buscarNoMapa(mapa, chave) {
-        if (!chave) return undefined
-        const k = norm(chave)
-        if (mapa[k] !== undefined) return mapa[k]
-        // fuzzy: uma contém a outra
-        for (const [mk, mv] of Object.entries(mapa)) {
-          if (k.includes(mk) || mk.includes(k)) return mv
-        }
-        return undefined
-      }
-      // Tenta: Nr_Contrato_OS → Nome_Projeto → Nr_OS_OPP
-      const chaves = [plan.Nr_Contrato_OS, plan.Nome_Projeto, plan.Nr_OS_OPP].filter(Boolean)
-      let totalRecebido = 0
-      let totalPendenteOPP = 0
-      for (const ch of chaves) {
-        const r = buscarNoMapa(recebidoPorCC, ch)
-        if (r !== undefined) { totalRecebido = r; break }
-      }
-      for (const ch of chaves) {
-        const p = buscarNoMapa(pendentesPorCC, ch)
-        if (p !== undefined) { totalPendenteOPP = p; break }
-      }
+      // totalRecebido vem do OPP (contas-receber) — matching por número da OS
+      // centro_custos_rec é sempre null no OPP; a OS fica em observacoes_rec
+      const osNum = String(plan.Nr_OS_OPP || '').trim()
+      const totalRecebido    = osNum ? (recebidoPorOS[osNum]  || 0) : 0
+      const totalPendenteOPP = osNum ? (pendentesPorOS[osNum] || 0) : 0
       const totalPendente = totalPendenteOPP ||
         medsReais.filter(m => m.Status_Financeiro !== 'Recebido').reduce((s, m) => s + pBR(m.Valor), 0)
       const percRecebido   = V > 0 ? totalRecebido / V * 100 : 0

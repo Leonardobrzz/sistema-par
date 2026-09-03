@@ -17,20 +17,39 @@ router.get('/diagnostico-cc', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// GET /api/opp/diagnostico-receitas — mostra contas-receber do OPP para debug de matching
+// GET /api/opp/diagnostico-receitas — mostra contas-receber agrupados por OS para debug
 router.get('/diagnostico-receitas', async (req, res, next) => {
   try {
-    const { cc } = req.query; // filtro opcional por nome/trecho do CC
-    const amostra = await opp.oppRequest('GET', '/contas-receber?limit=50&offset=0');
-    const lista = Array.isArray(amostra) ? amostra : (amostra?.data || []);
-    const filtrada = cc
-      ? lista.filter(r => (r.centro_custos_rec || r.centro_custo || '').toLowerCase().includes(cc.toLowerCase()))
-      : lista;
+    const { os } = req.query; // filtro opcional por número de OS
+    let offset = 0, todos = [];
+    while (true) {
+      const r = await opp.oppRequest('GET', `/contas-receber?limit=250&offset=${offset}&lixeira=Nao`);
+      const lista = Array.isArray(r) ? r : (r?.data || []);
+      if (lista.length === 0) break;
+      todos.push(...lista);
+      if (lista.length < 250) break;
+      offset += 250;
+      if (offset > 5000) break;
+    }
+    const osRegex = /ordem de servi[cç]o\s*n[º°]?\s*(\d+)/i;
+    const porOS = {};
+    for (const r of todos) {
+      const match = (r.observacoes_rec || '').match(osRegex);
+      if (!match) continue;
+      const osNum = match[1];
+      if (!porOS[osNum]) porOS[osNum] = { os: osNum, totalRecebido: 0, totalPendente: 0, registros: [] };
+      const v = parseFloat(r.valor_rec || 0);
+      if (r.liquidado_rec === 'Sim') porOS[osNum].totalRecebido += v;
+      else porOS[osNum].totalPendente += v;
+      porOS[osNum].registros.push({ nome_cliente: r.nome_cliente, valor_rec: r.valor_rec, liquidado: r.liquidado_rec, data_pag: r.data_pagamento });
+    }
+    const resultado = Object.values(porOS).sort((a, b) => Number(b.os) - Number(a.os));
+    const filtrado = os ? resultado.filter(x => x.os === String(os)) : resultado;
     res.json({
-      total_encontrado: filtrada.length,
-      campos: filtrada[0] ? Object.keys(filtrada[0]) : [],
-      centros_custo_unicos: [...new Set(lista.map(r => r.centro_custos_rec || r.centro_custo || '').filter(Boolean))].sort(),
-      registros: filtrada.slice(0, 20),
+      total_registros_opp: todos.length,
+      total_os_encontradas: resultado.length,
+      aviso: 'centro_custos_rec é sempre null no OPP — matching é feito pelo número da OS em observacoes_rec',
+      os_agrupadas: filtrado.slice(0, 50),
     });
   } catch (err) { next(err); }
 });
