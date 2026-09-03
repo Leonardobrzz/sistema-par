@@ -45,11 +45,17 @@ router.get('/diagnostico-receitas', async (req, res, next) => {
     }
     const resultado = Object.values(porOS).sort((a, b) => Number(b.os) - Number(a.os));
     const filtrado = os ? resultado.filter(x => x.os === String(os)) : resultado;
+    // Registros SEM o padrão de OS — amostrar para ver o formato real
+    const semOS = todos.filter(r => !(r.observacoes_rec || '').match(osRegex));
+    const amostrasObservacoes = [...new Set(semOS.map(r => r.observacoes_rec || '(vazio)').filter(Boolean))].slice(0, 30);
+
     res.json({
       total_registros_opp: todos.length,
       total_os_encontradas: resultado.length,
+      total_sem_padrao_os: semOS.length,
       aviso: 'centro_custos_rec é sempre null no OPP — matching é feito pelo número da OS em observacoes_rec',
       os_agrupadas: filtrado.slice(0, 50),
+      amostra_observacoes_sem_os: amostrasObservacoes,
     });
   } catch (err) { next(err); }
 });
