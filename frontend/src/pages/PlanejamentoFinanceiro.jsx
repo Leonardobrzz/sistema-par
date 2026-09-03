@@ -1613,15 +1613,11 @@ export default function PlanejamentoFinanceiro() {
                   <button onClick={() => delRow("terceirizados", i)} style={{ padding: "9px 10px", borderRadius: 8, border: "1px solid #FECACA", background: "#FEF2F2", color: "#DC2626", cursor: "pointer", alignSelf: "end" }}><Trash2 size={14} /></button>
                 </div>
               )})}
-              {form.terceirizados.length > 0 && (() => {
-                const totalRef = form.terceirizados.reduce((s, t) => s + parseBR(t.valorRef), 0)
-                return (
-                  <div style={{ display: "flex", gap: 24, padding: "8px 12px", background: "#F8FAFC", borderRadius: 8, border: "1px solid #E2E8F0", marginBottom: 8, fontSize: 12, fontWeight: 700, color: "#475569" }}>
-                    <span>Total Ref. Contrato: <span style={{ color: "#0F172A" }}>{fmt(totalRef)}</span></span>
-                    <span>Total Custo: <span style={{ color: "#0F172A" }}>{fmt(par.totalTerceiros)}</span></span>
-                  </div>
-                )
-              })()}
+              {form.terceirizados.length > 0 && (
+                <div style={{ display: "flex", gap: 24, padding: "8px 12px", background: "#F8FAFC", borderRadius: 8, border: "1px solid #E2E8F0", marginBottom: 8, fontSize: 12, fontWeight: 700, color: "#475569" }}>
+                  <span>Total Custo: <span style={{ color: "#0F172A" }}>{fmt(par.totalTerceiros)}</span></span>
+                </div>
+              )}
               <button onClick={() => addRow("terceirizados", { servico: "", vinculo: "", valorRef: "", custo: "" })} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1.5px dashed #FDE68A", background: "#FFFBEB", color: "#B45309", fontWeight: 700, fontSize: 13, cursor: "pointer", marginTop: 4 }}>
                 <Plus size={14} /> Adicionar Terceirizado
               </button>
@@ -1690,15 +1686,11 @@ export default function PlanejamentoFinanceiro() {
                     </div>
                   )
                 })}
-                {form.despesasInternas.length > 0 && (() => {
-                  const totalRef = form.despesasInternas.reduce((s, t) => s + parseBR(t.valorRef), 0)
-                  return (
-                    <div style={{ display: "flex", gap: 24, padding: "8px 12px", background: "#F8FAFC", borderRadius: 8, border: "1px solid #E2E8F0", marginBottom: 8, fontSize: 12, fontWeight: 700, color: "#475569" }}>
-                      <span>Total Ref. Contrato: <span style={{ color: "#0F172A" }}>{fmt(totalRef)}</span></span>
-                      <span>Total Custo: <span style={{ color: "#0F172A" }}>{fmt(par.totalDespesasInternas)}</span></span>
-                    </div>
-                  )
-                })()}
+                {form.despesasInternas.length > 0 && (
+                  <div style={{ display: "flex", gap: 24, padding: "8px 12px", background: "#F8FAFC", borderRadius: 8, border: "1px solid #E2E8F0", marginBottom: 8, fontSize: 12, fontWeight: 700, color: "#475569" }}>
+                    <span>Total Custo: <span style={{ color: "#0F172A" }}>{fmt(par.totalDespesasInternas)}</span></span>
+                  </div>
+                )}
                 <button onClick={() => addRow("despesasInternas", { servico: "", vinculo: "", valorRef: "", custo: "" })} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: "1.5px dashed #BFDBFE", background: "#EFF6FF", color: "#1D4ED8", fontWeight: 700, fontSize: 13, cursor: "pointer", marginTop: 4 }}>
                   <Plus size={14} /> Adicionar Despesa Interna
                 </button>
