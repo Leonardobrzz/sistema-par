@@ -848,6 +848,68 @@ router.get('/debug-oc', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// POST /api/opp/corrigir-medicoes — corrige valores de medição com decimal errado (×1000) e limpa OS incorretas
+router.post('/corrigir-medicoes', authMiddleware, async (req, res, next) => {
+  try {
+    const db = process.env.USE_POSTGRES === 'true'
+      ? require('../services/postgresService')
+      : require('../services/googleSheetsService');
+
+    const pBR = v => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0;
+
+    const [medicoes, planejamentos] = await Promise.all([
+      db.readSheet('Medicoes'),
+      db.readSheet('Planejamentos'),
+    ]);
+
+    // Mapa ID_Projeto → valor contrato e Nr_OS_OPP
+    const planMap = {};
+    for (const p of planejamentos) {
+      if (p.ID_Projeto) planMap[p.ID_Projeto] = p;
+    }
+
+    const corrigidos = [];
+    const erros = [];
+
+    for (const med of medicoes) {
+      const raw = String(med.Valor || med.Valor_Medicao || '0').trim();
+      const valorAtual = pBR(raw);
+      const plan = planMap[med.ID_Projeto] || {};
+      const contrato = pBR(plan.Valor_Contrato || plan.Vl_Contrato || 0);
+
+      // Regra: se valor < 1000 e valor×1000 ≤ contrato×1.1 (e contrato > 1000), é decimal errado
+      if (valorAtual > 0 && valorAtual < 1000 && contrato > 1000 && (valorAtual * 1000) <= (contrato * 1.1)) {
+        const novoValor = (valorAtual * 1000).toFixed(2);
+        try {
+          const campo = med.Valor_Medicao !== undefined ? 'Valor_Medicao' : 'Valor';
+          await db.updateRowById('Medicoes', 'ID_Medicao', med.ID_Medicao, { ...med, [campo]: novoValor });
+          corrigidos.push({ id: med.ID_Medicao, projeto: plan.Nome_Projeto || med.ID_Projeto, de: valorAtual, para: parseFloat(novoValor) });
+        } catch (e) {
+          erros.push({ id: med.ID_Medicao, erro: e.message });
+        }
+      }
+    }
+
+    // Limpa OS incorreta do projeto CORES VALE (INF-2026-3)
+    const coresVale = planejamentos.find(p =>
+      (p.Nome_Projeto || '').toUpperCase().includes('CORES VALE') ||
+      (p.ID_Projeto || '').includes('INF-2026-3')
+    );
+    let coresValeCorrigido = false;
+    if (coresVale && coresVale.Nr_OS_OPP) {
+      await db.updateRowById('Planejamentos', 'ID', coresVale.ID, { ...coresVale, Nr_OS_OPP: '' });
+      coresValeCorrigido = true;
+    }
+
+    res.json({
+      total_medicoes_corrigidas: corrigidos.length,
+      cores_vale_os_removida: coresValeCorrigido,
+      corrigidos,
+      erros,
+    });
+  } catch (err) { next(err); }
+});
+
 // GET /api/opp/centros-custo — lista centros de custo do OPP
 router.get('/centros-custo', async (req, res, next) => {
   try {

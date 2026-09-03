@@ -56,6 +56,19 @@ export default function VincularOS() {
     setSalvando(false)
   }
 
+  async function corrigirMedicoes() {
+    if (!window.confirm("Corrigir automaticamente valores de medição com decimal errado (ex: R$25,02 → R$25.020) e remover OS incorreta do CORES VALE?")) return
+    setSalvando(true)
+    try {
+      const { data } = await api.post("/opp/corrigir-medicoes")
+      toast.success(`${data.total_medicoes_corrigidas} medição(ões) corrigida(s)!${data.cores_vale_os_removida ? ' OS do Cores Vale removida.' : ''}`)
+      await carregar()
+    } catch {
+      toast.error("Erro ao corrigir medições")
+    }
+    setSalvando(false)
+  }
+
   async function aplicarMapeamentos() {
     if (!window.confirm("Aplicar todos os mapeamentos pré-definidos (OS por nome de projeto)?\n\nIsso sobrescreverá os vínculos atuais dos projetos mapeados.")) return
     setSalvando(true)
@@ -133,6 +146,10 @@ export default function VincularOS() {
             </p>
           </div>
           <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+            <button onClick={corrigirMedicoes} disabled={salvando}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "#059669", border: "none", borderRadius: 8, color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+              <Check size={14} /> Corrigir medições
+            </button>
             <button onClick={aplicarMapeamentos} disabled={salvando}
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "#7C3AED", border: "none", borderRadius: 8, color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
               <Database size={14} /> Aplicar mapeamentos
