@@ -151,11 +151,10 @@ router.get('/', async (req, res, next) => {
       const medsPlan  = d.medicoesCronograma || d.medicoes || []
       const medsReais = medPorProjeto[plan.ID_Projeto] || []
 
-      // totalRecebido vem do OPP (contas-receber) — matching por número da OS
-      // centro_custos_rec é sempre null no OPP; a OS fica em observacoes_rec
-      const osNum = String(plan.Nr_OS_OPP || '').trim()
-      const totalRecebido    = osNum ? (recebidoPorOS[osNum]  || 0) : 0
-      const totalPendenteOPP = osNum ? (pendentesPorOS[osNum] || 0) : 0
+      // totalRecebido vem do OPP — Nr_OS_OPP pode ter múltiplos números separados por vírgula
+      const osNums = String(plan.Nr_OS_OPP || '').split(',').map(s => s.trim()).filter(Boolean)
+      const totalRecebido    = osNums.reduce((s, n) => s + (recebidoPorOS[n]  || 0), 0)
+      const totalPendenteOPP = osNums.reduce((s, n) => s + (pendentesPorOS[n] || 0), 0)
       const totalPendente = totalPendenteOPP ||
         medsReais.filter(m => m.Status_Financeiro !== 'Recebido').reduce((s, m) => s + pBR(m.Valor), 0)
       const percRecebido   = V > 0 ? totalRecebido / V * 100 : 0

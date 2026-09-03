@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Link2, Check, Search, RefreshCw, X, AlertCircle, Zap } from "lucide-react"
+import { Link2, Check, Search, RefreshCw, X, AlertCircle, Zap, Plus } from "lucide-react"
 import api from "../utils/api"
 import { useTheme } from "../contexts/ThemeContext"
 import toast from "react-hot-toast"
@@ -13,7 +13,7 @@ export default function VincularOS() {
   const [loading, setLoading]       = useState(true)
   const [buscaProjeto, setBuscaProjeto] = useState("")
   const [buscaOS, setBuscaOS]       = useState("")
-  const [selecionado, setSelecionado] = useState(null) // idPlanejamento selecionado
+  const [selecionado, setSelecionado] = useState(null) // id do planejamento selecionado
   const [salvando, setSalvando]     = useState(false)
 
   async function carregar() {
@@ -30,17 +30,28 @@ export default function VincularOS() {
 
   useEffect(() => { carregar() }, [])
 
-  async function vincular(osNum, idOverride) {
-    const alvo = idOverride || selecionado
-    if (!alvo) return toast.error("Selecione um projeto primeiro")
+  const projetoSel = projetos.find(p => p.id === selecionado)
+  // OS já vinculadas ao projeto selecionado (pode ser lista separada por vírgula)
+  const osSel = projetoSel ? String(projetoSel.nrOsOpp || '').split(',').map(s => s.trim()).filter(Boolean) : []
+
+  async function toggleOS(osNum) {
+    if (!selecionado) return toast.error("Selecione um projeto primeiro")
+    const proj = projetos.find(p => p.id === selecionado)
+    const atual = String(proj?.nrOsOpp || '').split(',').map(s => s.trim()).filter(Boolean)
+    let nova
+    if (atual.includes(osNum)) {
+      nova = atual.filter(n => n !== osNum) // remover
+    } else {
+      nova = [...atual, osNum] // adicionar
+    }
     setSalvando(true)
     try {
-      await api.post("/opp/vincular-os", { idPlanejamento: alvo, nrOsOpp: osNum })
-      toast.success(`OS ${osNum} vinculada!`)
-      setSelecionado(null)
-      await carregar()
+      await api.post("/opp/vincular-os", { idPlanejamento: selecionado, nrOsOpp: nova.join(',') })
+      toast.success(nova.includes(osNum) ? `OS ${osNum} removida` : `OS ${osNum} adicionada!`)
+      // Atualiza localmente sem recarregar tudo
+      setProjetos(prev => prev.map(p => p.id === selecionado ? { ...p, nrOsOpp: nova.join(',') } : p))
     } catch {
-      toast.error("Erro ao vincular")
+      toast.error("Erro ao salvar")
     }
     setSalvando(false)
   }
@@ -48,7 +59,7 @@ export default function VincularOS() {
   async function autoVincularTudo() {
     const sugestoes = projetos.filter(p => !p.nrOsOpp && p.sugestao)
     if (sugestoes.length === 0) return toast("Nenhuma sugestão automática disponível")
-    if (!window.confirm(`Vincular automaticamente ${sugestoes.length} projeto(s) com base no nome do cliente?\n\nVocê pode revisar e corrigir depois.`)) return
+    if (!window.confirm(`Vincular automaticamente ${sugestoes.length} projeto(s) com base no nome e valor do contrato?\n\nVocê pode revisar e corrigir depois.`)) return
     setSalvando(true)
     try {
       const vinculos = sugestoes.map(p => ({ idPlanejamento: p.id, nrOsOpp: p.sugestao.os }))
@@ -61,15 +72,16 @@ export default function VincularOS() {
     setSalvando(false)
   }
 
-  async function desvincular(idPlanejamento) {
-    if (!window.confirm("Remover vínculo desta OS?")) return
+  async function desvincularTudo(idPlanejamento) {
+    if (!window.confirm("Remover todos os vínculos deste projeto?")) return
     setSalvando(true)
     try {
       await api.post("/opp/vincular-os", { idPlanejamento, nrOsOpp: "" })
-      toast.success("Vínculo removido")
-      await carregar()
+      toast.success("Vínculos removidos")
+      setProjetos(prev => prev.map(p => p.id === idPlanejamento ? { ...p, nrOsOpp: '' } : p))
+      if (selecionado === idPlanejamento) setSelecionado(null)
     } catch {
-      toast.error("Erro ao remover vínculo")
+      toast.error("Erro ao remover")
     }
     setSalvando(false)
   }
@@ -79,18 +91,21 @@ export default function VincularOS() {
   const brd  = dark ? "#334155" : "#E2E8F0"
   const txt  = dark ? "#F1F5F9" : "#1E293B"
   const sub  = dark ? "#94A3B8" : "#64748B"
-  const sel  = "#2563EB"
 
   const projetosFiltrados = projetos.filter(p =>
     !buscaProjeto || p.nome.toLowerCase().includes(buscaProjeto.toLowerCase()) || p.cliente.toLowerCase().includes(buscaProjeto.toLowerCase())
   )
-  const semVinculo   = projetosFiltrados.filter(p => !p.nrOsOpp)
-  const comVinculo   = projetosFiltrados.filter(p => p.nrOsOpp)
-  const osFiltradas  = osOpp.filter(o =>
+  const semVinculo = projetosFiltrados.filter(p => !p.nrOsOpp)
+  const comVinculo = projetosFiltrados.filter(p => p.nrOsOpp)
+  const osFiltradas = osOpp.filter(o =>
     !buscaOS || o.os.includes(buscaOS) || (o.cliente || "").toLowerCase().includes(buscaOS.toLowerCase())
   )
 
-  const projetoSel = projetos.find(p => p.id === selecionado)
+  // Total recebido+pendente das OS selecionadas para o projeto ativo
+  const totalOSSel = osSel.reduce((s, n) => {
+    const os = osOpp.find(o => o.os === n)
+    return s + (os ? os.totalRecebido + os.totalPendente : 0)
+  }, 0)
 
   return (
     <div style={{ minHeight: "100vh", background: bg, padding: "24px", color: txt }}>
@@ -101,7 +116,7 @@ export default function VincularOS() {
           <div>
             <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>Vincular OS OPP</h1>
             <p style={{ margin: 0, fontSize: 13, color: sub }}>
-              Associe cada projeto PAR ao número da Ordem de Serviço no OPP para sincronizar os valores recebidos
+              Associe cada projeto PAR às OS do OPP (pode ser múltiplas OS por projeto)
             </p>
           </div>
           <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
@@ -118,16 +133,23 @@ export default function VincularOS() {
           </div>
         </div>
 
-        {/* Instrução */}
+        {/* Instrução quando projeto selecionado */}
         {selecionado && (
-          <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 10, padding: "10px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
-            <AlertCircle size={16} color="#2563EB" />
-            <span style={{ fontSize: 13, color: "#1D4ED8" }}>
-              Projeto selecionado: <strong>{projetoSel?.nome}</strong> — agora clique em uma OS do OPP à direita para vincular
-            </span>
-            <button onClick={() => setSelecionado(null)} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "#2563EB" }}>
-              <X size={14} />
-            </button>
+          <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 10, padding: "10px 16px", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <AlertCircle size={16} color="#2563EB" />
+              <span style={{ fontSize: 13, color: "#1D4ED8" }}>
+                <strong>{projetoSel?.nome}</strong> — clique nas OS à direita para adicionar/remover. OS vinculadas: {osSel.length > 0 ? osSel.map(n => `#${n}`).join(', ') : 'nenhuma'}
+              </span>
+              {osSel.length > 0 && (
+                <span style={{ fontSize: 13, color: "#16A34A", marginLeft: 8 }}>
+                  Total: {fmtBRL(totalOSSel)}
+                </span>
+              )}
+              <button onClick={() => setSelecionado(null)} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "#2563EB" }}>
+                <X size={14} />
+              </button>
+            </div>
           </div>
         )}
 
@@ -147,7 +169,7 @@ export default function VincularOS() {
                     style={{ width: "100%", padding: "7px 10px 7px 32px", background: bg, border: `1px solid ${brd}`, borderRadius: 7, color: txt, fontSize: 13, boxSizing: "border-box" }} />
                 </div>
               </div>
-              <div style={{ maxHeight: 520, overflowY: "auto" }}>
+              <div style={{ maxHeight: 560, overflowY: "auto" }}>
                 {loading ? (
                   <div style={{ padding: 24, textAlign: "center", color: sub }}>Carregando...</div>
                 ) : (
@@ -159,9 +181,9 @@ export default function VincularOS() {
                         </div>
                         {semVinculo.map(p => (
                           <ProjetoPAR key={p.id} p={p} selecionado={selecionado === p.id}
+                            osOpp={osOpp}
                             onClick={() => setSelecionado(selecionado === p.id ? null : p.id)}
-                            onAplicarSugestao={p.sugestao ? () => vincular(p.sugestao.os, p.id) : null}
-                            dark={dark} card={card} brd={brd} txt={txt} sub={sub} />
+                            dark={dark} brd={brd} txt={txt} sub={sub} />
                         ))}
                       </>
                     )}
@@ -172,9 +194,10 @@ export default function VincularOS() {
                         </div>
                         {comVinculo.map(p => (
                           <ProjetoPAR key={p.id} p={p} selecionado={selecionado === p.id}
+                            osOpp={osOpp}
                             onClick={() => setSelecionado(selecionado === p.id ? null : p.id)}
-                            onDesvincular={() => desvincular(p.id)}
-                            dark={dark} card={card} brd={brd} txt={txt} sub={sub} />
+                            onDesvincular={() => desvincularTudo(p.id)}
+                            dark={dark} brd={brd} txt={txt} sub={sub} />
                         ))}
                       </>
                     )}
@@ -189,7 +212,7 @@ export default function VincularOS() {
             <div style={{ background: card, borderRadius: 12, border: `1px solid ${brd}`, overflow: "hidden" }}>
               <div style={{ padding: "14px 16px", borderBottom: `1px solid ${brd}`, display: "flex", alignItems: "center", gap: 10 }}>
                 <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>Ordens de Serviço — OPP</h2>
-                <span style={{ marginLeft: "auto", fontSize: 12, color: sub }}>{osOpp.length} OS encontradas</span>
+                <span style={{ marginLeft: "auto", fontSize: 12, color: sub }}>{osOpp.length} OS</span>
               </div>
               <div style={{ padding: "10px 12px", borderBottom: `1px solid ${brd}` }}>
                 <div style={{ position: "relative" }}>
@@ -199,46 +222,47 @@ export default function VincularOS() {
                     style={{ width: "100%", padding: "7px 10px 7px 32px", background: bg, border: `1px solid ${brd}`, borderRadius: 7, color: txt, fontSize: 13, boxSizing: "border-box" }} />
                 </div>
               </div>
-              <div style={{ maxHeight: 520, overflowY: "auto" }}>
+              <div style={{ maxHeight: 560, overflowY: "auto" }}>
                 {loading ? (
                   <div style={{ padding: 24, textAlign: "center", color: sub }}>Carregando...</div>
                 ) : osFiltradas.length === 0 ? (
                   <div style={{ padding: 24, textAlign: "center", color: sub }}>Nenhuma OS encontrada</div>
                 ) : osFiltradas.map(o => {
-                  const jaUsada = projetos.find(p => p.nrOsOpp === o.os)
+                  const vinculadaA = projetos.find(p => String(p.nrOsOpp || '').split(',').map(s => s.trim()).includes(o.os))
+                  const estaNoSel  = osSel.includes(o.os)
                   return (
                     <div key={o.os}
-                      onClick={() => !salvando && selecionado && vincular(o.os)}
+                      onClick={() => !salvando && selecionado && toggleOS(o.os)}
                       style={{
-                        padding: "12px 16px", borderBottom: `1px solid ${brd}`, display: "flex", alignItems: "center", gap: 12,
+                        padding: "11px 16px", borderBottom: `1px solid ${brd}`, display: "flex", alignItems: "center", gap: 12,
                         cursor: selecionado ? "pointer" : "default",
-                        background: jaUsada ? (dark ? "#0f2e1a" : "#F0FDF4") : "transparent",
-                        transition: "background 0.15s",
-                      }}
-                      onMouseEnter={e => { if (selecionado && !jaUsada) e.currentTarget.style.background = dark ? "#1e3a5f" : "#EFF6FF" }}
-                      onMouseLeave={e => { e.currentTarget.style.background = jaUsada ? (dark ? "#0f2e1a" : "#F0FDF4") : "transparent" }}>
-                      <div style={{ width: 42, height: 42, borderRadius: 8, background: jaUsada ? "#16A34A" : "#2563EB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <span style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>#{o.os}</span>
+                        background: estaNoSel ? (dark ? "#0f2e1a" : "#F0FDF4") : vinculadaA ? (dark ? "#1a2e0f" : "#F7FEF4") : "transparent",
+                        outline: estaNoSel ? `2px solid #16A34A` : "none",
+                        transition: "background 0.12s",
+                      }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 8, background: estaNoSel ? "#16A34A" : vinculadaA ? "#86EFAC" : "#2563EB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        {estaNoSel
+                          ? <Check size={18} color="#fff" />
+                          : <span style={{ color: "#fff", fontWeight: 700, fontSize: 12 }}>#{o.os}</span>
+                        }
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {o.cliente || "Cliente não informado"}
                         </div>
                         <div style={{ fontSize: 12, color: sub, marginTop: 2 }}>
-                          Recebido: <strong style={{ color: "#16A34A" }}>{fmtBRL(o.totalRecebido)}</strong>
-                          {o.totalPendente > 0 && <> · Pendente: {fmtBRL(o.totalPendente)}</>}
+                          {o.totalRecebido > 0 && <span style={{ color: "#16A34A" }}>✓ {fmtBRL(o.totalRecebido)} rec. </span>}
+                          {o.totalPendente > 0 && <span>⏳ {fmtBRL(o.totalPendente)} pend.</span>}
                         </div>
                       </div>
-                      {jaUsada && (
-                        <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                          <Check size={14} color="#16A34A" />
-                          <span style={{ fontSize: 11, color: "#16A34A", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {jaUsada.nome.split("-").slice(-1)[0]?.trim() || jaUsada.nome}
-                          </span>
-                        </div>
+                      {estaNoSel && <span style={{ fontSize: 11, color: "#16A34A", fontWeight: 700 }}>Vinculada</span>}
+                      {!estaNoSel && vinculadaA && (
+                        <span style={{ fontSize: 11, color: "#64748B", maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {vinculadaA.nome.split('-').slice(-1)[0]?.trim()}
+                        </span>
                       )}
-                      {selecionado && !jaUsada && (
-                        <div style={{ flexShrink: 0, fontSize: 11, color: "#2563EB", fontWeight: 600 }}>Clicar para vincular</div>
+                      {selecionado && !estaNoSel && (
+                        <Plus size={14} color="#2563EB" style={{ flexShrink: 0 }} />
                       )}
                     </div>
                   )
@@ -252,7 +276,18 @@ export default function VincularOS() {
   )
 }
 
-function ProjetoPAR({ p, selecionado, onClick, onDesvincular, onAplicarSugestao, dark, card, brd, txt, sub }) {
+function ProjetoPAR({ p, selecionado, onClick, onDesvincular, osOpp, dark, brd, txt, sub }) {
+  const osNums = String(p.nrOsOpp || '').split(',').map(s => s.trim()).filter(Boolean)
+  const totalRec = osNums.reduce((s, n) => {
+    const os = osOpp.find(o => o.os === n)
+    return s + (os ? os.totalRecebido : 0)
+  }, 0)
+  const totalPend = osNums.reduce((s, n) => {
+    const os = osOpp.find(o => o.os === n)
+    return s + (os ? os.totalPendente : 0)
+  }, 0)
+  const fmtBRL = v => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+
   return (
     <div onClick={onClick}
       style={{
@@ -262,39 +297,38 @@ function ProjetoPAR({ p, selecionado, onClick, onDesvincular, onAplicarSugestao,
       }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {p.nome}
-          </div>
-          <div style={{ fontSize: 12, color: sub, marginTop: 2 }}>
-            {p.cliente} · {p.setor}
-          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.nome}</div>
+          <div style={{ fontSize: 12, color: sub, marginTop: 2 }}>{p.cliente} · {p.setor}</div>
         </div>
-        {p.nrOsOpp ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-            <span style={{ background: "#16A34A", color: "#fff", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20 }}>
-              OS {p.nrOsOpp}
-            </span>
-            {onDesvincular && (
-              <button onClick={e => { e.stopPropagation(); onDesvincular() }}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#DC2626", padding: 2, display: "flex", alignItems: "center" }}
-                title="Remover vínculo">
-                <X size={13} />
-              </button>
-            )}
-          </div>
-        ) : (
-          <span style={{ background: "#FEF2F2", color: "#DC2626", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, flexShrink: 0 }}>
-            Sem OS
-          </span>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          {osNums.length > 0 ? (
+            <>
+              <div style={{ display: "flex", gap: 3, flexWrap: "wrap", justifyContent: "flex-end", maxWidth: 140 }}>
+                {osNums.map(n => (
+                  <span key={n} style={{ background: "#16A34A", color: "#fff", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 20 }}>#{n}</span>
+                ))}
+              </div>
+              {onDesvincular && (
+                <button onClick={e => { e.stopPropagation(); onDesvincular() }}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "#DC2626", padding: 2 }} title="Remover vínculos">
+                  <X size={13} />
+                </button>
+              )}
+            </>
+          ) : (
+            <span style={{ background: "#FEF2F2", color: "#DC2626", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20 }}>Sem OS</span>
+          )}
+        </div>
       </div>
-      {p.sugestao && !p.nrOsOpp && (
-        <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 11, color: "#D97706" }}>Sugestão: OS {p.sugestao.os} — {p.sugestao.cliente}</span>
-          <button onClick={e => { e.stopPropagation(); onAplicarSugestao && onAplicarSugestao() }}
-            style={{ fontSize: 11, fontWeight: 600, color: "#fff", background: "#D97706", border: "none", borderRadius: 6, padding: "2px 8px", cursor: "pointer" }}>
-            Aplicar
-          </button>
+      {osNums.length > 0 && (totalRec > 0 || totalPend > 0) && (
+        <div style={{ fontSize: 11, color: sub, marginTop: 4, paddingLeft: 2 }}>
+          {totalRec > 0 && <span style={{ color: "#16A34A" }}>Recebido: {fmtBRL(totalRec)} </span>}
+          {totalPend > 0 && <span>Pendente: {fmtBRL(totalPend)}</span>}
+        </div>
+      )}
+      {p.sugestao && osNums.length === 0 && (
+        <div style={{ marginTop: 4, fontSize: 11, color: "#D97706" }}>
+          Sugestão: OS #{p.sugestao.os} — {p.sugestao.cliente}
         </div>
       )}
     </div>
