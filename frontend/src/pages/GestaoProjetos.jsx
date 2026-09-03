@@ -510,6 +510,8 @@ export default function GestaoProjetos() {
                         <td style={{ padding: '11px 12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
                           {p.statusAuditoria === 'ERRO'
                             ? <span onClick={e => abrirPopup(e, 'auditoria', p)} style={{ display: 'inline-block', background: '#FEE2E2', color: '#DC2626', fontWeight: 800, fontSize: 11, padding: '2px 9px', borderRadius: 20, border: '1.5px solid #FECACA', cursor: 'pointer' }}>ERRO</span>
+                            : p.statusAuditoria === 'AVISO'
+                            ? <span onClick={e => abrirPopup(e, 'auditoria', p)} style={{ display: 'inline-block', background: '#FEF3C7', color: '#92400E', fontWeight: 800, fontSize: 11, padding: '2px 9px', borderRadius: 20, border: '1.5px solid #FDE68A', cursor: 'pointer' }}>AVISO</span>
                             : <span style={{ display: 'inline-block', background: '#DCFCE7', color: '#15803D', fontWeight: 800, fontSize: 11, padding: '2px 9px', borderRadius: 20, border: '1.5px solid #86EFAC' }}>OK</span>}
                         </td>
                         <td style={{ padding: '11px 8px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>

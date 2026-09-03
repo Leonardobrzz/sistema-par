@@ -89,21 +89,25 @@ router.get('/', async (req, res, next) => {
       const planData = p.Data_Entrega_Planejada ? new Date(p.Data_Entrega_Planejada) : null;
       const diasEstourado = planData && p.Status !== 'Concluído' && planData < hoje2
         ? Math.floor((hoje2 - planData) / 86400000) : 0;
-      const errosAuditoriaLista = [
-        projetoVencido && 'Projeto atrasado',
+      // Erros críticos → ERRO (exigem ação imediata)
+      const errosCriticos = [
+        projetoVencido && 'Prazo de entrega do contrato vencido',
         statusAtrasado && !projetoVencido && 'Projeto com status Atrasado',
-        false,
+        temAtrasada && 'Tarefas com prazo vencido',
+        diasEstourado > 0 && `Prazo do planejamento estourado (${diasEstourado} dia${diasEstourado > 1 ? 's' : ''})`,
+      ].filter(Boolean);
+      // Avisos menores → AVISO (qualidade de dados, não bloqueantes)
+      const avisosAuditoria = [
         temSemResponsavel && 'Há tarefas sem responsável atribuído',
-        temAtrasada && 'Tarefas atrasadas',
-        temSemDataInicial && 'Sem data inicial',
+        temSemDataInicial && 'Há tarefas sem data inicial',
         temTarefaSemPrazo && 'Há tarefas sem data de vencimento',
         temSemEstimativa && 'Há tarefas sem estimativa de tempo',
         temSemFase && 'Há tarefas sem indicação de fase',
         temSemCliente && 'Há tarefas sem indicação de cliente',
-        diasEstourado > 0 && `Planejamento estourado (${diasEstourado} dia${diasEstourado > 1 ? 's' : ''})`,
       ].filter(Boolean);
+      const errosAuditoriaLista = [...errosCriticos, ...avisosAuditoria];
       const errosAuditoria = errosAuditoriaLista.length;
-      const statusAuditoria = errosAuditoria > 0 ? 'ERRO' : 'OK';
+      const statusAuditoria = errosCriticos.length > 0 ? 'ERRO' : avisosAuditoria.length > 0 ? 'AVISO' : 'OK';
 
       // Detalhes dos alertas (só os do badge laranja)
       const alertasDetalhes = alertasBadge.map(a => ({

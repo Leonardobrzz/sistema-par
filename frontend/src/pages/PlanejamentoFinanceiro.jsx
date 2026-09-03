@@ -378,10 +378,11 @@ export default function PlanejamentoFinanceiro() {
   const par = calcPAR(form)
   const formBloqueado = planStatus === "Pendente Aprovação" || (planStatus === "Pendente Replanejamento" && !isDiretor)
   const margemOk = par.lucroPerc >= 23
-  // tercOk: nenhum item individual pode ter custo > 25% do seu valorRef
+  // tercOk: nenhum item individual pode ter custo > 25% do valor total do contrato
+  const _vcTotal = parseBR(form.valorContrato)
   const itensTerc25 = (form.terceirizados || []).filter(t => {
-    const ref = parseBR(t.valorRef); const custo = parseBR(t.custo)
-    return ref > 0 && (custo / ref * 100) > 25
+    const custo = parseBR(t.custo)
+    return _vcTotal > 0 && (custo / _vcTotal * 100) > 25
   })
   const tercOk = itensTerc25.length === 0
   const prodOk = par.custoProducaoPerc <= 30
@@ -1289,8 +1290,8 @@ export default function PlanejamentoFinanceiro() {
                 <div style={{ fontSize: 12, color: "#991B1B", marginTop: 4, lineHeight: 1.6 }}>
                   {!margemOk && <div>• Margem ({fmtN(par.lucroPerc)}%) abaixo de 23%.</div>}
                   {itensTerc25.map((t, i) => {
-                    const ref = parseBR(t.valorRef); const custo = parseBR(t.custo)
-                    return <div key={i}>• Terceirizado "{t.servico || 'sem nome'}": custo {fmtN(custo/ref*100)}% do valor de referência (máx 25%).</div>
+                    const custo = parseBR(t.custo); const vc2 = parseBR(form.valorContrato)
+                    return <div key={i}>• Terceirizado "{t.servico || 'sem nome'}": custo {fmtN(vc2 > 0 ? custo/vc2*100 : 0)}% do valor total do contrato (máx 25%).</div>
                   })}
                   {!prodOk && <div>• Custo de produção ({fmtN(par.custoProducaoPerc)}%) acima de 30%.</div>}
                   {!despGeraisOk && <div>• Despesas Gerais ({fmtN(par.percDespesasGerais)}%) acima de 7,5%.</div>}
@@ -1599,9 +1600,10 @@ export default function PlanejamentoFinanceiro() {
                   <Field label={i === 0 ? "% Custo/Ref." : ""}>
                     {(() => {
                       const val = percCustoSobreRef !== "—" ? parseFloat(percCustoSobreRef) : null
-                      const over = val !== null && val > 25
+                      // Flag vermelho somente quando custo > 25% do contrato total (não da medição)
+                      const over = vc > 0 && vCusto / vc * 100 > 25
                       return (
-                        <div title={over ? "Acima de 25% — não aceito pela metodologia PAR" : undefined}
+                        <div title={over ? "Custo acima de 25% do valor total do contrato — não aceito pela metodologia PAR" : undefined}
                           style={{ ...INPUT, background: over ? "#FEF2F2" : "#F0FDF4", color: over ? "#DC2626" : "#15803D", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, border: over ? "1.5px solid #FECACA" : undefined }}>
                           {val !== null ? `${percCustoSobreRef}%${over ? " ⚠" : ""}` : "—"}
                         </div>
@@ -1675,9 +1677,9 @@ export default function PlanejamentoFinanceiro() {
                       <Field label={i === 0 ? "% Custo/Ref." : ""}>
                         {(() => {
                           const val = percCustoSobreRef !== "—" ? parseFloat(percCustoSobreRef) : null
-                          const over = val !== null && val > 25
+                          const over = vc > 0 && vCusto / vc * 100 > 25
                           return (
-                            <div title={over ? "Acima de 25% — não aceito pela metodologia PAR" : undefined}
+                            <div title={over ? "Custo acima de 25% do valor total do contrato — não aceito pela metodologia PAR" : undefined}
                               style={{ ...INPUT, background: over ? "#FEF2F2" : "#F0FDF4", color: over ? "#DC2626" : "#15803D", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, border: over ? "1.5px solid #FECACA" : undefined }}>
                               {val !== null ? `${percCustoSobreRef}%${over ? " ⚠" : ""}` : "—"}
                             </div>
