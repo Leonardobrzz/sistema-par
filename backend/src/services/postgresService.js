@@ -36,6 +36,9 @@ async function ensureSheetsExist() {
     `ALTER TABLE "Planejamentos" ADD COLUMN IF NOT EXISTS "Travado" TEXT`,
     `ALTER TABLE "Planejamentos" ADD COLUMN IF NOT EXISTS "Travado_Em" TEXT`,
     `ALTER TABLE "Planejamentos" ADD COLUMN IF NOT EXISTS "Travado_Por" TEXT`,
+    `ALTER TABLE "Planejamentos" ADD COLUMN IF NOT EXISTS "Justificativa_Replanejamento" TEXT`,
+    `ALTER TABLE "Planejamentos" ADD COLUMN IF NOT EXISTS "Snapshot_Anterior" TEXT`,
+    `ALTER TABLE "Planejamentos" ADD COLUMN IF NOT EXISTS "Comentario_Aprovacao" TEXT`,
     `CREATE TABLE IF NOT EXISTS "Auditoria" (
       "ID_Auditoria" TEXT PRIMARY KEY,
       "Tabela" TEXT NOT NULL,
