@@ -303,7 +303,7 @@ export default function PlanejamentoFinanceiro() {
         despesasInternas: Array.isArray(d.despesasInternas) ? d.despesasInternas : [],
       })
     } catch {
-      setPlanId(null); setPlanStatus(null); setBaseline(null); setHistoricoBaselines([])
+      setPlanId(null); setPlanStatus(null); setPlanTravado(false); setPlanComentario(""); setPlanJustificativaReplan(""); setBaseline(null); setHistoricoBaselines([])
       setForm({ ...FORM0, nomeProjeto: proj.Nome || "", cliente: proj.Cliente || "", setor: proj.Setor || "", linkClickUp: proj.Link_ClickUp || "", valorContrato: proj.Valor_Global || "" })
     }
     setLoading(false)
