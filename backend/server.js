@@ -67,6 +67,15 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', version: '1.0.0', timestamp: new Date().toISOString() });
 });
 
+// Diagnóstico de variáveis de ambiente (mostra nomes, não valores)
+app.get('/api/admin/env-vars', (req, res) => {
+  if (req.query.senha !== 'teste1234') return res.status(403).json({ erro: 'Não autorizado' });
+  const vars = Object.keys(process.env)
+    .filter(k => /google|sheet|postgres|database|pg|supabase/i.test(k))
+    .reduce((acc, k) => { acc[k] = process.env[k] ? `[SET, ${String(process.env[k]).length} chars]` : '[EMPTY]'; return acc; }, {});
+  res.json(vars);
+});
+
 // ── Migração Sheets → PostgreSQL (roda uma vez, exige senha) ────────────────
 app.post('/api/admin/migrar-para-postgres', async (req, res) => {
   if (req.body.senha !== process.env.ADMIN_MIGRATION_SECRET && req.body.senha !== 'teste1234') {
