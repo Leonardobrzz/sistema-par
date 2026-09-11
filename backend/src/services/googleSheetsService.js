@@ -37,7 +37,8 @@ setInterval(() => {
 async function initialize() {
   if (sheets) return sheets;
 
-  spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
+  // Aceita múltiplos nomes de variável para compatibilidade com diferentes ambientes
+  spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID || process.env.GOOGLE_SHEET_ID;
   if (!spreadsheetId) {
     throw new Error('GOOGLE_SPREADSHEET_ID não configurado no .env');
   }
@@ -53,11 +54,10 @@ async function initialize() {
     }
   }
 
-  // Opção 2: Credenciais em base64 (produção)
-  if (!credentials && process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64) {
-    credentials = JSON.parse(
-      Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64, 'base64').toString('utf8')
-    );
+  // Opção 2: Credenciais em base64 (produção) — aceita dois nomes de variável
+  const b64 = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64 || process.env.GOOGLE_CREDENTIALS;
+  if (!credentials && b64) {
+    credentials = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
   }
 
   if (!credentials) {
