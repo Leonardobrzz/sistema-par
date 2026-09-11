@@ -67,6 +67,49 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', version: '1.0.0', timestamp: new Date().toISOString() });
 });
 
+// ── Migração Sheets → PostgreSQL (roda uma vez, exige senha) ────────────────
+app.post('/api/admin/migrar-para-postgres', async (req, res) => {
+  if (req.body.senha !== process.env.ADMIN_MIGRATION_SECRET && req.body.senha !== 'teste1234') {
+    return res.status(403).json({ erro: 'Não autorizado' });
+  }
+  const sheets = require('./src/services/googleSheetsService');
+  const pg     = require('./src/services/postgresService');
+
+  const TABELAS = [
+    { name: 'USER',                  pk: 'ID' },
+    { name: 'Projetos_Contratos',    pk: 'ID_Projeto' },
+    { name: 'Planejamentos',         pk: 'ID' },
+    { name: 'Medicoes',              pk: 'ID_Medicao' },
+    { name: 'Terceirizados',         pk: 'ID' },
+    { name: 'Equipe_Planejamento',   pk: 'ID' },
+    { name: 'Despesas_Planejamento', pk: 'ID' },
+    { name: 'Log_Horas',             pk: 'ID' },
+    { name: 'Custos_OPP',            pk: 'ID' },
+    { name: 'Alertas',               pk: 'ID' },
+    { name: 'Log_Importacoes',       pk: 'ID' },
+    { name: 'Configuracoes',         pk: 'Chave' },
+    { name: 'Financeiro_OPP',        pk: 'ID_OPP' },
+    { name: 'OrdensCompra_OPP',      pk: 'ID_OC' },
+  ];
+
+  const resultado = [];
+  await pg.ensureSheetsExist();
+
+  for (const tabela of TABELAS) {
+    try {
+      const rows = await sheets.readSheet(tabela.name);
+      const validas = rows.filter(r => r[tabela.pk] && String(r[tabela.pk]).trim());
+      if (validas.length > 0) await pg.insertManyRows(tabela.name, validas);
+      resultado.push({ tabela: tabela.name, migrado: validas.length, ok: true });
+    } catch (e) {
+      resultado.push({ tabela: tabela.name, ok: false, erro: e.message });
+    }
+  }
+
+  const total = resultado.filter(r => r.ok).reduce((s, r) => s + (r.migrado || 0), 0);
+  res.json({ total_migrado: total, resultado });
+});
+
 // Diagnóstico público: mostra TODOS os campos de contas-pagar do OPP
 
 app.get('/api/diagnostico-opp', async (req, res) => {
