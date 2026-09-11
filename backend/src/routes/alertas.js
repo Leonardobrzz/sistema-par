@@ -60,13 +60,13 @@ router.put('/:id/visto', async (req, res, next) => {
   }
 });
 
-// PUT /api/alertas/:id/resolver — resolve alerta manualmente
+// PUT /api/alertas/:id/resolver — resolve alerta manualmente (ignorado = não recria automaticamente)
 router.put('/:id/resolver', async (req, res, next) => {
   try {
     const alerta = await db.findOne('Alertas', (a) => a.ID === req.params.id);
     if (!alerta) return res.status(404).json({ error: 'Alerta não encontrado.' });
 
-    await db.updateRowById('Alertas', 'ID', req.params.id, { ...alerta, Status: 'resolvido' });
+    await db.updateRowById('Alertas', 'ID', req.params.id, { ...alerta, Status: 'ignorado' });
     res.json({ message: 'Alerta resolvido.' });
   } catch (err) {
     next(err);

@@ -43,6 +43,14 @@ async function checkAllAlerts() {
 
     const activeAlerts = alertasAll.filter(a => a.Status === 'ativo' || a.Status === 'Ativo');
 
+    // Alertas ignorados manualmente: não recriar por 30 dias
+    const IGNORADO_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+    const ignoradosRecentes = new Set(
+      alertasAll
+        .filter(a => a.Status === 'ignorado' && a.Data_Geracao && (now - new Date(a.Data_Geracao)) < IGNORADO_TTL_MS)
+        .map(a => `${a.Tipo_Alerta}|${a.ID_Projeto}`)
+    );
+
     // Projeto real = tem contrato ou valor global > 0 (exclui iterações de sprint do ClickUp)
     const isProjetoReal = (p) =>
       parseFloat(p.Valor_Global || 0) > 0 || (p.Nr_Contrato && String(p.Nr_Contrato).trim() !== '');
@@ -403,8 +411,11 @@ async function checkAllAlerts() {
       await db.updateManyRowsWhere('Alertas', a => toResolveIds.has(a.ID), { Status: 'Resolvido' });
     }
 
-    if (toCreate.length > 0) {
-      const rows = toCreate.map(({ tipo, idProjeto, mensagem, nivel, setorDestino, linkClickUp }) => ({
+    // Não recriar alertas que o usuário ignorou nos últimos 30 dias
+    const toCreateFiltrado = toCreate.filter(a => !ignoradosRecentes.has(`${a.tipo}|${a.idProjeto}`));
+
+    if (toCreateFiltrado.length > 0) {
+      const rows = toCreateFiltrado.map(({ tipo, idProjeto, mensagem, nivel, setorDestino, linkClickUp }) => ({
         ID: uuidv4(),
         Tipo_Alerta: tipo,
         ID_Projeto: idProjeto || '',
@@ -417,14 +428,13 @@ async function checkAllAlerts() {
         Link_ClickUp: linkClickUp || '',
       }));
       await db.insertManyRows('Alertas', rows);
-      // Broadcast dos novos alertas
       for (const r of rows) {
         const setores = r.Setor_Destino.split(',');
         broadcast('alert', r, setores);
       }
     }
 
-    console.log(`[Alertas] Resolvidos: ${toResolveIds.size} | Criados: ${toCreate.length}`);
+    console.log(`[Alertas] Resolvidos: ${toResolveIds.size} | Criados: ${toCreateFiltrado.length} (${toCreate.length - toCreateFiltrado.length} ignorados suprimidos)`);
   } catch (err) {
     console.error('[Alertas] Erro na verificação:', err.message);
   }
