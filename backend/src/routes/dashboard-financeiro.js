@@ -79,7 +79,9 @@ router.get('/', async (req, res, next) => {
       meds.forEach(m => {
         todasMedicoes.push({
           idProjeto:       plan.ID_Projeto,
-          valor:           pBR(m.valor),
+          // valorPlan é o campo real usado no cronograma (mesmo do Relatório de
+          // Medições); valor/valorPlanejado ficam como reserva pra formatos antigos
+          valor:           pBR(m.valorPlan || m.valor || m.valorPlanejado || 0),
           dataPrevisao:    m.dataPrevisao || m.dataPrevista || '',
           dataRecebimento: '',
           statusFinanceiro:'Pendente',
@@ -95,12 +97,24 @@ router.get('/', async (req, res, next) => {
       if (!setorPorProjeto[m.ID_Projeto]) setorPorProjeto[m.ID_Projeto] = m.Setor || 'Outros';
     });
 
-    // mapa ccNome → { setor, idProjeto } para receitas OPP
+    // Vínculo confiável: ID_Centro_Custo_OPP, confirmado manualmente contra o
+    // cadastro real de centro de custo do OPP (mesmo usado no Baseline x Real
+    // e nas Medições). Prioridade sobre o casamento por texto.
+    const infoPorCCId = {};
+    aprovados.forEach(p => {
+      if (p.ID_Centro_Custo_OPP) infoPorCCId[String(p.ID_Centro_Custo_OPP)] = { setor: p.Setor || 'Outros', idProjeto: p.ID_Projeto };
+    });
+
+    // mapa ccNome → { setor, idProjeto } — reserva, só pros projetos que ainda
+    // não têm o vínculo confirmado acima
     const infoPorCC = {};
     aprovados.forEach(p => {
-      if (p.Nr_Contrato_OS) infoPorCC[p.Nr_Contrato_OS.toLowerCase().trim()] = { setor: p.Setor || 'Outros', idProjeto: p.ID_Projeto };
+      if (!p.ID_Centro_Custo_OPP && p.Nr_Contrato_OS) infoPorCC[p.Nr_Contrato_OS.toLowerCase().trim()] = { setor: p.Setor || 'Outros', idProjeto: p.ID_Projeto };
     });
     function infoProjetoDeReceita(rec) {
+      const ccIdNum = String(rec.id_centro_custos || '');
+      if (ccIdNum && ccIdNum !== '0' && infoPorCCId[ccIdNum]) return infoPorCCId[ccIdNum];
+
       const cc = (rec.centro_custos_rec || rec.centro_custo || '').toLowerCase().trim();
       if (!cc) return null;
       if (infoPorCC[cc]) return infoPorCC[cc];

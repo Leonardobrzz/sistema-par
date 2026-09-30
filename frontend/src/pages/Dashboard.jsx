@@ -344,6 +344,7 @@ export default function Dashboard() {
   const [alertas, setAlertas] = useState([])
   const [oppStatus, setOppStatus] = useState(null)
   const [totalRecebidoOPP, setTotalRecebidoOPP] = useState(null)
+  const [baselineReal, setBaselineReal] = useState(null)
   const [loading, setLoading] = useState(true)
   const [mostrarTodosSaude, setMostrarTodosSaude] = useState(false)
   const [filtroSetor, setFiltroSetor] = useState('')
@@ -365,6 +366,10 @@ export default function Dashboard() {
       if (rM.status === 'fulfilled') setMedicoes(rM.value.data?.medicoes || rM.value.data || [])
       api.get('/opp/status').then(r => setOppStatus(r.data)).catch(() => setOppStatus({ ok: false }))
       api.get('/dashboard-financeiro').then(r => setTotalRecebidoOPP(r.data?.kpis?.totalRecebido ?? null)).catch(() => {})
+      // Baseline x Real já traz, por projeto, o quanto falta receber calculado
+      // direto do OPP (pelo centro de custo confirmado) — fonte mais confiável
+      // que recalcular do zero aqui.
+      api.get('/baseline-real').then(r => setBaselineReal(r.data?.projetos || null)).catch(() => setBaselineReal(null))
       setLoading(false)
     }
     load()
@@ -430,7 +435,17 @@ export default function Dashboard() {
   })
   const totalRecebido = medicoesPeriodo.reduce((s, m) => s + parseBR(m.Valor_Medicao || m.Valor || 0), 0)
 
-  // A Receber: soma medições da tabela + medições planejadas dos planejamentos aprovados
+  // A Receber: prioriza o Baseline x Real (usa o vínculo de centro de custo
+  // confirmado com o OPP — desconta corretamente o que já foi recebido).
+  // Só cai pro cálculo antigo (tabela Medicoes + cronograma planejado, que
+  // não desconta nada) se o Baseline x Real não tiver carregado ainda.
+  const idsAprovadosFiltrados = new Set(aprovados.map(p => p.ID_Projeto))
+  const totalAReceberBaseline = baselineReal
+    ? baselineReal
+        .filter(p => idsAprovadosFiltrados.has(p.idProjeto))
+        .reduce((s, p) => s + (p.totalPendente || 0), 0)
+    : null
+
   const totalAReceberTabela = medicoesFiltradas.filter(m => m.Status_Financeiro !== 'Recebido' && m.Status !== 'Cancelada').reduce((s, m) => s + parseBR(m.Valor_Medicao || m.Valor || 0), 0)
   const totalAReceberPlanejado = aprovados.reduce((s, plan) => {
     // IDs já em Medicoes — evita dupla contagem
@@ -440,10 +455,10 @@ export default function Dashboard() {
       const dados = JSON.parse(plan.Dados_JSON || '{}')
       const meds = dados.medicoes || dados._baseline?.medicoesCronograma || []
       const parseBRv = v => { if (!v) return 0; const s = String(v).replace(/\./g, '').replace(',', '.'); return parseFloat(s) || 0 }
-      return s + meds.reduce((ss, m) => ss + parseBRv(m.valor || m.valorPlanejado || 0), 0)
+      return s + meds.reduce((ss, m) => ss + parseBRv(m.valorPlan || m.valor || m.valorPlanejado || 0), 0)
     } catch { return s }
   }, 0)
-  const totalAReceber = totalAReceberTabela + totalAReceberPlanejado
+  const totalAReceber = totalAReceberBaseline !== null ? totalAReceberBaseline : (totalAReceberTabela + totalAReceberPlanejado)
   const alertasCriticos = alertas.filter(a => a.Nivel === 'error')
 
   // Usa o status original do ClickUp — remove sufixo " (Atrasado)" que é derivado pelo PAR
