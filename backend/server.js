@@ -71,7 +71,7 @@ app.get('/api/health', (req, res) => {
 app.get('/api/admin/env-vars', (req, res) => {
   if (req.query.senha !== 'teste1234') return res.status(403).json({ erro: 'Não autorizado' });
   const vars = Object.keys(process.env)
-    .filter(k => /google|sheet|postgres|database|pg|supabase/i.test(k))
+    .filter(k => /google|sheet|postgres|database|pg|supabase|opp/i.test(k))
     .reduce((acc, k) => { acc[k] = process.env[k] ? `[SET, ${String(process.env[k]).length} chars]` : '[EMPTY]'; return acc; }, {});
   res.json(vars);
 });
