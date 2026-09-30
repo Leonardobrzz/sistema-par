@@ -134,10 +134,10 @@ router.post('/migrar-baselines', async (req, res, next) => {
           medicoes: medicoes.map((m) => ({ etapa: m.etapa || m.nome || '', percentual: parseFloat(m.percentual || 0), valor: parseFloat(m.valor || 0), dataPrevisao: m.dataPrevisao || m.data_previsao || '' })),
           terceirizados: (dados.terceirizados || []).map((t) => ({ descricao: t.descricao || t.servico || t.nome || '', custo: parseBRLocal(t.custo), fornecedor: t.fornecedor || '' })),
           despesas: (dados.despesas || []).map((d) => ({ descricao: d.descricao || '', valor: parseFloat(d.valor || 0) })),
-          valorContrato: parseFloat(dados.valorContrato || plan.Valor_Contrato || 0),
-          impostosPerc: parseFloat(dados.impostosPerc || plan.Impostos_Perc || 16.33),
-          taxaAdmPerc: parseFloat(dados.taxaAdmPerc || plan.Taxa_Adm_Perc || 12),
-          comissaoPerc: parseFloat(dados.comissaoPerc || plan.Comissao_Perc || 7.5),
+          valorContrato: parseBRLocal(dados.valorContrato || plan.Valor_Contrato || 0),
+          impostosPerc: parseBRLocal(dados.impostosPerc || plan.Impostos_Perc || 16.33),
+          taxaAdmPerc: parseBRLocal(dados.taxaAdmPerc || plan.Taxa_Adm_Perc || 12),
+          comissaoPerc: parseBRLocal(dados.comissaoPerc || plan.Comissao_Perc || 7.5),
         };
         const historicoBaselines = dados._historicoBaselines || [];
         if (dados._baseline) historicoBaselines.push({ ...dados._baseline, arquivadoEm: new Date().toISOString() });
@@ -493,10 +493,10 @@ async function handleAprovar(req, res, next, acaoForced) {
             medicoes: medicoes.map((m) => ({ etapa: m.etapa || m.nome || '', percentual: parseFloat(m.percentual || 0), valor: parseFloat(m.valor || 0), dataPrevisao: m.dataPrevisao || m.data_previsao || '' })),
             terceirizados: (dados.terceirizados || []).map((t) => ({ descricao: t.descricao || t.servico || t.nome || '', custo: parseBRLocal(t.custo), fornecedor: t.fornecedor || '' })),
             despesas: (dados.despesas || []).map((d) => ({ descricao: d.descricao || '', valor: parseFloat(d.valor || 0) })),
-            valorContrato: parseFloat(dados.valorContrato || plan.Valor_Contrato || 0),
-            impostosPerc: parseFloat(dados.impostosPerc || plan.Impostos_Perc || 16.33),
-            taxaAdmPerc: parseFloat(dados.taxaAdmPerc || plan.Taxa_Adm_Perc || 12),
-            comissaoPerc: parseFloat(dados.comissaoPerc || plan.Comissao_Perc || 7.5),
+            valorContrato: parseBRLocal(dados.valorContrato || plan.Valor_Contrato || 0),
+            impostosPerc: parseBRLocal(dados.impostosPerc || plan.Impostos_Perc || 16.33),
+            taxaAdmPerc: parseBRLocal(dados.taxaAdmPerc || plan.Taxa_Adm_Perc || 12),
+            comissaoPerc: parseBRLocal(dados.comissaoPerc || plan.Comissao_Perc || 7.5),
           };
           const historicoBaselines = dados._historicoBaselines || [];
           if (dados._baseline) historicoBaselines.push({ ...dados._baseline, arquivadoEm: new Date().toISOString() });
@@ -709,10 +709,10 @@ router.post('/:id/baseline', async (req, res, next) => {
       })),
 
       // Resumo financeiro planejado
-      valorContrato: parseFloat(dados.valorContrato || plan.Valor_Contrato || 0),
-      impostosPerc: parseFloat(dados.impostosPerc || plan.Impostos_Perc || 16.33),
-      taxaAdmPerc: parseFloat(dados.taxaAdmPerc || plan.Taxa_Adm_Perc || 12),
-      comissaoPerc: parseFloat(dados.comissaoPerc || plan.Comissao_Perc || 7.5),
+      valorContrato: parseBR(dados.valorContrato || plan.Valor_Contrato || 0),
+      impostosPerc: parseBR(dados.impostosPerc || plan.Impostos_Perc || 16.33),
+      taxaAdmPerc: parseBR(dados.taxaAdmPerc || plan.Taxa_Adm_Perc || 12),
+      comissaoPerc: parseBR(dados.comissaoPerc || plan.Comissao_Perc || 7.5),
     };
 
     // ── Versionamento de Baseline ─────────────────────────────────────────────
@@ -1273,10 +1273,10 @@ router.post('/migrar-baselines-dup', async (req, res, next) => {
           medicoes: medicoes.map((m) => ({ etapa: m.etapa || m.nome || '', percentual: parseFloat(m.percentual || 0), valor: parseFloat(m.valor || 0), dataPrevisao: m.dataPrevisao || m.data_previsao || '' })),
           terceirizados: (dados.terceirizados || []).map((t) => ({ descricao: t.descricao || t.servico || t.nome || '', custo: parseBRLocal(t.custo), fornecedor: t.fornecedor || '' })),
           despesas: (dados.despesas || []).map((d) => ({ descricao: d.descricao || '', valor: parseFloat(d.valor || 0) })),
-          valorContrato: parseFloat(dados.valorContrato || plan.Valor_Contrato || 0),
-          impostosPerc: parseFloat(dados.impostosPerc || plan.Impostos_Perc || 16.33),
-          taxaAdmPerc: parseFloat(dados.taxaAdmPerc || plan.Taxa_Adm_Perc || 12),
-          comissaoPerc: parseFloat(dados.comissaoPerc || plan.Comissao_Perc || 7.5),
+          valorContrato: parseBRLocal(dados.valorContrato || plan.Valor_Contrato || 0),
+          impostosPerc: parseBRLocal(dados.impostosPerc || plan.Impostos_Perc || 16.33),
+          taxaAdmPerc: parseBRLocal(dados.taxaAdmPerc || plan.Taxa_Adm_Perc || 12),
+          comissaoPerc: parseBRLocal(dados.comissaoPerc || plan.Comissao_Perc || 7.5),
         };
         const historicoBaselines = dados._historicoBaselines || [];
         if (dados._baseline) historicoBaselines.push({ ...dados._baseline, arquivadoEm: new Date().toISOString() });
