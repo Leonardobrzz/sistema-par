@@ -65,23 +65,47 @@ router.get('/', async (req, res, next) => {
 
     const pBR = (v) => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0;
 
-    // Mapa ccNome → totalRecebido (igual ao baseline-real)
+    // Mapa por id_centro_custos (fonte principal e confiável — mesmo vínculo
+    // usado no Baseline x Real) e por texto de descrição (reserva, método
+    // antigo) → totalRecebido / NF
+    const recebidoPorCCId = {};
+    const nfPorCCId = {};
     const recebidoPorCC = {};
     const nfPorCC = {};
     for (const r of receitasOPP) {
       if (r.liquidado_rec !== 'Sim') continue;
+      const v = parseFloat(r.valor_rec || 0);
+
+      const ccIdNum = String(r.id_centro_custos || '');
+      if (ccIdNum && ccIdNum !== '0') {
+        recebidoPorCCId[ccIdNum] = (recebidoPorCCId[ccIdNum] || 0) + v;
+        if (!nfPorCCId[ccIdNum] && r.n_documento_rec) nfPorCCId[ccIdNum] = r.n_documento_rec;
+      }
+
       const cc = (r.centro_custos_rec || r.centro_custo || '').toLowerCase().trim();
       if (!cc) continue;
-      recebidoPorCC[cc] = (recebidoPorCC[cc] || 0) + parseFloat(r.valor_rec || 0);
+      recebidoPorCC[cc] = (recebidoPorCC[cc] || 0) + v;
       if (!nfPorCC[cc] && r.n_documento_rec) nfPorCC[cc] = r.n_documento_rec;
     }
 
-    // Total recebido do OPP por projeto via Nr_Contrato_OS → CC matching
+    // Total recebido do OPP por projeto. Prioridade: centro de custo
+    // confirmado (ID_Centro_Custo_OPP, revisado manualmente contra o cadastro
+    // real do OPP). Só cai pro casamento por texto (Nr_Contrato_OS) pros
+    // projetos que ainda não têm esse vínculo confirmado.
     const totalRecebidoPorProjeto = {};
     const nfPorProjeto = {};
     for (const plan of planejamentos) {
+      if (!plan.ID_Projeto) continue;
+
+      if (plan.ID_Centro_Custo_OPP) {
+        const ccIdNum = String(plan.ID_Centro_Custo_OPP);
+        totalRecebidoPorProjeto[plan.ID_Projeto] = recebidoPorCCId[ccIdNum] || 0;
+        if (nfPorCCId[ccIdNum]) nfPorProjeto[plan.ID_Projeto] = nfPorCCId[ccIdNum];
+        continue;
+      }
+
       const cc = (plan.Nr_Contrato_OS || '').trim().toLowerCase();
-      if (!cc || !plan.ID_Projeto) continue;
+      if (!cc) continue;
       let total = recebidoPorCC[cc] || 0;
       if (!total) {
         // fuzzy match
