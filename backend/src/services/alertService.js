@@ -43,12 +43,28 @@ async function checkAllAlerts() {
 
     const activeAlerts = alertasAll.filter(a => a.Status === 'ativo' || a.Status === 'Ativo');
 
-    // Alertas ignorados manualmente: não recriar por 30 dias
+    // Alertas ignorados manualmente ("Ignorar 30d" na tela): não recriar o
+    // MESMO problema por 30 dias. Pra tipos que podem ter mais de uma
+    // ocorrência simultânea no mesmo projeto (uma medição/etapa diferente,
+    // uma NF diferente), a chave inclui esse identificador — senão, ignorar
+    // uma medição atrasada silenciaria também um atraso de outra medição
+    // completamente diferente no mesmo projeto.
+    function chaveEspecifica(tipo, mensagem) {
+      if (tipo === 'MEDICAO_ATRASADA' || tipo === 'MEDICAO_PROXIMA') {
+        const m = (mensagem || '').match(/Medição "([^"]+)"/);
+        return m ? m[1] : '';
+      }
+      if (tipo === 'FATURA_VENCIDA') {
+        const m = (mensagem || '').match(/NF\s+(\S+)/);
+        return m ? m[1] : '';
+      }
+      return '';
+    }
     const IGNORADO_TTL_MS = 30 * 24 * 60 * 60 * 1000;
     const ignoradosRecentes = new Set(
       alertasAll
         .filter(a => a.Status === 'ignorado' && a.Data_Geracao && (now - new Date(a.Data_Geracao)) < IGNORADO_TTL_MS)
-        .map(a => `${a.Tipo_Alerta}|${a.ID_Projeto}`)
+        .map(a => `${a.Tipo_Alerta}|${a.ID_Projeto}|${chaveEspecifica(a.Tipo_Alerta, a.Mensagem)}`)
     );
 
     // Projeto real = tem contrato ou valor global > 0 (exclui iterações de sprint do ClickUp)
@@ -411,8 +427,9 @@ async function checkAllAlerts() {
       await db.updateManyRowsWhere('Alertas', a => toResolveIds.has(a.ID), { Status: 'Resolvido' });
     }
 
-    // Não recriar alertas que o usuário ignorou nos últimos 30 dias
-    const toCreateFiltrado = toCreate.filter(a => !ignoradosRecentes.has(`${a.tipo}|${a.idProjeto}`));
+    // Não recriar alertas que o usuário ignorou nos últimos 30 dias (mesmo
+    // tipo + projeto + ocorrência específica, quando aplicável)
+    const toCreateFiltrado = toCreate.filter(a => !ignoradosRecentes.has(`${a.tipo}|${a.idProjeto}|${chaveEspecifica(a.tipo, a.mensagem)}`));
 
     if (toCreateFiltrado.length > 0) {
       const rows = toCreateFiltrado.map(({ tipo, idProjeto, mensagem, nivel, setorDestino, linkClickUp }) => ({

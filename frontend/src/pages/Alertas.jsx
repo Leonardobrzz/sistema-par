@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  CheckCircleIcon, XMarkIcon, ArrowTopRightOnSquareIcon,
+  CheckCircleIcon, ArrowTopRightOnSquareIcon,
   ExclamationCircleIcon, ExclamationTriangleIcon, InformationCircleIcon,
-  BellAlertIcon, ClockIcon, TrashIcon, ArrowPathIcon,
+  BellAlertIcon, ClockIcon, TrashIcon, ArrowPathIcon, ArrowRightCircleIcon,
+  BellSlashIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'react-hot-toast'
 import { formatDateTime } from '../utils/formatters'
@@ -134,7 +135,7 @@ export default function Alertas() {
             <h1 className="text-2xl font-black text-slate-900 tracking-widest uppercase">Central de Alertas</h1>
           </div>
           <p className="text-sm text-slate-500 max-w-2xl">
-            Alertas gerados automaticamente pelo ClickUp e pelas regras PAR.
+            Alertas gerados automaticamente pelo ClickUp e pelas regras PAR. Corrigindo a causa, o alerta some sozinho — "Ignorar 30d" só o esconde temporariamente, sem confirmar que foi corrigido.
           </p>
         </div>
 
@@ -264,7 +265,7 @@ export default function Alertas() {
                     const Icon = cfg.icon
                     const setores = (alerta.Setor_Destino || '').split(',').map(s => s.trim()).filter(Boolean)
                     return (
-                      <div key={alerta.ID} onClick={() => alerta.ID_Projeto && navigate(`/planejamento/${alerta.ID_Projeto}`)} style={{ background: '#fff', borderRadius: 14, padding: '14px 18px', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'flex-start', gap: 14, transition: 'box-shadow 0.15s', cursor: alerta.ID_Projeto ? 'pointer' : 'default' }} onMouseEnter={e => { if (alerta.ID_Projeto) e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.10)' }} onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
+                      <div key={alerta.ID} style={{ background: '#fff', borderRadius: 14, padding: '14px 18px', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'flex-start', gap: 14, transition: 'box-shadow 0.15s' }}>
                         <div style={{ flexShrink: 0, width: 36, height: 36, borderRadius: 10, background: cfg.bg, border: `1px solid`, borderColor: cfg.border.replace('border-', ''), display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
                           <Icon className={`w-5 h-5 ${cfg.iconColor}`} />
                         </div>
@@ -303,11 +304,22 @@ export default function Alertas() {
                           </div>
                         </div>
 
-                        <button onClick={(e) => { e.stopPropagation(); resolveAlert(alerta.ID) }}
-                          style={{ flexShrink: 0, padding: '6px 12px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <XMarkIcon className="w-4 h-4" />
-                          Resolver
-                        </button>
+                        <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'stretch' }}>
+                          {alerta.ID_Projeto && (
+                            <button onClick={() => navigate(`/planejamento/${alerta.ID_Projeto}`)}
+                              title="Abre o planejamento do projeto pra você corrigir a causa do alerta"
+                              style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #C4B5FD', background: '#F5F3FF', color: '#7C3AED', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
+                              <ArrowRightCircleIcon className="w-4 h-4" />
+                              Ver problema
+                            </button>
+                          )}
+                          <button onClick={() => resolveAlert(alerta.ID)}
+                            title="Esconde esse alerta por 30 dias. Não confirma que o problema foi corrigido — se a causa continuar valendo, o alerta volta sozinho depois desse prazo. Alertas com causa realmente corrigida já somem sozinhos, sem precisar disso."
+                            style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
+                            <BellSlashIcon className="w-4 h-4" />
+                            Ignorar 30d
+                          </button>
+                        </div>
                       </div>
                     )
                   })}
