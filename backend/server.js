@@ -67,6 +67,18 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', version: '1.0.0', timestamp: new Date().toISOString() });
 });
 
+// Diagnóstico de conexão OPP (público, para debug)
+app.get('/api/admin/opp-ping', async (req, res) => {
+  if (req.query.senha !== 'teste1234') return res.status(403).json({ erro: 'Não autorizado' });
+  try {
+    const { oppRequest } = require('./src/services/oppService');
+    const r = await oppRequest('GET', '/clientes?limit=1&offset=0');
+    res.json({ ok: true, sample: Array.isArray(r) ? r.length : typeof r });
+  } catch (err) {
+    res.json({ ok: false, erro: err.message });
+  }
+});
+
 // Diagnóstico de variáveis de ambiente (mostra nomes, não valores)
 app.get('/api/admin/env-vars', (req, res) => {
   if (req.query.senha !== 'teste1234') return res.status(403).json({ erro: 'Não autorizado' });
