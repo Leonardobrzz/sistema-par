@@ -164,7 +164,7 @@ router.get('/', async (req, res, next) => {
     const ocValorMap = {};
     for (const oc of ocs) {
       if ((oc.Situacao || '').toLowerCase() !== 'cancelado') {
-        ocValorMap[String(oc.ID_OC)] = parseFloat(oc.Valor_Total || 0);
+        ocValorMap[String(oc.ID_OC)] = parseBR(oc.Valor_Total || 0);
       }
     }
     // Soma dos valores de OC por projeto (via Terceirizados.OC)
@@ -179,8 +179,8 @@ router.get('/', async (req, res, next) => {
 
     const enriched = planejamentos.map(p => {
       const proj = projMap[p.ID_Projeto] || {};
-      const valorContrato = parseFloat(p.Valor_Contrato || 0);
-      const valorGlobal = parseFloat(proj.Valor_Global || 0);
+      const valorContrato = parseBR(p.Valor_Contrato || 0);
+      const valorGlobal = parseBR(proj.Valor_Global || 0);
       const valorOC = valorOCPorProjeto[p.ID_Projeto] || 0;
       // Prioridade: planejamento > Projetos_Contratos > soma das OCs no OPP
       const valorFinal = valorContrato > 0 ? valorContrato : valorGlobal > 0 ? valorGlobal : valorOC;
@@ -490,9 +490,9 @@ async function handleAprovar(req, res, next, acaoForced) {
             horasPorColaborador: equipe.map((e) => ({ colaborador: e.colaborador || e.nome || '', horasEstimadas: parseFloat(e.horas || 0), mediaHora: parseFloat(e.mediaHora || 0), custoEstimado: parseFloat(e.mediaHora || 0) * parseFloat(e.horas || 0) })),
             totalHorasEstimadas: equipe.reduce((s, e) => s + parseFloat(e.horas || 0), 0),
             totalCustoEquipe: equipe.reduce((s, e) => s + (parseFloat(e.mediaHora || 0) * parseFloat(e.horas || 0)), 0),
-            medicoes: medicoes.map((m) => ({ etapa: m.etapa || m.nome || '', percentual: parseFloat(m.percentual || 0), valor: parseFloat(m.valor || 0), dataPrevisao: m.dataPrevisao || m.data_previsao || '' })),
+            medicoes: medicoes.map((m) => ({ etapa: m.etapa || m.nome || '', percentual: parseBRLocal(m.percentual || 0), valor: parseBRLocal(m.valor || 0), dataPrevisao: m.dataPrevisao || m.data_previsao || '' })),
             terceirizados: (dados.terceirizados || []).map((t) => ({ descricao: t.descricao || t.servico || t.nome || '', custo: parseBRLocal(t.custo), fornecedor: t.fornecedor || '' })),
-            despesas: (dados.despesas || []).map((d) => ({ descricao: d.descricao || '', valor: parseFloat(d.valor || 0) })),
+            despesas: (dados.despesas || []).map((d) => ({ descricao: d.descricao || '', valor: parseBRLocal(d.valor || 0) })),
             valorContrato: parseBRLocal(dados.valorContrato || plan.Valor_Contrato || 0),
             impostosPerc: parseBRLocal(dados.impostosPerc || plan.Impostos_Perc || 16.33),
             taxaAdmPerc: parseBRLocal(dados.taxaAdmPerc || plan.Taxa_Adm_Perc || 12),
@@ -690,8 +690,8 @@ router.post('/:id/baseline', async (req, res, next) => {
       // Cronograma de medições planejado
       medicoes: medicoes.map((m) => ({
         etapa: m.etapa || m.nome || '',
-        percentual: parseFloat(m.percentual || 0),
-        valor: parseFloat(m.valor || 0),
+        percentual: parseBR(m.percentual || 0),
+        valor: parseBR(m.valor || 0),
         dataPrevisao: m.dataPrevisao || m.data_previsao || '',
       })),
 
@@ -705,7 +705,7 @@ router.post('/:id/baseline', async (req, res, next) => {
       // Despesas gerais planejadas
       despesas: (dados.despesas || []).map((d) => ({
         descricao: d.descricao || '',
-        valor: parseFloat(d.valor || 0),
+        valor: parseBR(d.valor || 0),
       })),
 
       // Resumo financeiro planejado
@@ -793,8 +793,8 @@ router.get('/:id/comparativo', async (req, res, next) => {
               descricao: d.nome_conta || '',
               fornecedor: d.nome_fornecedor || '',
               categoria: d.categoria || d.nome_categoria || d.categoria_pag || '',
-              valor: parseFloat(d.valor_pag || 0),
-              valorPago: parseFloat(d.valor_pago || 0),
+              valor: parseBR(d.valor_pag || 0),
+              valorPago: parseBR(d.valor_pago || 0),
               liquidado: d.liquidado_pag === 'Sim',
               data: d.vencimento_pag || d.data_emissao || '',
             }));
@@ -924,7 +924,7 @@ router.get('/:id/comparativo', async (req, res, next) => {
             statusFinanceiro: realizada?.Status_Financeiro || realizada?.statusFinanceiro || 'Pendente',
             statusFisico: realizada?.Status_Fisico || realizada?.statusFisico || 'Não iniciado',
             atrasoDias: Math.max(0, atrasoDias),
-            valorRealizado: parseFloat(realizada?.Valor_Medicao || realizada?.valorRealizado || 0),
+            valorRealizado: parseBR(realizada?.Valor_Medicao || realizada?.valorRealizado || 0),
           };
         });
       })(),
@@ -1058,8 +1058,8 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
         descricao: d.nome_conta || '',
         fornecedor: d.nome_fornecedor || '',
         categoria: d.categoria || d.nome_categoria || d.categoria_pag || '',
-        valor: parseFloat(d.valor_pag || 0),
-        valorPago: parseFloat(d.valor_pago || 0),
+        valor: parseBR(d.valor_pag || 0),
+        valorPago: parseBR(d.valor_pago || 0),
         situacao: d.situacao || '',
         liquidado: d.liquidado_pag === 'Sim',
         data: d.vencimento_pag || d.data_emissao || '',

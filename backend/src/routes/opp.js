@@ -930,6 +930,133 @@ router.post('/corrigir-medicoes', authMiddleware, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET /api/opp/diagnostico-medicoes-1000x — lista (sem alterar nada) registros da
+// tabela Medicoes (a mesma que alimenta a tela Medições & Faturamento) com suspeita
+// de valor gravado ÷1000 (ex.: contrato R$ 64.500,00 com medição gravada como R$ 64,50).
+// Diferente de /corrigir-medicoes acima, que só corrige o JSON de planejamento
+// (Planejamentos.Dados_JSON) — este olha a tabela Medicoes de verdade.
+router.get('/diagnostico-medicoes-1000x', authMiddleware, async (req, res, next) => {
+  try {
+    const db = process.env.USE_POSTGRES === 'true'
+      ? require('../services/postgresService')
+      : require('../services/googleSheetsService');
+
+    const pBR = (v) => {
+      const s = String(v || 0).trim();
+      if (s.includes(',')) return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+      const parts = s.split('.');
+      if (parts.length === 2 && parts[1].length <= 2) return parseFloat(s) || 0;
+      return parseFloat(s.replace(/\./g, '')) || 0;
+    };
+
+    const [medicoes, planejamentos, projetos] = await Promise.all([
+      db.readSheet('Medicoes'),
+      db.readSheet('Planejamentos'),
+      db.readSheet('Projetos_Contratos'),
+    ]);
+
+    const contratoPorProjeto = {};
+    const nomePorProjeto = {};
+    for (const p of projetos) {
+      nomePorProjeto[p.ID_Projeto] = p.Nome;
+      const v = pBR(p.Valor_Global || 0);
+      if (v > 0) contratoPorProjeto[p.ID_Projeto] = v;
+    }
+    for (const plan of planejamentos) {
+      if (!plan.ID_Projeto) continue;
+      if (plan.Nome_Projeto) nomePorProjeto[plan.ID_Projeto] = plan.Nome_Projeto;
+      let dados = {};
+      try { dados = JSON.parse(plan.Dados_JSON || '{}'); } catch {}
+      const d = dados._baseline || dados;
+      const v = pBR(d.valorContrato || plan.Valor_Contrato || 0);
+      if (v > 0) contratoPorProjeto[plan.ID_Projeto] = v; // planejamento tem prioridade
+    }
+
+    const candidatos = [];
+    for (const m of medicoes) {
+      const contrato = contratoPorProjeto[m.ID_Projeto];
+      if (!contrato || contrato <= 1000) continue;
+      const valorAtual = pBR(m.Valor);
+      if (valorAtual > 0 && valorAtual < 1000 && (valorAtual * 1000) <= contrato * 1.15) {
+        candidatos.push({
+          ID_Medicao: m.ID_Medicao,
+          ID_Projeto: m.ID_Projeto,
+          nome: nomePorProjeto[m.ID_Projeto] || '(desconhecido)',
+          etapa: m.Etapa,
+          status: m.Status_Financeiro,
+          valorAtual,
+          valorSugerido: parseFloat((valorAtual * 1000).toFixed(2)),
+          contrato,
+        });
+      }
+    }
+
+    res.json({ total: candidatos.length, candidatos });
+  } catch (err) { next(err); }
+});
+
+// POST /api/opp/corrigir-medicoes-1000x — aplica a correção acima na tabela Medicoes.
+// Usa a mesma regra já validada em /corrigir-medicoes (valor<1000 e valor×1000 dentro
+// de 15% do contrato). Não mexe em Terceirizados nem em nenhum outro dado.
+router.post('/corrigir-medicoes-1000x', authMiddleware, async (req, res, next) => {
+  try {
+    const db = process.env.USE_POSTGRES === 'true'
+      ? require('../services/postgresService')
+      : require('../services/googleSheetsService');
+
+    const pBR = (v) => {
+      const s = String(v || 0).trim();
+      if (s.includes(',')) return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+      const parts = s.split('.');
+      if (parts.length === 2 && parts[1].length <= 2) return parseFloat(s) || 0;
+      return parseFloat(s.replace(/\./g, '')) || 0;
+    };
+
+    const [medicoes, planejamentos, projetos] = await Promise.all([
+      db.readSheet('Medicoes'),
+      db.readSheet('Planejamentos'),
+      db.readSheet('Projetos_Contratos'),
+    ]);
+
+    const contratoPorProjeto = {};
+    const nomePorProjeto = {};
+    for (const p of projetos) {
+      nomePorProjeto[p.ID_Projeto] = p.Nome;
+      const v = pBR(p.Valor_Global || 0);
+      if (v > 0) contratoPorProjeto[p.ID_Projeto] = v;
+    }
+    for (const plan of planejamentos) {
+      if (!plan.ID_Projeto) continue;
+      if (plan.Nome_Projeto) nomePorProjeto[plan.ID_Projeto] = plan.Nome_Projeto;
+      let dados = {};
+      try { dados = JSON.parse(plan.Dados_JSON || '{}'); } catch {}
+      const d = dados._baseline || dados;
+      const v = pBR(d.valorContrato || plan.Valor_Contrato || 0);
+      if (v > 0) contratoPorProjeto[plan.ID_Projeto] = v;
+    }
+
+    const corrigidos = [];
+    for (const m of medicoes) {
+      const contrato = contratoPorProjeto[m.ID_Projeto];
+      if (!contrato || contrato <= 1000) continue;
+      const valorAtual = pBR(m.Valor);
+      if (valorAtual > 0 && valorAtual < 1000 && (valorAtual * 1000) <= contrato * 1.15) {
+        const valorCorrigido = parseFloat((valorAtual * 1000).toFixed(2));
+        await db.updateRowById('Medicoes', 'ID_Medicao', m.ID_Medicao, { ...m, Valor: String(valorCorrigido) });
+        corrigidos.push({
+          ID_Medicao: m.ID_Medicao,
+          nome: nomePorProjeto[m.ID_Projeto] || '(desconhecido)',
+          etapa: m.Etapa,
+          de: valorAtual,
+          para: valorCorrigido,
+        });
+      }
+    }
+
+    res.json({ total_corrigidos: corrigidos.length, corrigidos });
+  } catch (err) { next(err); }
+});
+
 // POST /api/opp/fix-especificos — corrige casos específicos que o algoritmo geral não captura
 router.post('/fix-especificos', authMiddleware, async (req, res, next) => {
   try {

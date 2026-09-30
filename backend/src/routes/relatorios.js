@@ -21,12 +21,24 @@ function withTimeout(ms) {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+// Parser numérico BR: "43.000,00" (milhar+decimal BR) e "43000.00" (decimal US).
+// formatBRL/formatPerc recebem valores vindos de campos de texto (Sheets/Postgres),
+// então precisam passar por aqui antes de formatar — parseFloat()/Number() puro
+// corta no separador errado (ou vira NaN) e o relatório sai com valor errado.
+function pBR(v) {
+  const s = String(v || 0).trim();
+  if (s.includes(',')) return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+  const parts = s.split('.');
+  if (parts.length === 2 && parts[1].length <= 2) return parseFloat(s) || 0;
+  return parseFloat(s.replace(/\./g, '')) || 0;
+}
+
 function formatBRL(value) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(pBR(value));
 }
 
 function formatPerc(value) {
-  return `${parseFloat(value || 0).toFixed(2)}%`;
+  return `${pBR(value).toFixed(2)}%`;
 }
 
 // ── GET /api/relatorios/planejamento/:idProjeto/excel ─────────────────────────
@@ -80,10 +92,10 @@ router.get('/planejamento/:idProjeto/excel', async (req, res, next) => {
     // ── Aba: Planejamento Financeiro ──
     const wsPlan = wb.addWorksheet('Planejamento Financeiro');
 
-    const V = parseFloat(plan.Valor_Contrato || 0);
-    const ip = parseFloat(plan.Impostos_Perc || 16.33);
-    const ta = parseFloat(plan.Taxa_Adm_Perc || 12);
-    const co = parseFloat(plan.Comissao_Perc || 7.5);
+    const V = pBR(plan.Valor_Contrato || 0);
+    const ip = pBR(plan.Impostos_Perc || 16.33);
+    const ta = pBR(plan.Taxa_Adm_Perc || 12);
+    const co = pBR(plan.Comissao_Perc || 7.5);
     const impostos = V * ip / 100;
     const taxaAdm = V * ta / 100;
     const comissao = V * co / 100;
@@ -92,8 +104,8 @@ router.get('/planejamento/:idProjeto/excel', async (req, res, next) => {
     const equipe = dados.equipe || [];
     const despesas = dados.despesas || [];
     const totalTerceiros = terceirizados.reduce((s, t) => s + parseFloat(t.custo || 0), 0);
-    const totalEquipe = equipe.reduce((s, e) => s + (parseFloat(e.mediaHora || 0) * parseFloat(e.horas || 0)), 0);
-    const totalDespesas = despesas.reduce((s, d) => s + parseFloat(d.valor || 0), 0);
+    const totalEquipe = equipe.reduce((s, e) => s + (pBR(e.mediaHora || 0) * pBR(e.horas || 0)), 0);
+    const totalDespesas = despesas.reduce((s, d) => s + pBR(d.valor || 0), 0);
     const receitaLiquida = V - impostos - taxaAdm - comissao;
     const lucro = receitaLiquida - totalTerceiros - totalEquipe - totalDespesas;
 
@@ -135,8 +147,8 @@ router.get('/planejamento/:idProjeto/excel', async (req, res, next) => {
       wsMed.addRow([m.etapa, m.dataPrevisao, formatBRL(m.valor), formatPerc(m.percentual)]);
     }
 
-    const totalMed = medicoesPlan.reduce((s, m) => s + parseFloat(m.valor || 0), 0);
-    const totalPercMed = medicoesPlan.reduce((s, m) => s + parseFloat(m.percentual || 0), 0);
+    const totalMed = medicoesPlan.reduce((s, m) => s + pBR(m.valor || 0), 0);
+    const totalPercMed = medicoesPlan.reduce((s, m) => s + pBR(m.percentual || 0), 0);
     const totalRow = wsMed.addRow(['TOTAL', '', formatBRL(totalMed), formatPerc(totalPercMed)]);
     totalRow.font = { bold: true };
 
@@ -221,10 +233,10 @@ router.get('/planejamento/:idProjeto/pdf', async (req, res, next) => {
     doc.moveDown(0.3);
     doc.fontSize(10).fillColor('#1E293B');
 
-    const V = parseFloat(plan.Valor_Contrato || 0);
-    const ip = parseFloat(plan.Impostos_Perc || 16.33);
-    const ta = parseFloat(plan.Taxa_Adm_Perc || 12);
-    const co = parseFloat(plan.Comissao_Perc || 7.5);
+    const V = pBR(plan.Valor_Contrato || 0);
+    const ip = pBR(plan.Impostos_Perc || 16.33);
+    const ta = pBR(plan.Taxa_Adm_Perc || 12);
+    const co = pBR(plan.Comissao_Perc || 7.5);
     const impostos = V * ip / 100;
     const taxaAdm = V * ta / 100;
     const comissao = V * co / 100;
@@ -236,8 +248,8 @@ router.get('/planejamento/:idProjeto/pdf', async (req, res, next) => {
     const equipe = dados.equipe || [];
     const despesas = dados.despesas || [];
     const totalTerceiros = terceirizados.reduce((s, t) => s + parseFloat(t.custo || 0), 0);
-    const totalEquipe = equipe.reduce((s, e) => s + (parseFloat(e.mediaHora || 0) * parseFloat(e.horas || 0)), 0);
-    const totalDespesas = despesas.reduce((s, d) => s + parseFloat(d.valor || 0), 0);
+    const totalEquipe = equipe.reduce((s, e) => s + (pBR(e.mediaHora || 0) * pBR(e.horas || 0)), 0);
+    const totalDespesas = despesas.reduce((s, d) => s + pBR(d.valor || 0), 0);
     const receitaLiquida = V - impostos - taxaAdm - comissao;
     const lucro = receitaLiquida - totalTerceiros - totalEquipe - totalDespesas;
 

@@ -8,6 +8,16 @@ const router = express.Router();
 router.use(authMiddleware);
 const audit = auditMiddleware('Projetos_Contratos');
 
+// Parser numérico BR: "43.000,00" (milhar+decimal BR) e "43000.00" (decimal US).
+// Sem isso, um Valor_Global digitado no formato BR sai muito menor do que o real.
+const pBR = (v) => {
+  const s = String(v || 0).trim();
+  if (s.includes(',')) return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+  const parts = s.split('.');
+  if (parts.length === 2 && parts[1].length <= 2) return parseFloat(s) || 0;
+  return parseFloat(s.replace(/\./g, '')) || 0;
+};
+
 // GET /api/projetos — lista todos os projetos com filtros
 router.get('/', async (req, res, next) => {
   try {
@@ -49,7 +59,7 @@ router.get('/', async (req, res, next) => {
       const tercs = terceirizados.filter((t) => t.ID_Projeto === p.ID_Projeto && t.Status !== 'Cancelado');
       const horas = logHoras.filter((l) => l.ID_Projeto === p.ID_Projeto);
 
-      const valorGlobal = parseFloat(p.Valor_Global || 0);
+      const valorGlobal = pBR(p.Valor_Global || 0);
       const totalTerceiros = tercs.reduce((s, t) => s + parseFloat(t.Valor_Contratado || 0), 0);
       const percTerceiros = valorGlobal > 0 ? (totalTerceiros / valorGlobal) * 100 : 0;
 
@@ -126,15 +136,8 @@ router.get('/', async (req, res, next) => {
         return p.Setor || ''
       })()
 
-      const parseBR = (v) => {
-        const s = String(v || 0).trim();
-        if (s.includes(',')) return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
-        const parts = s.split('.');
-        if (parts.length === 2 && parts[1].length <= 2) return parseFloat(s) || 0;
-        return parseFloat(s.replace(/\./g, '')) || 0;
-      };
-      const valorPlanejamento = parseBR(plan?.Valor_Contrato);
-      const valorExibido = valorPlanejamento > 0 ? valorPlanejamento : parseBR(p.Valor_Global);
+      const valorPlanejamento = pBR(plan?.Valor_Contrato);
+      const valorExibido = valorPlanejamento > 0 ? valorPlanejamento : pBR(p.Valor_Global);
 
       return {
         ...p,
@@ -253,7 +256,7 @@ router.get('/:id', async (req, res, next) => {
     const custosOPP = await db.findRows('Custos_OPP', (c) => c.ID_Projeto === project.ID_Projeto);
     const totalCustosReais = custosOPP
       .filter((c) => c.Tipo?.toLowerCase().includes('pago') || c.Tipo?.toLowerCase().includes('realizado'))
-      .reduce((s, c) => s + parseFloat(c.Valor_Lancado || 0), 0);
+      .reduce((s, c) => s + pBR(c.Valor_Lancado || 0), 0);
 
     res.json({
       ...project,
@@ -286,7 +289,7 @@ router.post('/', audit, async (req, res, next) => {
       }
     }
 
-    const valor = parseFloat(valorGlobal || 0);
+    const valor = pBR(valorGlobal || 0);
     const tetoPerc = parseFloat(process.env.TETO_TERCEIROS_BLOQUEIO || '20');
 
     const project = {

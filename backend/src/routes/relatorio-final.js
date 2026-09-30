@@ -5,6 +5,17 @@ const { authMiddleware } = require('../middleware/auth');
 const router = express.Router();
 router.use(authMiddleware);
 
+// Parser numérico BR: trata "43.000,00" (milhar+decimal BR) e "43000.00" (decimal US)
+// igual ao usado em baseline-real.js/dashboard-financeiro.js/planejamento.js — parseFloat()
+// puro corta o valor no separador errado e gera números muito menores que o real.
+const pBR = (v) => {
+  const s = String(v || 0).trim();
+  if (s.includes(',')) return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+  const parts = s.split('.');
+  if (parts.length === 2 && parts[1].length <= 2) return parseFloat(s) || 0;
+  return parseFloat(s.replace(/\./g, '')) || 0;
+};
+
 // GET /api/relatorio-final/:idProjeto — consolida fechamento do projeto
 router.get('/:idProjeto', async (req, res, next) => {
   try {
@@ -30,19 +41,19 @@ router.get('/:idProjeto', async (req, res, next) => {
       historicoBaselines = dadosPlan._historicoBaselines || [];
     } catch {}
 
-    const V = parseFloat(dadosPlan.valorContrato || plan?.Valor_Contrato || 0);
-    const ip = Math.max(parseFloat(dadosPlan.impostosPerc || 20), 16.33);
-    const ta = Math.max(parseFloat(dadosPlan.taxaAdmPerc || 12), 5);
+    const V = pBR(dadosPlan.valorContrato || plan?.Valor_Contrato || 0);
+    const ip = Math.max(pBR(dadosPlan.impostosPerc || 20), 16.33);
+    const ta = Math.max(pBR(dadosPlan.taxaAdmPerc || 12), 5);
     const co = 7.5;
     const totalDevolutivas = V * (ip + ta + co) / 100;
     const receitaLiquida = V - totalDevolutivas;
 
     // ── Financeiro Planejado (baseline) ──────────────────────────────────────
     const custoEquipePlanejado = (dadosPlan.equipe || []).reduce((s, e) => {
-      return s + parseFloat(e.horas || 0) * parseFloat(e.mediaHora || 36.40);
+      return s + pBR(e.horas || 0) * pBR(e.mediaHora || 36.40);
     }, 0);
     const custoTerceirosPlanejado = (dadosPlan.terceirizados || []).reduce((s, t) => s + parseFloat(t.custo || 0), 0);
-    const despesasPlanejadas = (dadosPlan.despesas || []).reduce((s, d) => s + parseFloat(d.valor || 0), 0);
+    const despesasPlanejadas = (dadosPlan.despesas || []).reduce((s, d) => s + pBR(d.valor || 0), 0);
     const custoTotalPlanejado = custoEquipePlanejado + custoTerceirosPlanejado + despesasPlanejadas;
     const lucroPlanejado = receitaLiquida - custoTotalPlanejado;
     const lucroPercPlanejado = V > 0 ? (lucroPlanejado / V) * 100 : 0;
@@ -50,10 +61,10 @@ router.get('/:idProjeto', async (req, res, next) => {
     // ── Financeiro Real ───────────────────────────────────────────────────────
     const totalRecebido = medicoes
       .filter(m => m.Status_Financeiro === 'Recebido')
-      .reduce((s, m) => s + parseFloat(m.Valor || 0), 0);
+      .reduce((s, m) => s + pBR(m.Valor || 0), 0);
     const totalFaturado = medicoes
       .filter(m => ['Faturado', 'Recebido'].includes(m.Status_Financeiro))
-      .reduce((s, m) => s + parseFloat(m.Valor || 0), 0);
+      .reduce((s, m) => s + pBR(m.Valor || 0), 0);
 
     const custoTerceirosReal = terceirizados.reduce((s, t) => s + parseFloat(t.Valor_Pago || t.Valor_Contratado || 0), 0);
     const horasRastreadas = logHoras.reduce((s, l) => s + parseFloat(l.Horas_Logadas || 0), 0);
@@ -175,7 +186,7 @@ router.get('/:idProjeto', async (req, res, next) => {
         lista: medicoes.map(m => ({
           etapa: m.Etapa,
           percentual: m.Percentual,
-          valor: parseFloat(m.Valor || 0),
+          valor: pBR(m.Valor || 0),
           statusFisico: m.Status_Fisico,
           statusFinanceiro: m.Status_Financeiro,
           dataPrevisao: m.Data_Previsao,

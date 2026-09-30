@@ -134,7 +134,7 @@ router.get('/', async (req, res, next) => {
         atrasada: statusFin !== 'Recebido' && isAtrasada,
         valorRecebidoOPP: cobertoPeloOPP ? pBR(m.Valor_Medicao || m.Valor || 0) : 0,
         Nr_NF: nrNF,
-        Nr_OS_OPP: nrOS,
+        Nr_OS_OPP: plan.Nr_OS_OPP || m.Nr_OS_OPP || '',
         Status_Financeiro: statusFin,
         Link_Produto: m.Link_Produto || m.Link_Contrato || '',
       };
