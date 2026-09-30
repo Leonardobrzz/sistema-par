@@ -51,30 +51,48 @@ async function fetchOppBatch() {
       porCC[ccId].totalPago += parseFloat(d.valor_pago || 0)
     }
 
-    // Agrupa receitas por número de OS (extraído de observacoes_rec)
-    // centro_custos_rec é sempre null no OPP — mesma situação do contas-pagar
-    // Captura "OS nro. 79" (formato ativo) e "ordem de serviço nº 1791" (formato legado)
+    // Agrupa receitas por id_centro_custos — fonte principal e confiável
+    // (confirmado: vem preenchido em ~97% dos lançamentos; só falta em casos
+    // residuais como fatura de cartão, lançamento de banco etc. O comentário
+    // antigo dizia que esse campo vinha sempre nulo — não é mais verdade, ou
+    // nunca foi pra Contas a Receber; só é nulo mesmo pra alguns lançamentos
+    // avulsos.)
+    const recebidoPorCC = {}  // ccId → total liquidado
+    const pendentePorCC = {}  // ccId → total pendente
+
+    // Agrupa também por número de OS (extraído de observacoes_rec) — usado só
+    // como reserva pros projetos que ainda não têm ID_Centro_Custo_OPP
+    // confirmado no Par. Captura "OS nro. 79" (formato ativo) e "ordem de
+    // serviço nº 1791" (formato legado)
     const osRegex = /(?:OS\s+nro?\.\s*|ordem de servi[cç]o\s*n[º°]?\s*)(\d+)/i
     const recebidoPorOS  = {}  // osNum → total liquidado
     const pendentesPorOS = {}  // osNum → total pendente
 
     for (const r of receitas) {
       if (r.lixeira === 'Sim') continue
+      const v = parseFloat(r.valor_rec || 0)
+      const liquidado = r.liquidado_rec === 'Sim'
+
+      const ccId = String(r.id_centro_custos || '')
+      if (ccId && ccId !== '0') {
+        if (liquidado) recebidoPorCC[ccId] = (recebidoPorCC[ccId] || 0) + v
+        else           pendentePorCC[ccId] = (pendentePorCC[ccId] || 0) + v
+      }
+
       const obs = r.observacoes_rec || ''
       const match = obs.match(osRegex)
       if (!match) continue
       const osNum = match[1]
-      const v = parseFloat(r.valor_rec || 0)
-      if (r.liquidado_rec === 'Sim') {
+      if (liquidado) {
         recebidoPorOS[osNum]  = (recebidoPorOS[osNum]  || 0) + v
       } else {
         pendentesPorOS[osNum] = (pendentesPorOS[osNum] || 0) + v
       }
     }
 
-    return { listaCC, porCC, recebidoPorOS, pendentesPorOS }
+    return { listaCC, porCC, recebidoPorOS, pendentesPorOS, recebidoPorCC, pendentePorCC }
   } catch {
-    return { listaCC: [], porCC: {}, recebidoPorOS: {}, pendentesPorOS: {} }
+    return { listaCC: [], porCC: {}, recebidoPorOS: {}, pendentesPorOS: {}, recebidoPorCC: {}, pendentePorCC: {} }
   }
 }
 
@@ -103,7 +121,7 @@ router.get('/', async (req, res, next) => {
       horasPorProjeto[id] += parseFloat(h.Horas_Logadas || h.Horas || h.horas || 0)
     })
 
-    const { listaCC, porCC, recebidoPorOS, pendentesPorOS } = oppData
+    const { listaCC, porCC, recebidoPorOS, pendentesPorOS, recebidoPorCC, pendentePorCC } = oppData
 
     function findCC(nome) {
       if (!nome) return null
@@ -132,9 +150,15 @@ router.get('/', async (req, res, next) => {
       const lucroPlan    = recLiq - totalCustos
       const margemPlan   = V > 0 ? lucroPlan / V * 100 : 0
 
+      // Centro de custo do projeto: prioriza o vínculo confirmado
+      // (ID_Centro_Custo_OPP, conferido manualmente contra o cadastro real do
+      // OPP), cai pro casamento por texto (Nr_Contrato_OS) só pros projetos
+      // que ainda não têm esse vínculo revisado.
+      const ccIdConfirmado = plan.ID_Centro_Custo_OPP ? String(plan.ID_Centro_Custo_OPP) : null
+      const ccFuzzy = ccIdConfirmado ? null : findCC(plan.Nr_Contrato_OS || '')
+      const ccId = ccIdConfirmado || (ccFuzzy ? String(ccFuzzy.id_centro_custos) : null)
+
       // Custo real — OPP (despesas pagas)
-      const cc = findCC(plan.Nr_Contrato_OS || '')
-      const ccId = cc ? String(cc.id_centro_custos) : null
       const oppCC = ccId ? (porCC[ccId] || { total: 0, totalPago: 0 }) : { total: 0, totalPago: 0 }
       const custoRealOPP = oppCC.totalPago
 
@@ -151,10 +175,20 @@ router.get('/', async (req, res, next) => {
       const medsPlan  = d.medicoesCronograma || d.medicoes || []
       const medsReais = medPorProjeto[plan.ID_Projeto] || []
 
-      // totalRecebido vem do OPP — Nr_OS_OPP pode ter múltiplos números separados por vírgula
-      const osNums = String(plan.Nr_OS_OPP || '').split(',').map(s => s.trim()).filter(Boolean)
-      const totalRecebido    = osNums.reduce((s, n) => s + (recebidoPorOS[n]  || 0), 0)
-      const totalPendenteOPP = osNums.reduce((s, n) => s + (pendentesPorOS[n] || 0), 0)
+      // totalRecebido vem do OPP. Prioridade: centro de custo confirmado
+      // (ID_Centro_Custo_OPP) — muito mais confiável que texto digitado à mão
+      // na observação. Só cai pro método antigo (Nr_OS_OPP + texto da
+      // observação) pros projetos que ainda não têm um centro de custo
+      // confirmado no Par.
+      let totalRecebido, totalPendenteOPP
+      if (ccIdConfirmado) {
+        totalRecebido    = recebidoPorCC[ccIdConfirmado] || 0
+        totalPendenteOPP = pendentePorCC[ccIdConfirmado] || 0
+      } else {
+        const osNums = String(plan.Nr_OS_OPP || '').split(',').map(s => s.trim()).filter(Boolean)
+        totalRecebido    = osNums.reduce((s, n) => s + (recebidoPorOS[n]  || 0), 0)
+        totalPendenteOPP = osNums.reduce((s, n) => s + (pendentesPorOS[n] || 0), 0)
+      }
       const totalPendente = totalPendenteOPP ||
         medsReais.filter(m => m.Status_Financeiro !== 'Recebido').reduce((s, m) => s + pBR(m.Valor), 0)
       const percRecebido   = V > 0 ? totalRecebido / V * 100 : 0
