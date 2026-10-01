@@ -284,6 +284,11 @@ router.post('/', audit, async (req, res, next) => {
       Cliente: dados.cliente || '',
       Nr_Contrato_OS: dados.nrContratoOS || '',
       Nr_OS_OPP: dados.nrOsOpp || '',
+      // Vínculo confirmado com o centro de custo real do OPP (escolhido numa
+      // lista, não digitado) — fonte confiável usada no Baseline x Real, nas
+      // Medições e no Dashboard Financeiro. Preserva o valor existente quando
+      // o formulário não manda nada (ex.: telas antigas em cache).
+      ID_Centro_Custo_OPP: dados.idCentroCustoOpp || existing?.ID_Centro_Custo_OPP || '',
       Resp_Planejamento: dados.respPlanejamento || '',
       Resp_Aprovacao: dados.respAprovacao || '',
       Setor: dados.setor || '',
@@ -767,18 +772,24 @@ router.get('/:id/comparativo', async (req, res, next) => {
       db.findRows('Medicoes', (m) => m.ID_Projeto === plan.ID_Projeto),
       db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === plan.ID_Projeto),
       (async () => {
-        if (!centroCusto) return [];
         try {
           const { oppRequest } = require('../services/oppService');
-          const ccNorm = centroCusto.toLowerCase().trim();
-          const todosCC = await oppRequest('GET', '/centros-custo?limit=500');
-          const listaCC = Array.isArray(todosCC) ? todosCC : (todosCC?.data || []);
-          const cc = listaCC.find(c => {
-            const desc = (c.desc_centro_custos || '').toLowerCase().trim();
-            return desc === ccNorm || desc.includes(ccNorm) || ccNorm.includes(desc);
-          });
-          if (!cc) return [];
-          const ccId = String(cc.id_centro_custos);
+          // Prioriza o vínculo confirmado (escolhido na lista real do OPP);
+          // só cai pro casamento por texto pros planejamentos ainda não
+          // vinculados dessa forma.
+          let ccId = plan.ID_Centro_Custo_OPP ? String(plan.ID_Centro_Custo_OPP) : null;
+          if (!ccId) {
+            if (!centroCusto) return [];
+            const ccNorm = centroCusto.toLowerCase().trim();
+            const todosCC = await oppRequest('GET', '/centros-custo?limit=500');
+            const listaCC = Array.isArray(todosCC) ? todosCC : (todosCC?.data || []);
+            const cc = listaCC.find(c => {
+              const desc = (c.desc_centro_custos || '').toLowerCase().trim();
+              return desc === ccNorm || desc.includes(ccNorm) || ccNorm.includes(desc);
+            });
+            if (!cc) return [];
+            ccId = String(cc.id_centro_custos);
+          }
           let offset = 0, todos = [];
           while (true) {
             const r = await oppRequest('GET', `/contas-pagar?limit=250&offset=${offset}&lixeira=Nao`);
@@ -1009,28 +1020,36 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
   try {
     // Aceita centro de custo direto via query param (para importação sem salvar antes)
     let centroCusto = req.query.centroCusto || '';
+    let ccIdConfirmado = null;
     if (!centroCusto) {
       const plan = await db.findOne('Planejamentos', p => p.ID === req.params.id || p.ID_Projeto === req.params.id);
       if (!plan) return res.status(404).json({ error: 'Planejamento não encontrado.' });
       centroCusto = plan.Nr_Contrato_OS || '';
+      // Prioriza o vínculo confirmado (escolhido na lista real do OPP) — só
+      // cai pro casamento por texto se o planejamento ainda não tiver isso
+      if (plan.ID_Centro_Custo_OPP) ccIdConfirmado = String(plan.ID_Centro_Custo_OPP);
     }
-    if (!centroCusto) return res.json({ centroCusto: '', lancamentos: [], total: 0 });
+    if (!centroCusto && !ccIdConfirmado) return res.json({ centroCusto: '', lancamentos: [], total: 0 });
 
     const { oppRequest } = require('../services/oppService');
 
-    // Busca centros de custo filtrando pelo nome para reduzir payload
-    const ccNorm = centroCusto.toLowerCase().trim();
-    let cc = null;
-
-    // Busca todos centros de custo e filtra localmente
+    // Busca todos centros de custo (precisamos da lista mesmo com vínculo
+    // confirmado, pra achar o item certo por id)
     const todosCC = await oppRequest('GET', '/centros-custo?limit=500');
     const listaCC = Array.isArray(todosCC) ? todosCC : (todosCC?.data || []);
-    cc = listaCC.find(c => {
-      const desc = (c.desc_centro_custos || '').toLowerCase().trim();
-      return desc === ccNorm || desc.includes(ccNorm) || ccNorm.includes(desc);
-    }) || null;
 
-    console.log(`[OPP] centros encontrados: ${listaCC.length}, buscando: "${ccNorm}", encontrou: ${cc ? cc.id_centro_custos : 'NÃO'}`);
+    let cc = null;
+    if (ccIdConfirmado) {
+      cc = listaCC.find(c => String(c.id_centro_custos) === ccIdConfirmado) || null;
+    } else {
+      const ccNorm = centroCusto.toLowerCase().trim();
+      cc = listaCC.find(c => {
+        const desc = (c.desc_centro_custos || '').toLowerCase().trim();
+        return desc === ccNorm || desc.includes(ccNorm) || ccNorm.includes(desc);
+      }) || null;
+    }
+
+    console.log(`[OPP] centros encontrados: ${listaCC.length}, buscando: "${centroCusto}" (id confirmado: ${ccIdConfirmado || 'não'}), encontrou: ${cc ? cc.id_centro_custos : 'NÃO'}`);
 
     if (!cc) return res.json({ centroCusto, centroCustoEncontrado: false, lancamentos: [], total: 0, debug: listaCC.slice(0,5).map(c => c.desc_centro_custos) });
 
@@ -1200,6 +1219,11 @@ router.post('/:id/travar', async (req, res, next) => {
     if (!plan) return res.status(404).json({ error: 'Planejamento não encontrado.' });
     if (plan.Travado) return res.status(400).json({ error: 'Planejamento já está travado.' });
     if (!plan.Nr_Contrato_OS) return res.status(400).json({ error: 'Preencha o Nome do Centro de Custo antes de travar.' });
+    // Exige o vínculo confirmado (escolhido na lista real do OPP) — não deixa
+    // travar com só um nome digitado que ainda não bateu com nada no OPP.
+    if (!plan.ID_Centro_Custo_OPP) {
+      return res.status(400).json({ error: 'Selecione o centro de custo na lista do OPP (não apenas digite o nome) antes de travar.' });
+    }
 
     await db.updateRowById('Planejamentos', 'ID', plan.ID, {
       ...plan,
@@ -1211,7 +1235,8 @@ router.post('/:id/travar', async (req, res, next) => {
     res.json({
       ok: true,
       centroCusto: plan.Nr_Contrato_OS,
-      message: `Vínculo travado. PAR vai buscar "${plan.Nr_Contrato_OS}" no OPP a partir de agora.`,
+      centroCustoId: plan.ID_Centro_Custo_OPP,
+      message: `Vínculo travado. PAR vai buscar o centro de custo "${plan.Nr_Contrato_OS}" (ID ${plan.ID_Centro_Custo_OPP}) no OPP a partir de agora.`,
     });
   } catch (err) { next(err); }
 });

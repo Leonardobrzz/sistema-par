@@ -84,7 +84,7 @@ function calcPAR(form) {
 }
 
 const FORM0 = {
-  nomeProjeto: "", cliente: "", nrContratoOS: "", nrOsOpp: "", setor: "", tipologia: "", empresa: "",
+  nomeProjeto: "", cliente: "", nrContratoOS: "", idCentroCustoOpp: "", nrOsOpp: "", setor: "", tipologia: "", empresa: "",
   respPlanejamento: "", respAprovacao: "", linkClickUp: "", justificativa: "",
   valorContrato: "", impostosPerc: "20", taxaAdmPerc: "12",
   dataInicioOS: "", dataOsExterna: "", dataEntregaContrato: "", dataEntregaPlanejada: "",
@@ -281,6 +281,7 @@ export default function PlanejamentoFinanceiro() {
         nomeProjeto:       p.Nome_Projeto       || d.nomeProjeto       || proj.Nome     || "",
         cliente:           p.Cliente            || d.cliente           || proj.Cliente  || "",
         nrContratoOS:      p.Nr_Contrato_OS     || d.nrContratoOS      || "",
+        idCentroCustoOpp:  p.ID_Centro_Custo_OPP || d.idCentroCustoOpp || "",
         nrOsOpp:           p.Nr_OS_OPP          || d.nrOsOpp           || "",
         setor:             p.Setor              || d.setor             || proj.Setor    || "",
         tipologia:         p.Tipologia          || d.tipologia         || "",
@@ -517,21 +518,29 @@ export default function PlanejamentoFinanceiro() {
     try {
       const r = await api.get('/opp/centros-custo')
       const lista = Array.isArray(r.data) ? r.data : []
-      const nomes = lista.map(c => (c.nome || '').toUpperCase()).filter(Boolean).sort()
-      setCentrosCusto(nomes)
+      // Guarda o objeto completo {id, nome} — precisamos do id real do OPP
+      // pra gravar o vínculo confirmado (ID_Centro_Custo_OPP), não só o nome.
+      const itens = lista
+        .map(c => ({ id: c.id, nome: (c.nome || '').toUpperCase() }))
+        .filter(c => c.nome)
+        .sort((a, b) => a.nome.localeCompare(b.nome))
+      setCentrosCusto(itens)
     } catch { /* silencioso */ }
   }
 
   function onCcChange(val) {
-    f("nrContratoOS", val.toUpperCase())
+    // Digitar à mão invalida qualquer vínculo confirmado anterior — só volta
+    // a existir vínculo quando o usuário CLICA numa opção real da lista
+    setForm(prev => ({ ...prev, nrContratoOS: val.toUpperCase(), idCentroCustoOpp: "" }))
     const q = val.toUpperCase().trim()
     if (q.length < 2) { setCcSugestoes([]); return }
-    const sugs = centrosCusto.filter(c => c.includes(q)).slice(0, 10)
+    const sugs = centrosCusto.filter(c => c.nome.includes(q)).slice(0, 10)
     setCcSugestoes(sugs)
   }
 
-  function selecionarCc(nome) {
-    f("nrContratoOS", nome)
+  function selecionarCc(item) {
+    // Escolhido da lista real do OPP — aqui sim o vínculo fica confirmado
+    setForm(prev => ({ ...prev, nrContratoOS: item.nome, idCentroCustoOpp: String(item.id) }))
     setCcSugestoes([])
     setCcFocado(false)
   }
@@ -565,7 +574,8 @@ export default function PlanejamentoFinanceiro() {
   async function travarOPP() {
     if (!planId) return toast.error("Salve o planejamento primeiro")
     if (!form.nrContratoOS) return toast.error("Preencha o Nome do Centro de Custo antes de travar")
-    if (!window.confirm(`Travar vínculo OPP?\n\nO PAR vai buscar sempre por:\n"${form.nrContratoOS}"\n\nEsse nome não poderá ser alterado depois.`)) return
+    if (!form.idCentroCustoOpp) return toast.error('Selecione o centro de custo na lista do OPP (clique numa sugestão) antes de travar — não vale só digitar o nome.')
+    if (!window.confirm(`Travar vínculo OPP?\n\nO PAR vai buscar sempre pelo centro de custo:\n"${form.nrContratoOS}" (ID ${form.idCentroCustoOpp})\n\nEsse vínculo não poderá ser alterado depois.`)) return
     setTravandoOPP(true)
     try {
       const r = await api.post(`/planejamento/${projetoId}/travar`)
@@ -1329,11 +1339,11 @@ export default function PlanejamentoFinanceiro() {
                       {ccFocado && ccSugestoes.length > 0 && (
                         <div style={{ position: "absolute", top: "100%", left: 0, right: 0, minWidth: 320, zIndex: 9999, background: "#fff", border: "2px solid #38BDF8", borderRadius: 10, boxShadow: "0 12px 32px rgba(0,0,0,0.18)", marginTop: 4, maxHeight: 280, overflowY: "auto" }}>
                           {ccSugestoes.map((s, i) => (
-                            <div key={i} onMouseDown={() => selecionarCc(s)}
+                            <div key={s.id ?? i} onMouseDown={() => selecionarCc(s)}
                               style={{ padding: "11px 16px", fontSize: 14, fontWeight: 500, color: "#0F172A", cursor: "pointer", borderBottom: i < ccSugestoes.length - 1 ? "1px solid #F1F5F9" : "none", lineHeight: 1.4 }}
                               onMouseEnter={e => e.currentTarget.style.background = "#E0F2FE"}
                               onMouseLeave={e => e.currentTarget.style.background = ""}>
-                              {s}
+                              {s.nome}
                             </div>
                           ))}
                         </div>
@@ -1351,21 +1361,19 @@ export default function PlanejamentoFinanceiro() {
                     ) : null}
                   </div>
                   {!planTravado && form.nrContratoOS && (() => {
-                    const nomeUpper = (form.nrContratoOS || '').toUpperCase().trim()
-                    const existeNoOPP = centrosCusto.some(c => {
-                      const cu = c.toUpperCase()
-                      return cu === nomeUpper || cu.includes(nomeUpper) || nomeUpper.includes(cu)
-                    })
+                    // Vínculo confirmado = o usuário clicou numa opção real da
+                    // lista do OPP (não só digitou um nome parecido)
+                    const confirmado = !!form.idCentroCustoOpp
                     return (
-                      <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", borderRadius: 8, background: existeNoOPP ? "#F0FDF4" : "#FFFBEB", border: `1px solid ${existeNoOPP ? "#86EFAC" : "#FDE68A"}` }}>
-                        <span style={{ fontSize: 14, lineHeight: 1 }}>{existeNoOPP ? "✅" : "⏳"}</span>
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", borderRadius: 8, background: confirmado ? "#F0FDF4" : "#FFFBEB", border: `1px solid ${confirmado ? "#86EFAC" : "#FDE68A"}` }}>
+                        <span style={{ fontSize: 14, lineHeight: 1 }}>{confirmado ? "✅" : "⏳"}</span>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: existeNoOPP ? "#15803D" : "#B45309" }}>
-                            {existeNoOPP ? "Centro de custo encontrado no OPP" : "Pendente — informe à Roberta para criar no OPP"}
+                          <div style={{ fontSize: 12, fontWeight: 700, color: confirmado ? "#15803D" : "#B45309" }}>
+                            {confirmado ? `Vínculo confirmado com o OPP (ID ${form.idCentroCustoOpp})` : "Ainda não confirmado — selecione na lista abaixo"}
                           </div>
-                          {!existeNoOPP && (
+                          {!confirmado && (
                             <div style={{ fontSize: 11, color: "#92400E", marginTop: 2 }}>
-                              O nome <strong>"{form.nrContratoOS}"</strong> ainda não existe no OPP. A Roberta deve criar um centro de custo com exatamente este nome.
+                              Clique no campo e escolha um item da lista que vem do OPP. Se <strong>"{form.nrContratoOS}"</strong> não aparecer nas sugestões, esse centro de custo ainda não foi criado no OPP — peça pra Roberta criar com esse nome e depois volte aqui pra selecionar.
                             </div>
                           )}
                         </div>
