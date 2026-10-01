@@ -24,57 +24,30 @@ async function calcPercTerceiros(idProjeto, valorGlobal, excludeId = null) {
   return { total, perc, count: tercs.length };
 }
 
-// Busca contas-pagar do OPP ao vivo
-// centro_custos_pag é sempre vazio no OPP — matching por OC (observacoes_pag) ou nome_fornecedor
-async function fetchDespesasOPP() {
+// Mapa OC -> valores, lido da aba OrdensCompra_OPP (já sincronizada do OPP a
+// cada 2h pelo cron do server.js, via opp.syncOrdensCompra — tabela de verdade
+// com id_pedido retornado direto pela API do OPP em /ordens-compra, não um
+// texto de observação). Antes esse matching tentava achar "ordem de compra nº
+// X" dentro de observacoes_pag em /contas-pagar ao vivo, mas na prática nenhum
+// lançamento do OPP tem esse texto (confirmado: 0 de 2438 bateram) — os
+// lançamentos lá são coisas como "SERVIÇOS DE CONTABILIDADE", sem menção à OC.
+// Usar a tabela já sincronizada por ID é direto e confiável.
+async function mapaOrdensCompra() {
   try {
-    const { oppRequest } = require('../services/oppService');
-    let offset = 0, despesas = [];
-    while (true) {
-      const r = await oppRequest('GET', `/contas-pagar?limit=250&offset=${offset}&lixeira=Nao`);
-      const lista = Array.isArray(r) ? r : (r?.data || []);
-      if (lista.length === 0) break;
-      despesas.push(...lista);
-      if (lista.length < 250) break;
-      offset += 250;
-      if (offset > 10000) break;
-    }
-
-    // Mapa por OC (extraído de observacoes_pag: "Ref. a ordem de compra nº 1234...")
+    const ocs = await db.readSheet('OrdensCompra_OPP');
     const porOC = {};
-    // Mapa por nome_fornecedor (normalizado)
-    const porForn = {};
-
-    const ocRegex = /ordem de compra\s*n[º°]?\s*(\d+)/i;
-
-    for (const d of despesas) {
-      if (d.lixeira === 'Sim') continue;
-      if ((d.situacao || '').toLowerCase().includes('estornada')) continue;
-      const vTotal = parseFloat(d.valor_pag || 0);
-      const vPago  = parseFloat(d.valor_pago || 0);
-      if (vTotal === 0 && vPago === 0) continue;
-
-      // Tenta extrair OC das observações
-      const obs = d.observacoes_pag || '';
-      const matchOC = obs.match(ocRegex);
-      if (matchOC) {
-        const ocNum = matchOC[1];
-        if (!porOC[ocNum]) porOC[ocNum] = { total: 0, pago: 0, nome_fornecedor: d.nome_fornecedor || '' };
-        porOC[ocNum].total += vTotal;
-        porOC[ocNum].pago  += vPago;
-      }
-
-      // Agrupa por fornecedor (fallback)
-      const forn = (d.nome_fornecedor || '').toLowerCase().trim();
-      if (forn) {
-        if (!porForn[forn]) porForn[forn] = { total: 0, pago: 0 };
-        porForn[forn].total += vTotal;
-        porForn[forn].pago  += vPago;
-      }
+    for (const oc of ocs) {
+      const id = String(oc.ID_OC || '').trim();
+      if (!id) continue;
+      porOC[id] = {
+        total: parseFloat(oc.Valor_Total || 0) || 0,
+        pago: parseFloat(oc.Valor_Liquidado || 0) || 0,
+        situacao: oc.Situacao || '',
+        fornecedor: oc.Nome_Fornecedor || '',
+      };
     }
-
-    return { porOC, porForn };
-  } catch { return { porOC: {}, porForn: {} }; }
+    return porOC;
+  } catch { return {}; }
 }
 
 // GET /api/terceirizados?projeto=ID
@@ -83,10 +56,10 @@ router.get('/', async (req, res, next) => {
     const { projeto, idProjeto, status } = req.query;
     const filtroId = projeto || idProjeto;
 
-    const [rows0, projetos, oppData] = await Promise.all([
+    const [rows0, projetos, porOC] = await Promise.all([
       db.readSheet('Terceirizados'),
       db.readSheet('Projetos_Contratos'),
-      fetchDespesasOPP(),
+      mapaOrdensCompra(),
     ]);
 
     let rows = rows0;
@@ -94,7 +67,6 @@ router.get('/', async (req, res, next) => {
     if (status) rows = rows.filter((r) => r.Status === status);
 
     const projMap = Object.fromEntries(projetos.map(p => [p.ID_Projeto, p]));
-    const { porOC, porForn } = oppData;
     const pBR = (v) => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0;
 
     // Limpa valor de fornecedor que pode ter sido salvo como JSON do ClickUp
@@ -133,7 +105,13 @@ router.get('/', async (req, res, next) => {
         Cliente: r.Cliente || proj?.Cliente || proj?.Nome_Cliente || '',
         Setor: proj?.Setor || r.Setor || '',
         Descricao_Servico: r.Descricao_Servico || r.Servico || '',
-        Fornecedor: parseFornecedor(r.Fornecedor) || parseFornecedor(r.Responsavel) || '',
+        // Fornecedor é o nome da empresa terceirizada (campo "Fornecedor" do
+        // ClickUp). Responsavel é quem está cuidando da tarefa internamente
+        // (pessoa da equipe) — nunca o nome do fornecedor. Antes, quando o
+        // campo Fornecedor vinha vazio do ClickUp, caía no Responsavel e
+        // mostrava nome de pessoa no lugar de empresa. Melhor deixar vazio
+        // (fica claro que falta preencher no ClickUp) do que mostrar errado.
+        Fornecedor: parseFornecedor(r.Fornecedor) || '',
         Valor_Contratado: String(valorContratado),
         Valor_Liquidado: String(valorLiquidado),
         Saldo: String(saldo),

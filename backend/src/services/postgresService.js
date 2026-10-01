@@ -120,6 +120,12 @@ async function ensureSheetsExist() {
     `ALTER TABLE "Planejamentos" ADD COLUMN IF NOT EXISTS "Justificativa_Replanejamento" TEXT`,
     `ALTER TABLE "Planejamentos" ADD COLUMN IF NOT EXISTS "Snapshot_Anterior" TEXT`,
     `ALTER TABLE "Planejamentos" ADD COLUMN IF NOT EXISTS "Comentario_Aprovacao" TEXT`,
+    // A tabela OrdensCompra_OPP já existia (criada antes da coluna Valor_Liquidado
+    // ser adicionada ao CREATE TABLE acima) — "CREATE TABLE IF NOT EXISTS" não
+    // adiciona coluna em tabela que já existe, então o sync de Ordens de Compra
+    // ficava sempre falhando silenciosamente (erro engolido pelo catch do cron)
+    // na hora de gravar, deixando a tabela sempre vazia.
+    `ALTER TABLE "OrdensCompra_OPP" ADD COLUMN IF NOT EXISTS "Valor_Liquidado" TEXT`,
     `CREATE TABLE IF NOT EXISTS "Auditoria" (
       "ID_Auditoria" TEXT PRIMARY KEY,
       "Tabela" TEXT NOT NULL,

@@ -1086,8 +1086,14 @@ async function syncTerceirizadosClickUp() {
 
     const existentes = await db.readSheet('Terceirizados');
     const projetos = await db.readSheet('Projetos_Contratos');
+    // Só considera projeto REAL quem tem um dos 3 setores válidos. Isso evita
+    // linkar tarefas de Terceirizados às próprias listas internas da pasta
+    // Gestão/Terceirizados (ex: "Execução & Pagamento", "Gestão Contratual",
+    // "Solicitação") que acabaram importadas como "projeto" por engano em
+    // algum sync antigo — ficam com Setor vazio/errado e não são clientes.
+    const SETORES_VALIDOS = ['Arquitetura', 'Saneamento', 'Infraestrutura'];
     const projetoByClickUp = {};
-    for (const p of projetos) if (p.ID_ClickUp) projetoByClickUp[p.ID_ClickUp] = p;
+    for (const p of projetos) if (p.ID_ClickUp && SETORES_VALIDOS.includes(p.Setor)) projetoByClickUp[p.ID_ClickUp] = p;
 
     const porTaskId = Object.fromEntries(existentes.filter(r => r.ID_Tarefa_ClickUp).map(r => [r.ID_Tarefa_ClickUp, r]));
 
@@ -1113,15 +1119,25 @@ async function syncTerceirizadosClickUp() {
 
       const existente = porTaskId[task.id];
       if (existente) {
+        // Status simplificado (Solicitado/Confirmado) tem que acompanhar a
+        // etapa atual — antes ficava travado no valor da primeira sincronização,
+        // então uma tarefa que já chegou em Execução & Pagamento continuava
+        // aparecendo como "Solicitado" pra sempre (some da aba "Contratos
+        // ativos", que esconde Solicitado). Nunca mexe se já foi Cancelado.
+        const statusCalculado = etapa.includes('Execução') ? 'Confirmado' : etapa.includes('Contratação') ? 'Confirmado' : 'Solicitado';
+        const statusFinal = existente.Status === 'Cancelado' ? 'Cancelado' : statusCalculado;
+        const statusDesatualizado = existente.Status !== statusFinal;
+
         const ocMudou = oc && existente.OC !== oc;
         const statusMudou = existente.Status_ClickUp !== status;
         const etapaMudou = existente.Etapa_ClickUp !== etapa;
         const respMudou = responsavel && existente.Responsavel !== responsavel;
         const projetoMudou = idProjeto && existente.ID_Projeto !== idProjeto;
-        if (ocMudou || statusMudou || etapaMudou || respMudou || projetoMudou || !existente.Responsavel) {
+        if (ocMudou || statusMudou || etapaMudou || respMudou || projetoMudou || statusDesatualizado || !existente.Responsavel) {
           await db.updateRowById('Terceirizados', 'ID', existente.ID, {
             ...existente,
             OC: oc || existente.OC || '',
+            Status: statusFinal,
             Status_ClickUp: status,
             Etapa_ClickUp: etapa,
             Responsavel: responsavel || existente.Responsavel || '',
