@@ -164,7 +164,53 @@ router.get('/', async (req, res, next) => {
       };
     });
 
-    res.json(enriched);
+    // Projetos aprovados sem NENHUMA linha real na tabela Medicoes ainda —
+    // mostra o cronograma planejado (Dados_JSON.medicoes) como prévia, igual
+    // o frontend já fazia antes. Mas agora reaproveita o mesmo
+    // totalRecebidoPorProjeto/nfPorProjeto calculados acima (por
+    // ID_Centro_Custo_OPP confirmado) em vez de uma versão mais fraca —
+    // assim Nº NF e Nº OS Interna saem certos aqui também, não só pros
+    // projetos que já têm medição real cadastrada.
+    const idsNaTabela = new Set(rows.map((m) => m.ID_Projeto));
+    const hojeZero = new Date(); hojeZero.setHours(0, 0, 0, 0);
+    const doPlanejamento = [];
+    for (const plan of planejamentos) {
+      if (plan.Status !== 'Aprovado') continue;
+      if (!plan.ID_Projeto || idsNaTabela.has(plan.ID_Projeto)) continue;
+      const proj = projMap[plan.ID_Projeto] || {};
+      let dados;
+      try { dados = JSON.parse(plan.Dados_JSON || '{}'); } catch { continue; }
+      const meds = dados.medicoes || dados._baseline?.medicoesCronograma || [];
+      const totalRecebido = totalRecebidoPorProjeto[plan.ID_Projeto] || 0;
+      let acumulado = 0;
+      meds.forEach((m, idx) => {
+        const dataPrevisao = m.dataPrevisao || m.dataPrevista || '';
+        const valorMed = pBR(m.valor || m.valorPlanejado || 0);
+        acumulado += valorMed;
+        const cobertoPeloOPP = totalRecebido > 0 && acumulado <= totalRecebido + 0.5;
+        const isAtrasada = dataPrevisao && new Date(dataPrevisao + 'T00:00:00') < hojeZero;
+        const statusFin = cobertoPeloOPP ? 'Recebido' : (isAtrasada ? 'Atrasado' : 'Pendente');
+        doPlanejamento.push({
+          ID_Medicao: `plan_${plan.ID_Projeto}_${idx}`,
+          ID_Projeto: plan.ID_Projeto,
+          nomeProjeto: proj.Nome || plan.Nome_Projeto || '(projeto não encontrado)',
+          cliente: proj.Cliente || proj.Nome_Cliente || '',
+          setor: proj.Setor || '',
+          Data_Previsao: dataPrevisao,
+          Valor: valorMed,
+          Descricao: m.descricao || m.etapa || `Medição ${idx + 1}`,
+          Status_Financeiro: statusFin,
+          atrasada: statusFin !== 'Recebido' && isAtrasada,
+          valorRecebidoOPP: cobertoPeloOPP ? valorMed : 0,
+          Nr_NF: cobertoPeloOPP ? (nfPorProjeto[plan.ID_Projeto] || '') : '',
+          Nr_OS_OPP: plan.Nr_OS_OPP || '',
+          Link_Produto: '',
+          _doPlanejamento: true,
+        });
+      });
+    }
+
+    res.json([...enriched, ...doPlanejamento]);
   } catch (err) {
     next(err);
   }

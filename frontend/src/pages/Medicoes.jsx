@@ -48,61 +48,21 @@ export default function Medicoes() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [medRes, projRes, planRes, baseRes] = await Promise.all([
+      // O backend já devolve tanto as medições reais quanto, pra projeto
+      // aprovado que ainda não tem nenhuma medição real cadastrada, uma
+      // prévia a partir do cronograma planejado (marcada com
+      // _doPlanejamento) — usando o mesmo cálculo de Nº NF / Nº OS /
+      // recebido do OPP que as medições reais usam. Antes essa prévia era
+      // recalculada aqui no frontend com uma lógica mais fraca (sem Nº NF
+      // nem Nº OS Interna), por isso ficavam sempre em branco.
+      const [medRes, projRes] = await Promise.all([
         api.get('/medicoes'),
         api.get('/projetos?incluirTodos=true'),
-        api.get('/planejamento'),
-        api.get('/baseline-real').catch(() => ({ data: { projetos: [] } })),
       ])
       const tabela = medRes.data.medicoes || medRes.data || []
       const projs = projRes.data.projetos || []
-      const projMap = Object.fromEntries(projs.map(p => [p.ID_Projeto, p]))
-      const idsNaTabela = new Set(tabela.map(m => m.ID_Projeto))
 
-      // Mapa idProjeto → totalRecebido do OPP (vem do baseline-real que já tem a lógica correta)
-      const oppRecebidoPorProjeto = {}
-      const baseProjs = baseRes.data?.projetos || []
-      for (const bp of baseProjs) {
-        if (bp.idProjeto) oppRecebidoPorProjeto[bp.idProjeto] = bp.totalRecebido || 0
-      }
-
-      const parseBRval = v => { if (!v) return 0; const s = String(v).replace(/\./g, '').replace(',', '.'); return parseFloat(s) || 0 }
-
-      const doPlanejamento = []
-      const planos = Array.isArray(planRes.data) ? planRes.data : (planRes.data.planejamentos || [])
-      planos.filter(p => p.Status === 'Aprovado').forEach(plan => {
-        if (idsNaTabela.has(plan.ID_Projeto)) return
-        const proj = projMap[plan.ID_Projeto] || {}
-        try {
-          const dados = JSON.parse(plan.Dados_JSON || '{}')
-          const meds = dados.medicoes || dados._baseline?.medicoesCronograma || []
-          const hoje = new Date(); hoje.setHours(0,0,0,0)
-          const totalRecebidoOPP = oppRecebidoPorProjeto[plan.ID_Projeto] || 0
-          let acumuladoCoberto = 0
-          meds.forEach((m, idx) => {
-            const dataPrevisao = m.dataPrevisao || m.dataPrevista || ''
-            const valorMed = parseBRval(m.valor || m.valorPlanejado || 0)
-            acumuladoCoberto += valorMed
-            const coberto = totalRecebidoOPP > 0 && acumuladoCoberto <= totalRecebidoOPP + 0.5
-            let statusFin = coberto ? 'Recebido' : (dataPrevisao && new Date(dataPrevisao + 'T00:00:00') < hoje ? 'Atrasado' : 'Pendente')
-            doPlanejamento.push({
-              ID_Medicao: `plan_${plan.ID_Projeto}_${idx}`,
-              ID_Projeto: plan.ID_Projeto,
-              nomeProjeto: proj.Nome || plan.Nome_Projeto || '(projeto não encontrado)',
-              cliente: proj.Cliente || proj.Nome_Cliente || plan.Cliente || '',
-              setor: proj.Setor || plan.Setor || '',
-              Data_Previsao: dataPrevisao,
-              Valor: valorMed,
-              Descricao: m.descricao || m.etapa || `Medição ${idx + 1}`,
-              Status_Financeiro: statusFin,
-              valorRecebidoOPP: coberto ? valorMed : 0,
-              _doPlanejamento: true,
-            })
-          })
-        } catch {}
-      })
-
-      setMedicoes([...tabela, ...doPlanejamento])
+      setMedicoes(tabela)
       setProjetos(projs)
     } catch {
       toast.error('Erro ao carregar medições')
