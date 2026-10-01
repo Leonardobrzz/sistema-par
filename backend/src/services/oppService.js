@@ -432,45 +432,36 @@ async function testarConexao() {
 }
 
 // Busca ordens de compra do OPP e salva na aba OrdensCompra_OPP
-// Para cada OC ativa, busca também os pagamentos via /contas-pagar?id_pedido=X
 async function syncOrdensCompra(db) {
   console.log('[OPP OC] Sincronizando ordens de compra...');
   const todos = await listarComPaginacao('/ordens-compra');
-  const ocsBase = todos
+  const rows = todos
     .filter(o => o.id_pedido != null && String(o.id_pedido).trim() !== '')
     .map(o => ({
       ID_OC: String(o.id_pedido),
       ID_Ordem_OPP: String(o.id_ordem || ''),
       Nome_Fornecedor: o.nome_cliente || '',
       Valor_Total: String(o.valor_total_nota || 0),
+      // Valor_Liquidado fica vazio de propósito — o OPP não tem um jeito
+      // confiável de ligar uma conta a pagar a uma Ordem de Compra específica.
+      // /contas-pagar?id_pedido=X parece um filtro válido mas a API do OPP
+      // ignora esse parâmetro e devolve uma lista genérica qualquer (testado
+      // e confirmado: o mesmo lançamento genérico volta não importa a OC
+      // pedida, e inclusive já vinha de registro na lixeira). Isso fazia TODAS
+      // as OCs ficarem com o mesmo Valor_Liquidado, baseado numa lista que não
+      // tem nada a ver com cada uma — então é melhor deixar vazio (=desconhecido)
+      // do que mostrar um número que parece certo mas não é. Se o OPP/VHSys
+      // tiver um relatório ou endpoint correto pra isso, dá pra plugar aqui.
+      Valor_Liquidado: '',
       Data_Pedido: o.data_pedido || '',
       Situacao: o.situacao_pedido || o.status_pedido || '',
       Observacao: o.obs_pedido || '',
       Sincronizado_Em: new Date().toISOString(),
     }));
 
-  // Para cada OC não cancelada, busca pagamentos e calcula valor liquidado
-  const rows = [];
-  for (const oc of ocsBase) {
-    let valorLiquidado = 0;
-    if ((oc.Situacao || '').toLowerCase() !== 'cancelado') {
-      try {
-        const pagamentos = await oppRequest('GET', `/contas-pagar?id_pedido=${oc.ID_OC}&limit=100`);
-        const lista = Array.isArray(pagamentos) ? pagamentos : (pagamentos?.data || []);
-        for (const p of lista) {
-          if ((p.situacao || '').toLowerCase().includes('estornada')) continue;
-          if (p.liquidado_pag === 'Sim') {
-            valorLiquidado += parseFloat(p.valor_pago || p.valor_pag || 0);
-          }
-        }
-      } catch { /* ignora se OC não tiver pagamentos */ }
-    }
-    rows.push({ ...oc, Valor_Liquidado: String(valorLiquidado) });
-  }
-
   try { await db.clearSheetData('OrdensCompra_OPP'); } catch {}
   if (rows.length > 0) await db.insertManyRows('OrdensCompra_OPP', rows);
-  console.log(`[OPP OC] ${rows.length} ordens de compra sincronizadas com valor liquidado.`);
+  console.log(`[OPP OC] ${rows.length} ordens de compra sincronizadas (valor liquidado por OC não disponível na API do OPP).`);
   return rows.length;
 }
 

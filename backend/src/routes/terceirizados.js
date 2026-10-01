@@ -87,6 +87,10 @@ router.get('/', async (req, res, next) => {
       const oppEntry = r.OC ? (porOC[String(r.OC).trim()] || null) : null;
 
       const valorContratadoOPP = oppEntry?.total || 0;
+      // Valor Liquidado por OC não existe de verdade na API do OPP (ver
+      // comentário em syncOrdensCompra, em oppService.js) — fica sempre 0 aqui
+      // até o OPP oferecer um jeito confiável de ligar pagamento à OC. Então
+      // Saldo, por enquanto, é sempre igual ao Valor Contratado.
       const valorPagoOPP       = oppEntry?.pago  || 0;
       const valorContratadoPAR = pBR(r.Valor_Contratado || r.Valor_Estimado || 0);
 
