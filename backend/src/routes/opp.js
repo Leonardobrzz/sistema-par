@@ -528,6 +528,20 @@ router.get('/extrato-por-projeto', async (req, res, next) => {
     inicio.setMonth(inicio.getMonth() - 18); // últimos 18 meses
     const fmt = (d) => d.toISOString().split('T')[0];
 
+    // Valor_Global vem do cadastro do projeto formatado em padrão BR
+    // ("1.800,00" = mil e oitocentos). parseFloat() comum lê só até o
+    // primeiro separador inválido — "1.800,00" virava 1.8 — fazendo a
+    // Margem explodir pra milhões de % (dividindo por um número ~1000x
+    // menor que o real). Mesmo parser já usado em outras rotas desse mesmo
+    // arquivo (linhas ~975 e ~1038) pra esse mesmo campo.
+    const pBR = (v) => {
+      const s = String(v || 0).trim();
+      if (s.includes(',')) return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+      const parts = s.split('.');
+      if (parts.length === 2 && parts[1].length <= 2) return parseFloat(s) || 0;
+      return parseFloat(s.replace(/\./g, '')) || 0;
+    };
+
     const [
       projetos, planejamentos, terceirizados, ordensCompra, centrosCustoAPI,
       receitasOPP, despesasOPP
@@ -688,8 +702,9 @@ router.get('/extrato-por-projeto', async (req, res, next) => {
         const budgetTerceiros = (dadosPlan.terceirizados || []).reduce((s, t) => s + parseFloat(t.custo || 0), 0);
         const horasEquipe = (dadosPlan.equipe || []).reduce((s, e) => s + parseFloat(e.horas || 0), 0);
         const custoEquipePlan = horasEquipe * CUSTO_HORA;
-        const margemReal = parseFloat(p.Valor_Global || 0) > 0
-          ? ((totalReceitas - totalDespesas - custoEquipePlan) / parseFloat(p.Valor_Global)) * 100
+        const valorGlobalNum = pBR(p.Valor_Global || 0);
+        const margemReal = valorGlobalNum > 0
+          ? ((totalReceitas - totalDespesas - custoEquipePlan) / valorGlobalNum) * 100
           : null;
 
         // Nome do Centro de Custo pra exibição: nome real do cadastro OPP
@@ -707,7 +722,7 @@ router.get('/extrato-por-projeto', async (req, res, next) => {
           status: p.Status,
           centroCusto: centroCustoNome,
           ccVinculado: !!ccIdConfirmado,
-          valorContrato: parseFloat(p.Valor_Global || 0),
+          valorContrato: valorGlobalNum,
           statusPlanejamento: plan?.Status || null,
           financeiro: {
             receitas10: { total: totalReceitas, lista: receitas10.slice(0, 20).map(({_raw, ...t}) => t) },
