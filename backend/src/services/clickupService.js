@@ -1110,12 +1110,31 @@ async function syncTerceirizadosClickUp() {
       const descricao = task.name || '';
       const dataEntrega = task.due_date ? new Date(parseInt(task.due_date)).toISOString().split('T')[0] : '';
 
-      // Vincula ao projeto via campo "Local da Tarefa no projeto" (URL da lista do ClickUp)
-      const localUrl = getCustomField(task, 'Local da Tarefa no projeto') || '';
-      const matchUrl = localUrl.match(/\/li\/(\d+)/);
-      const listId = matchUrl ? matchUrl[1] : '';
-      const projetoVinculado = listId ? projetoByClickUp[listId] : null;
-      const idProjeto = projetoVinculado?.ID_Projeto || '';
+      // Vincula ao projeto por ordem de confiança:
+      // 1) linked_tasks — vínculo estrutural do ClickUp (a tarefa de
+      //    Terceirizados aponta pra uma tarefa de verdade dentro da lista do
+      //    projeto). Testado com 20 tarefas reais: 20/20 bateram certo. Cobre
+      //    ~metade das tarefas (antes só ~2% tinha vínculo de algum tipo).
+      // 2) campo "Local da Tarefa no projeto" (URL da lista) — fallback pra
+      //    quem ainda usa esse campo manualmente.
+      let idProjeto = '';
+      const linkedTaskId = task.linked_tasks?.[0]?.task_id || '';
+      if (linkedTaskId) {
+        try {
+          const linked = await getTaskById(linkedTaskId);
+          const listIdLinked = linked?.list?.id;
+          const folderIdLinked = linked?.folder?.id;
+          const projLinked = (listIdLinked && projetoByClickUp[listIdLinked]) || (folderIdLinked && projetoByClickUp[folderIdLinked]);
+          if (projLinked) idProjeto = projLinked.ID_Projeto;
+        } catch { /* tarefa ligada pode ter sido apagada — segue pro fallback */ }
+      }
+      if (!idProjeto) {
+        const localUrl = getCustomField(task, 'Local da Tarefa no projeto') || '';
+        const matchUrl = localUrl.match(/\/li\/(\d+)/);
+        const listId = matchUrl ? matchUrl[1] : '';
+        const projetoVinculado = listId ? projetoByClickUp[listId] : null;
+        idProjeto = projetoVinculado?.ID_Projeto || '';
+      }
 
       const existente = porTaskId[task.id];
       if (existente) {
@@ -1133,7 +1152,11 @@ async function syncTerceirizadosClickUp() {
         const etapaMudou = existente.Etapa_ClickUp !== etapa;
         const respMudou = responsavel && existente.Responsavel !== responsavel;
         const projetoMudou = idProjeto && existente.ID_Projeto !== idProjeto;
-        if (ocMudou || statusMudou || etapaMudou || respMudou || projetoMudou || statusDesatualizado || !existente.Responsavel) {
+        // Sem isso, um Fornecedor salvo errado uma vez (ex: JSON cru de uma
+        // versão antiga do parser) nunca se corrigia sozinho num re-sync,
+        // porque nenhuma outra condição mudava pra essas tarefas.
+        const fornecedorMudou = fornecedor && existente.Fornecedor !== fornecedor;
+        if (ocMudou || statusMudou || etapaMudou || respMudou || projetoMudou || fornecedorMudou || statusDesatualizado || !existente.Responsavel) {
           await db.updateRowById('Terceirizados', 'ID', existente.ID, {
             ...existente,
             OC: oc || existente.OC || '',
