@@ -529,12 +529,14 @@ router.get('/extrato-por-projeto', async (req, res, next) => {
     const fmt = (d) => d.toISOString().split('T')[0];
 
     const [
-      projetos, planejamentos, terceirizados,
+      projetos, planejamentos, terceirizados, ordensCompra, centrosCustoAPI,
       receitasOPP, despesasOPP
     ] = await Promise.all([
       db.readSheet('Projetos_Contratos'),
       db.readSheet('Planejamentos'),
       db.readSheet('Terceirizados'),
+      db.readSheet('OrdensCompra_OPP'),
+      opp.oppRequest('GET', '/centros-custo?limit=500').catch(() => []),
       opp.listarReceitas({ data_inicio: fmt(inicio), data_fim: fmt(agora) }).catch(() => []),
       opp.listarDespesas({ data_inicio: fmt(inicio), data_fim: fmt(agora) }).catch(() => []),
     ]);
@@ -544,12 +546,15 @@ router.get('/extrato-por-projeto', async (req, res, next) => {
     const listaDespesas = (Array.isArray(despesasOPP) ? despesasOPP : (despesasOPP?.data || []))
       .filter(d => d.lixeira !== 'Sim');
 
-    // Extrai nome do centro de custo — o campo pode ser string, null, ou array de objetos
-    const extractCC = (val) => {
-      if (!val) return '';
-      if (Array.isArray(val)) return val.map(v => v?.nome || v?.descricao || String(v)).filter(Boolean).join(', ');
-      return String(val);
-    };
+    // Nome de cada Centro de Custo, direto do cadastro do OPP (/centros-custo)
+    // — mesmo endpoint já usado com sucesso no planejamento.js e em GET
+    // /centros-custo acima. Serve só pra exibição; o vínculo de verdade é
+    // pelo ID (ver ccIdConfirmado abaixo).
+    const nomePorCCId = {};
+    (Array.isArray(centrosCustoAPI) ? centrosCustoAPI : (centrosCustoAPI?.data || [])).forEach(c => {
+      const id = String(c.id_centro_custos || c.id || '');
+      if (id) nomePorCCId[id] = c.desc_centro_custos || c.nome || c.descricao || '';
+    });
 
     // Extrai número de OS/OC das observações (ex: "Ref. a ordem de serviço nº 1791, ...")
     const extractOSFromObs = (obs) => {
@@ -558,7 +563,17 @@ router.get('/extrato-por-projeto', async (req, res, next) => {
       return m ? m[1] : '';
     };
 
-    // Normaliza campos do OPP para formato interno
+    // Normaliza campos do OPP para formato interno. O vínculo com o projeto é
+    // feito só pelo id_centro_custos numérico que o OPP devolve em cada
+    // lançamento (idCentroCusto) — o mesmo campo já usado com sucesso no
+    // Baseline x Real, no Planejamento e nas Medições. Essa tela usava antes
+    // um casamento por texto (Centro_Custo_OPP) com fallback por nome do
+    // cliente, o que fazia TODOS os sub-projetos de um mesmo cliente (ex: os
+    // ~10 "GRUPO" da CODEVASF) somarem a receita inteira do cliente cada um —
+    // inflando os valores e gerando margens absurdas tipo "4237167.8%". Com
+    // o ID certo isso não acontece mais: projeto sem Centro de Custo
+    // confirmado no Planejamento fica honestamente "sem dados" em vez de
+    // herdar lançamentos de outro projeto por aproximação de texto.
     const normReceita = (r) => ({
       tipo: 'Receita',
       id: String(r.id_conta_rec || ''),
@@ -570,14 +585,12 @@ router.get('/extrato-por-projeto', async (req, res, next) => {
       cliente: r.nome_cliente || '',
       nrDocumento: r.n_documento_rec || '',
       nrOS: extractOSFromObs(r.observacoes_rec),
-      // Centro de Custo: campo centro_custo (array) ou centro_custos_rec (string/null)
-      profissional: extractCC(r.centro_custo) || extractCC(r.centro_custos_rec) || '',
+      idCentroCusto: String(r.id_centro_custos || ''),
       categoria: String(r.categoria_rec || '1.0 Receitas'),
       _raw: r,
     });
 
     const normDespesa = (d) => {
-      const profissional = extractCC(d.centro_custo) || extractCC(d.centro_custos_pag) || '';
       const catRaw = String(d.categoria_pag || '');
       // Tenta classificar por categoria PAR se o OPP não retornar categorizado
       const cat = catRaw || (() => {
@@ -596,7 +609,7 @@ router.get('/extrato-por-projeto', async (req, res, next) => {
         cliente: d.nome_fornecedor || '',
         nrDocumento: d.n_documento_pag || '',
         nrOS: extractOSFromObs(d.observacoes_pag),
-        profissional,
+        idCentroCusto: String(d.id_centro_custos || ''),
         categoria: cat,
         _raw: d,
       };
@@ -607,13 +620,20 @@ router.get('/extrato-por-projeto', async (req, res, next) => {
       ...listaDespesas.map(normDespesa),
     ];
 
-    // Identifica quais campos únicos de "profissional" existem nos dados reais
-    const profissionaisUnicos = [...new Set(todasTxs.map(t => t.profissional).filter(Boolean))].sort();
-
-    // Índice de planejamentos aprovados para buscar dados do plano
+    // Índice de planejamentos (aprovados ou em aprovação) por projeto — é
+    // aqui, não em Projetos_Contratos, que mora o ID_Centro_Custo_OPP.
     const planMap = {};
     for (const pl of planejamentos) {
       if (pl.Status === 'Aprovado' || pl.Status === 'Pendente Aprovação') planMap[pl.ID_Projeto] = pl;
+    }
+
+    // Mapa OC -> valor contratado, lido da tabela já sincronizada
+    // OrdensCompra_OPP (mesmo critério do terceirizados.js) — a linha de
+    // Terceirizados em si normalmente não tem esse valor preenchido.
+    const porOC = {};
+    for (const oc of ordensCompra) {
+      const id = String(oc.ID_OC || '').trim();
+      if (id) porOC[id] = { total: parseFloat(oc.Valor_Total || 0) || 0 };
     }
 
     const CUSTO_HORA = 36.40;
@@ -621,20 +641,20 @@ router.get('/extrato-por-projeto', async (req, res, next) => {
     const resultado = projetos
       .filter(p => /^(ARQ|SAN|INF)-/i.test(p.Nome || '') && p.Status !== 'Arquivado')
       .map(p => {
-        const centroCusto = (p.Centro_Custo_OPP || '').trim().toLowerCase();
-        const clienteNome = (p.Cliente || '').trim().toLowerCase();
+        // Dados do planejamento (aprovado ou em aprovação) deste projeto
+        const plan = planMap[p.ID_Projeto];
+        let dadosPlan = {};
+        try { dadosPlan = JSON.parse(plan?.Dados_JSON || '{}'); } catch {}
 
-        // Filtra transações que correspondem a este projeto
-        // Prioridade 1: campo Profissional bate com Centro_Custo_OPP
-        // Prioridade 2: Nome_Cliente bate com Cliente do projeto
-        const txs = todasTxs.filter(t => {
-          const prof = (t.profissional || '').trim().toLowerCase();
-          const nomeCliente = (t.cliente || '').trim().toLowerCase();
-          if (centroCusto && prof && prof.includes(centroCusto)) return true;
-          if (centroCusto && prof && centroCusto.includes(prof) && prof.length > 4) return true;
-          if (!centroCusto && clienteNome && nomeCliente.includes(clienteNome) && clienteNome.length > 4) return true;
-          return false;
-        });
+        // Vínculo confiável: ID_Centro_Custo_OPP do Planejamento (conferido
+        // manualmente contra o cadastro real do OPP) — mesma chave usada no
+        // resto do sistema. Sem esse vínculo, o projeto fica sem dados em vez
+        // de herdar lançamentos de outro projeto por aproximação de texto.
+        const ccIdConfirmado = plan?.ID_Centro_Custo_OPP ? String(plan.ID_Centro_Custo_OPP) : null;
+
+        const txs = ccIdConfirmado
+          ? todasTxs.filter(t => t.idCentroCusto && t.idCentroCusto === ccIdConfirmado)
+          : [];
 
         // Classifica por categoria PAR
         const receitas10  = txs.filter(t => t.tipo === 'Receita');
@@ -652,16 +672,19 @@ router.get('/extrato-por-projeto', async (req, res, next) => {
         const totalDespesas = totalCustosDiretos + totalDespesasOp;
         const saldo = totalReceitas - totalDespesas;
 
-        // O.C.s (terceirizados) deste projeto
+        // O.C.s (terceirizados) deste projeto — valor contratado vem da
+        // Ordem de Compra de verdade no OPP (OrdensCompra_OPP), não de um
+        // campo solto na linha de Terceirizados.
         const tercsProj = terceirizados.filter(t => t.ID_Projeto === p.ID_Projeto && t.Status !== 'Cancelado');
-        const totalOC_contratado = tercsProj.reduce((s, t) => s + parseFloat(t.Valor_Contratado || t.Valor_Total || 0), 0);
-        const totalOC_entregue = tercsProj.filter(t => t.Status === 'Entregue').reduce((s, t) => s + parseFloat(t.Valor_Contratado || t.Valor_Total || 0), 0);
+        const valorPorTerc = tercsProj.map(t => {
+          const oc = t.OC ? porOC[String(t.OC).trim()] : null;
+          const valor = oc?.total || parseFloat(t.Valor_Contratado || t.Valor_Total || 0);
+          return { t, valor };
+        });
+        const totalOC_contratado = valorPorTerc.reduce((s, x) => s + x.valor, 0);
+        const totalOC_entregue = valorPorTerc.filter(x => x.t.Status === 'Entregue').reduce((s, x) => s + x.valor, 0);
         const totalOC_pendente = totalOC_contratado - totalOC_entregue;
 
-        // Dados do planejamento aprovado
-        const plan = planMap[p.ID_Projeto];
-        let dadosPlan = {};
-        try { dadosPlan = JSON.parse(plan?.Dados_JSON || '{}'); } catch {}
         const budgetTerceiros = (dadosPlan.terceirizados || []).reduce((s, t) => s + parseFloat(t.custo || 0), 0);
         const horasEquipe = (dadosPlan.equipe || []).reduce((s, e) => s + parseFloat(e.horas || 0), 0);
         const custoEquipePlan = horasEquipe * CUSTO_HORA;
@@ -669,13 +692,21 @@ router.get('/extrato-por-projeto', async (req, res, next) => {
           ? ((totalReceitas - totalDespesas - custoEquipePlan) / parseFloat(p.Valor_Global)) * 100
           : null;
 
+        // Nome do Centro de Custo pra exibição: nome real do cadastro OPP
+        // quando o vínculo existe, senão o texto manual antigo (legado,
+        // raramente preenchido), senão "—".
+        const centroCustoNome = ccIdConfirmado
+          ? (nomePorCCId[ccIdConfirmado] || p.Centro_Custo_OPP || `CC #${ccIdConfirmado}`)
+          : (p.Centro_Custo_OPP || '—');
+
         return {
           id: p.ID_Projeto,
           nome: p.Nome,
           cliente: p.Cliente || '—',
           setor: p.Setor || '—',
           status: p.Status,
-          centroCusto: p.Centro_Custo_OPP || '—',
+          centroCusto: centroCustoNome,
+          ccVinculado: !!ccIdConfirmado,
           valorContrato: parseFloat(p.Valor_Global || 0),
           statusPlanejamento: plan?.Status || null,
           financeiro: {
@@ -692,15 +723,15 @@ router.get('/extrato-por-projeto', async (req, res, next) => {
             entregue: totalOC_entregue,
             pendente: totalOC_pendente,
             percBudget: budgetTerceiros > 0 ? parseFloat(((totalOC_contratado / budgetTerceiros) * 100).toFixed(1)) : 0,
-            lista: tercsProj.map(t => ({
+            lista: valorPorTerc.map(({ t, valor }) => ({
               fornecedor: t.Fornecedor,
               servico: t.Servico,
-              valor: parseFloat(t.Valor_Contratado || t.Valor_Total || 0),
+              valor,
               status: t.Status,
               oc: t.OC || t.Nr_OC || '—',
             })),
           },
-          semDados: txs.length === 0,
+          semDados: !ccIdConfirmado || txs.length === 0,
         };
       })
       .filter(p => p.valorContrato > 0);
@@ -714,7 +745,7 @@ router.get('/extrato-por-projeto', async (req, res, next) => {
       totalDespesas: resultado.reduce((s, r) => s + r.financeiro.totalDespesas, 0),
     };
 
-    res.json({ projetos: resultado, stats, profissionaisUnicos });
+    res.json({ projetos: resultado, stats, profissionaisUnicos: Object.values(nomePorCCId) });
   } catch (err) { next(err); }
 });
 

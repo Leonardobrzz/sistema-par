@@ -392,8 +392,12 @@ export default function ExtratoProjeto() {
             {proj.semDados ? (
               <div style={{ textAlign: "center", padding: 40, background: "#78350F", borderRadius: 12, border: "1px solid #92400E", color: "#FCD34D" }}>
                 <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 6 }}>⚠ Sem lançamentos vinculados no OPP</div>
-                <div style={{ fontSize: 12 }}>Verifique se o <strong>Centro_Custo_OPP</strong> do projeto bate com o campo <strong>Profissional</strong> no OPP.</div>
-                <div style={{ marginTop: 8, fontSize: 11 }}>Centro de Custo cadastrado: <strong>{proj.centroCusto}</strong></div>
+                {proj.ccVinculado ? (
+                  <div style={{ fontSize: 12 }}>O Centro de Custo deste projeto já está confirmado, mas ainda não tem nenhum lançamento (receita ou despesa) no OPP.</div>
+                ) : (
+                  <div style={{ fontSize: 12 }}>Este projeto ainda não tem um <strong>Centro de Custo do OPP</strong> confirmado no Planejamento, então o PAR não busca os lançamentos dele automaticamente (pra não arriscar misturar com os de outro projeto).</div>
+                )}
+                <div style={{ marginTop: 8, fontSize: 11 }}>Centro de Custo: <strong>{proj.centroCusto}</strong></div>
               </div>
             ) : (
               <>
