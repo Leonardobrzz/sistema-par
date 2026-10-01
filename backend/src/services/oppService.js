@@ -244,13 +244,25 @@ async function listarDespesas(filtros = {}) {
 }
 
 // Busca todas as páginas da API OPP (máximo 250 por página)
+//
+// IMPORTANTE: sem o parâmetro lixeira=Nao, o /contas-pagar do OPP devolve só
+// lançamentos com lixeira="Sim" (confirmado: 5250 de 5250 num teste real, com
+// campos vazios tipo nome_conta="" e situacao="Conta editada." — claramente
+// lixo). Isso fazia qualquer chamada a listarDespesas() sem esse filtro
+// explícito voltar uma lista cheia, mas 100% inútil depois do
+// .filter(lixeira !== 'Sim') do lado de quem chama — zerando Custos Diretos
+// e Despesas Operacionais na tela de Extrato Financeiro por Projeto inteira.
+// O baseline-real.js já tinha descoberto isso e passa lixeira=Nao direto na
+// query — replicando aqui pra valer pra TODO mundo que usa
+// listarReceitas/listarDespesas, não só quem lembrar de passar o filtro.
 async function listarComPaginacao(endpoint, filtros = {}) {
   assertConfig();
   const LIMIT = 250;
   let offset = 0;
   const todos = [];
+  const filtrosComLixeira = { lixeira: 'Nao', ...filtros };
   while (true) {
-    const params = new URLSearchParams({ ...filtros, limit: LIMIT, offset }).toString();
+    const params = new URLSearchParams({ ...filtrosComLixeira, limit: LIMIT, offset }).toString();
     const res = await oppRequest('GET', `${endpoint}?${params}`);
     const lista = Array.isArray(res) ? res : (res?.data || []);
     todos.push(...lista);
