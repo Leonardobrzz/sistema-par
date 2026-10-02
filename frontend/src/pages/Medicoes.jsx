@@ -264,6 +264,12 @@ export default function Medicoes() {
                   // venceu e ainda não foi recebido, igual ao Saldo.
                   const dataVencimento = m.Data_Vencimento || ''
                   const vencimentoAtrasado = dataVencimento && m.Status_Financeiro !== 'Recebido' && new Date(dataVencimento) < new Date()
+                  // Quando não tem Vencimento, mostra POR QUE em vez de só um
+                  // traço: "nao_encontrado" = essa NF ainda não foi lançada no
+                  // Contas a Receber do OPP (a O.S. existe, falta o financeiro);
+                  // "ambiguo" = tem mais de uma parcela com esse número e elas
+                  // têm vencimentos diferentes, não dá pra saber qual é a certa.
+                  const motivoSemVencimento = m.NF_Sem_Vencimento_Motivo || ''
                   return (
                     <tr key={m.ID_Medicao} style={{ borderBottom: `1px solid ${T.border}`, transition: "background 0.12s" }}
                       onMouseEnter={e => e.currentTarget.style.background = isDark ? "#243048" : "#F8FAFC"}
@@ -315,7 +321,15 @@ export default function Medicoes() {
                         ) : <span style={{ color: "#CBD5E1" }}>—</span>}
                       </td>
                       <td style={{ padding: "11px 14px", textAlign: "center", fontSize: 12, fontWeight: vencimentoAtrasado ? 700 : 400, color: vencimentoAtrasado ? "#DC2626" : T.text2 }}>
-                        {dataVencimento ? formatDate(dataVencimento) : <span style={{ color: "#CBD5E1" }}>—</span>}
+                        {dataVencimento ? formatDate(dataVencimento) : motivoSemVencimento === 'nao_encontrado' ? (
+                          <span style={{ fontSize: 10, fontStyle: "italic", color: "#B45309" }} title="Essa NF ainda não foi lançada no Contas a Receber do OPP">
+                            não lançada no OPP
+                          </span>
+                        ) : motivoSemVencimento === 'ambiguo' ? (
+                          <span style={{ fontSize: 10, fontStyle: "italic", color: "#B45309" }} title="Tem mais de uma parcela com esse número de NF no OPP, com vencimentos diferentes — confira direto lá qual é a certa">
+                            conferir no OPP
+                          </span>
+                        ) : <span style={{ color: "#CBD5E1" }}>—</span>}
                       </td>
                       <td style={{ padding: "11px 14px", textAlign: "center" }}>
                         {(() => {

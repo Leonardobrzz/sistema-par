@@ -266,6 +266,25 @@ router.get('/', async (req, res, next) => {
       const r = resolverPorBaseNF(nf);
       return r ? r.liquidado_rec === 'Sim' : false;
     }
+    // Só pra mostrar na tela POR QUE uma NF ficou sem Vencimento — não muda
+    // nenhum valor usado em nenhum outro lugar. Dois motivos possíveis:
+    // "nao_encontrado" = essa NF realmente não existe ainda no Contas a
+    // Receber do OPP (confirmado com dados reais pras NFs 503/428/524/361/
+    // 511 — a O.S. existe, mas a Roberta ainda não lançou a parte financeira
+    // lá); "ambiguo" = existe mais de uma parcela com esse número base, mas
+    // com vencimento/conta diferentes entre si, e não dá pra saber qual é a
+    // certa sem arriscar (confirmado pras NFs 91 e 95).
+    function motivoSemVencimentoDoNF(nf) {
+      if (!nf) return '';
+      if (vencimentoPorNF[nf]) return '';
+      const lista = porBaseNF[nf];
+      if (!lista || lista.length === 0) return 'nao_encontrado';
+      if (lista.length === 1) return '';
+      const vencs = new Set(lista.map((x) => x.vencimento_rec || ''));
+      const contas = new Set(lista.map((x) => x.id_conta_rec || ''));
+      if (vencs.size === 1 && contas.size === 1) return '';
+      return 'ambiguo';
+    }
     // Tolerância BEM pequena e fixa (não percentual) — só pra cobrir
     // arredondamento de centavos. Se o valor real for diferente do planejado
     // por reajuste ou qualquer outro motivo, é melhor NÃO casar: assim a
@@ -313,6 +332,7 @@ router.get('/', async (req, res, next) => {
           Nr_NF: nf,
           Data_Vencimento: vencimentoDoNF(nf),
           ID_Conta_Receber_OPP: idContaReceberDoNF(nf),
+          NF_Sem_Vencimento_Motivo: motivoSemVencimentoDoNF(nf),
           Status_Financeiro: statusFin,
           atrasada: statusFin !== 'Recebido' && isAtrasadaOS,
           valorRecebidoOPP: statusFin === 'Recebido' ? pBR(o.Valor_Total) : 0,
@@ -377,6 +397,9 @@ router.get('/', async (req, res, next) => {
         Data_Vencimento: m.Data_Vencimento || vencimentoDoNF(nrNF),
         // ID interno da Conta a Receber — pro link direto dela no OPP.
         ID_Conta_Receber_OPP: idContaReceberDoNF(nrNF),
+        // Só preenche o motivo quando realmente não achou nenhuma data (se já
+        // tem Data_Vencimento gravada manualmente, não tem motivo nenhum).
+        NF_Sem_Vencimento_Motivo: (m.Data_Vencimento || vencimentoDoNF(nrNF)) ? '' : motivoSemVencimentoDoNF(nrNF),
         // NUNCA mostra o Nr_OS_OPP do projeto quando ele tem mais de uma O.S.
         // colada (texto com vírgula) — esse campo é do contrato inteiro, não
         // dessa medição específica, e um contrato grande pode ter várias O.S.
@@ -453,6 +476,7 @@ router.get('/', async (req, res, next) => {
           Nr_NF: nfDaEtapa,
           Data_Vencimento: vencimentoDoNF(nfDaEtapa),
           ID_Conta_Receber_OPP: idContaReceberDoNF(nfDaEtapa),
+          NF_Sem_Vencimento_Motivo: motivoSemVencimentoDoNF(nfDaEtapa),
           // Mesma regra da linha "enriched" acima: nunca cola mais de uma
           // O.S. numa etapa de prévia. Com mais de uma O.S. no projeto, essa
           // etapa específica ainda não tem uma O.S. confirmada — fica em
