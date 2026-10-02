@@ -461,9 +461,14 @@ export default function Dashboard() {
   const totalAReceber = totalAReceberBaseline !== null ? totalAReceberBaseline : (totalAReceberTabela + totalAReceberPlanejado)
   const alertasCriticos = alertas.filter(a => a.Nivel === 'error')
 
-  // Usa o status original do ClickUp — remove sufixo " (Atrasado)" que é derivado pelo PAR
+  // Usa só status que vêm de fato do ClickUp (pedido do chefe). O PAR grava alguns
+  // status por conta própria fora do fluxo do ClickUp — ex.: "Planejado", setado na
+  // hora de aprovar um planejamento (antes do próximo sync do ClickUp corrigir), e
+  // "A Planejar"/outros em projetos de teste sem ID_ClickUp — esses não entram aqui.
+  const STATUS_CLICKUP = new Set(['Concluído', 'Backlog', 'Paralisado', 'Em Análise', 'Arquivado', 'Aguardando Faturamento', 'Pendência', 'Em Andamento'])
   const statusData = Object.entries(
     projetosFiltrados
+      .filter(p => STATUS_CLICKUP.has((p.Status || '').replace(' (Atrasado)', '').trim()))
       .reduce((acc, p) => {
         const s = (p.Status || 'Outros').replace(' (Atrasado)', '').trim()
         acc[s] = (acc[s] || 0) + 1
@@ -700,7 +705,7 @@ export default function Dashboard() {
       {/* ── 4 KPI Cards ── */}
       {vis('kpis') && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-          <StatCard label="Projetos em Andamento" value={emAndamento.length} sub={`${projetosFiltrados.length} projetos ativos`} icon={<FolderOpen size={20} />} bg="#22C55E" onClick={() => navigate('/projetos')} />
+          <StatCard label="Projetos em Andamento" value={emAndamento.length} sub={`de ${projetosFiltrados.length} ativos (outros em backlog, pendência, aguardando faturamento etc.)`} icon={<FolderOpen size={20} />} bg="#22C55E" onClick={() => navigate('/projetos')} />
           <StatCard label="Carteira Aprovada" value={fmt(totalContrato)} sub={`${aprovados.length} planejamento(s) aprovado(s)`} icon={<Briefcase size={20} />} bg="#EF4444" />
           <StatCard label="Total a Pagar" value={fmt(totalAPagar)} sub="custo total dos planejamentos aprovados" icon={<CheckCircle2 size={20} />} bg="#0EA5E9" />
           <StatCard label="A Receber" value={fmt(totalAReceber)} sub="medições pendentes/em andamento" icon={<BadgeDollarSign size={20} />} bg="#F59E0B"
