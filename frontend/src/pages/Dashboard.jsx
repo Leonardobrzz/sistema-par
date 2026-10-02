@@ -477,20 +477,22 @@ export default function Dashboard() {
       }, {})
   ).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
 
-  // Gráfico à parte, pedido pelo chefe: dos projetos "Em Andamento" (o mesmo
-  // grupo do card "Projetos em Andamento" lá em cima), quantos já têm
-  // Planejamento Aprovado no PAR ("Planejado") e quantos ainda não
-  // ("A Planejar" — o restante do Em Andamento sem planejamento aprovado).
-  // Não usa mais o campo Status do projeto ('A Planejar'/'Planejado' gravado
-  // manualmente na hora de aprovar, que pode ficar desatualizado) — usa o
-  // Status real e atual do Planejamento: "Aprovado" = Planejado; qualquer
-  // outra coisa (ou nenhum Planejamento ainda) = A Planejar.
+  // Gráfico à parte, pedido pelo chefe: de TODOS os projetos ativos visíveis
+  // no PAR (projetosFiltrados — já exclui Concluído/Arquivado, respeita o
+  // filtro de setor; é o mesmo universo da tabela de Planejamento Físico),
+  // quantos já têm Planejamento Aprovado ("Planejado") e quantos ainda não
+  // ("A Planejar" — o restante, não tem Planejamento ainda ou tem um que não
+  // está Aprovado). Não usa mais o campo Status do projeto ('A
+  // Planejar'/'Planejado' gravado manualmente na hora de aprovar, que podia
+  // ficar desatualizado) — usa o Status real e atual do Planejamento.
+  // Conferido com os dados reais: 111 visíveis = 56 Aprovados + 55 sem
+  // Aprovado ainda.
   const idsComPlanejamentoAprovado = new Set(
     planejamentos.filter(pl => pl.Status === 'Aprovado').map(pl => pl.ID_Projeto)
   )
   const statusDataPlanejamento = [
-    { name: 'Planejado', value: emAndamento.filter(p => idsComPlanejamentoAprovado.has(p.ID_Projeto)).length },
-    { name: 'A Planejar', value: emAndamento.filter(p => !idsComPlanejamentoAprovado.has(p.ID_Projeto)).length },
+    { name: 'Planejado', value: projetosFiltrados.filter(p => idsComPlanejamentoAprovado.has(p.ID_Projeto)).length },
+    { name: 'A Planejar', value: projetosFiltrados.filter(p => !idsComPlanejamentoAprovado.has(p.ID_Projeto)).length },
   ].sort((a, b) => b.value - a.value)
 
   const medicoesPorMes = (() => {
