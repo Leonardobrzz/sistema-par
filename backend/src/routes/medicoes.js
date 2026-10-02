@@ -252,6 +252,10 @@ router.get('/', async (req, res, next) => {
           Data_Previsao: dataRef,
           Data_Realizacao: o.Data_Realizacao || (o.Status === 'Atendido' ? o.Data_Pedido : ''),
           Nr_OS_OPP: o.ID_OS_OPP,
+          // ID_Ordem_OPP é o número grande usado no link direto do OPP
+          // (#!editar/<id_ordem>) — diferente do ID_OS_OPP (id_pedido, o
+          // número pequeno que aparece na tela). Confirmado com URL real.
+          ID_Ordem_OPP: o.ID_Ordem_OPP || '',
           Nr_NF: nf,
           Data_Vencimento: nf ? (vencimentoPorNF[nf] || '') : '',
           Status_Financeiro: statusFin,
@@ -326,6 +330,8 @@ router.get('/', async (req, res, next) => {
         // linha — a linha de medição real (casada por valor, acima) já cobre
         // o caso de saber exatamente qual O.S. é de qual etapa.
         Nr_OS_OPP: nrOsResolvido,
+        // Número grande usado no link direto da O.S. no OPP (#!editar/<id>).
+        ID_Ordem_OPP: osReal ? (osReal.ID_Ordem_OPP || '') : '',
         Status_Financeiro: statusFin,
         Link_Produto: m.Link_Produto || m.Link_Contrato || '',
       };
@@ -394,6 +400,8 @@ router.get('/', async (req, res, next) => {
           // etapa específica ainda não tem uma O.S. confirmada — fica em
           // branco até a medição real bater por valor (vira uma realRow).
           Nr_OS_OPP: nrOsResolvidoPlano,
+          // Número grande usado no link direto da O.S. no OPP (#!editar/<id>).
+          ID_Ordem_OPP: osRealPlano ? (osRealPlano.ID_Ordem_OPP || '') : '',
           Link_Produto: '',
           _doPlanejamento: true,
         });

@@ -321,7 +321,17 @@ export default function Medicoes() {
                         {(() => {
                           const osNum = m.Nr_OS_OPP || nrOSInterna
                           const nfNum = m.Nr_NF
-                          const urlOS = 'https://erp.opportune.com.br/index.php?Secao=Servicos.Ordem&Modulo=Servicos'
+                          // Link direto da O.S. específica (confirmado com URL
+                          // real do OPP: usa o id_ordem, não o id_pedido que a
+                          // gente mostra na tela). Sem esse ID (prévia do
+                          // planejamento sem O.S. real casada ainda), cai pro
+                          // link genérico do módulo.
+                          const urlOS = m.ID_Ordem_OPP
+                            ? `https://erp.opportune.com.br/index.php?Secao=Servicos.Ordem&Modulo=Servicos#!editar/${m.ID_Ordem_OPP}`
+                            : 'https://erp.opportune.com.br/index.php?Secao=Servicos.Ordem&Modulo=Servicos'
+                          // Contas a Receber ainda não tem link direto — falta
+                          // confirmar o formato da URL (ID interno diferente
+                          // do número da NF). Por enquanto abre o módulo.
                           const urlFin = 'https://erp.opportune.com.br/index.php?Secao=Financeiro.ContasReceber&Modulo=Financeiro'
                           if (linkProduto) {
                             return <a href={linkProduto} target="_blank" rel="noopener noreferrer" title="Abrir link" style={{ color: "#7C3AED", display: "inline-flex", alignItems: "center" }}><LinkIcon style={{ width: 15, height: 15 }} /></a>
