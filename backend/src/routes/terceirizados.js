@@ -80,6 +80,23 @@ router.get('/', async (req, res, next) => {
       return raw;
     }
 
+    // Último fallback pro Setor: quando nem o campo SETOR* do ClickUp nem o
+    // Setor do projeto estão preenchidos, usa o mesmo sinal que o resto do
+    // sistema já trata como confiável — o prefixo do NOME do projeto (ARQ-/
+    // INF-/SAN-, igual o backend de /projetos usa pra filtrar o que é
+    // visível no Par). IMPORTANTE: é o prefixo do Nome (ex.: "SAN-23-SIAA
+    // ...") que carrega esse sinal — o ID_Projeto é só um identificador
+    // interno sem relação com ele. Cobre casos como "SAN-23-..." que ficava
+    // com Setor em branco só porque o campo do projeto nunca foi preenchido
+    // no banco.
+    function inferirSetorPorPrefixo(nomeProjeto) {
+      const s = (nomeProjeto || '').toUpperCase();
+      if (s.startsWith('ARQ')) return 'Arquitetura';
+      if (s.startsWith('SAN')) return 'Saneamento';
+      if (s.startsWith('INF')) return 'Infraestrutura';
+      return '';
+    }
+
     rows = rows.map(r => {
       const proj = projMap[r.ID_Projeto];
 
@@ -115,8 +132,10 @@ router.get('/', async (req, res, next) => {
         // com o projeto às vezes falha (linked_tasks quebrado, URL errada) e
         // aí o Setor ficava em branco mesmo a tarefa já tendo o setor
         // marcado certinho no ClickUp. Só cai pro Setor do projeto quando a
-        // tarefa realmente não tem esse campo preenchido.
-        Setor: r.Setor || proj?.Setor || '',
+        // tarefa realmente não tem esse campo preenchido, e só cai pro
+        // prefixo do NOME do projeto quando nem um nem outro está
+        // preenchido.
+        Setor: r.Setor || proj?.Setor || inferirSetorPorPrefixo(proj?.Nome) || '',
         Descricao_Servico: r.Descricao_Servico || r.Servico || '',
         // Fornecedor é o nome da empresa terceirizada (campo "Fornecedor" do
         // ClickUp). Responsavel é quem está cuidando da tarefa internamente
