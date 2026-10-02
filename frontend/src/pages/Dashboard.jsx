@@ -47,7 +47,8 @@ const SECOES_DISPONIVEIS = [
   { id: 'kpis',        label: 'Cards KPI',              desc: 'Projetos em andamento, carteira, recebido, a receber' },
   { id: 'financeiro',  label: 'Gráfico de Faturamento', desc: 'Faturamento previsto vs recebido (6 meses)' },
   { id: 'par',         label: 'Regras PAR',              desc: 'Margem de lucro, terceirizados, custo de produção' },
-  { id: 'pizza',       label: 'Projetos por Status',     desc: 'Distribuição dos projetos por status' },
+  { id: 'pizza',       label: 'Projetos por Status',     desc: 'Distribuição dos projetos por status (somente status do ClickUp)' },
+  { id: 'planejamento',label: 'Projetos em Planejamento',desc: '"A Planejar" e "Planejado" — fase financeira, antes do ClickUp' },
   { id: 'medicoes',    label: 'Próximas Medições',       desc: 'Medições vencendo nos próximos 30 dias' },
   { id: 'saude',       label: 'Saúde dos Projetos',      desc: 'Semáforo de risco por projeto' },
   { id: 'clickup',     label: 'Projetos ClickUp',        desc: 'Projetos por setor sincronizados do ClickUp' },
@@ -471,6 +472,21 @@ export default function Dashboard() {
       .filter(p => STATUS_CLICKUP.has((p.Status || '').replace(' (Atrasado)', '').trim()))
       .reduce((acc, p) => {
         const s = (p.Status || 'Outros').replace(' (Atrasado)', '').trim()
+        acc[s] = (acc[s] || 0) + 1
+        return acc
+      }, {})
+  ).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
+
+  // Gráfico à parte, pedido pelo chefe: "A Planejar" e "Planejado" são status
+  // financeiros/de planejamento do próprio PAR (antes de virar execução no
+  // ClickUp) — interessante de ver, mas não deve se misturar com o gráfico de
+  // status do ClickUp acima.
+  const STATUS_PLANEJAMENTO = new Set(['A Planejar', 'Planejado'])
+  const statusDataPlanejamento = Object.entries(
+    projetosFiltrados
+      .filter(p => STATUS_PLANEJAMENTO.has((p.Status || '').trim()))
+      .reduce((acc, p) => {
+        const s = p.Status.trim()
         acc[s] = (acc[s] || 0) + 1
         return acc
       }, {})
@@ -903,6 +919,73 @@ export default function Dashboard() {
                   })}
                 </div>
               )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Projetos em Planejamento (à parte do status do ClickUp, pedido do chefe) ── */}
+      {vis('planejamento') && (
+        <div style={{ background: T.card, borderRadius: 18, padding: '22px 24px', border: `1px solid ${T.border}`, boxShadow: `0 2px 12px ${T.shadow}`, marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <PieIcon size={16} style={{ color: '#7C3AED' }} />
+            <span style={{ fontWeight: 800, fontSize: 15, color: T.text1 }}>Projetos em Planejamento</span>
+          </div>
+          <div style={{ fontSize: 12, color: '#94A3B8', marginBottom: 12 }}>
+            "A Planejar" e "Planejado" — fase financeira, antes de virar execução no ClickUp{filtroSetor ? ` · ${filtroSetor}` : ''}
+          </div>
+          {statusDataPlanejamento.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '30px 0', color: '#94A3B8', fontSize: 13 }}>Nenhum projeto nessa fase</div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{ position: 'relative', flexShrink: 0, width: 140, height: 140 }}>
+                <ResponsiveContainer width={140} height={140}>
+                  <PieChart>
+                    <Pie
+                      data={statusDataPlanejamento}
+                      cx="50%" cy="50%"
+                      innerRadius={42} outerRadius={64}
+                      paddingAngle={2}
+                      dataKey="value"
+                      strokeWidth={0}
+                    >
+                      {statusDataPlanejamento.map((entry, i) => (
+                        <Cell key={i} fill={STATUS_COLORS[entry.name] || '#94A3B8'} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(v, n) => [`${v} projetos`, n]}
+                      contentStyle={{ borderRadius: 8, fontSize: 12, border: '1px solid #E2E8F0', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                  <span style={{ fontSize: 22, fontWeight: 900, color: '#0F172A', lineHeight: 1 }}>
+                    {statusDataPlanejamento.reduce((a, b) => a + b.value, 0)}
+                  </span>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: '#94A3B8', marginTop: 2 }}>projetos</span>
+                </div>
+              </div>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7 }}>
+                {statusDataPlanejamento.map((entry) => {
+                  const total = statusDataPlanejamento.reduce((a, b) => a + b.value, 0)
+                  const pct = total > 0 ? Math.round((entry.value / total) * 100) : 0
+                  const cor = STATUS_COLORS[entry.name] || '#94A3B8'
+                  return (
+                    <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 10, height: 10, borderRadius: '50%', background: cor, flexShrink: 0 }} />
+                      <span style={{ fontSize: 12, color: '#475569', fontWeight: 500, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.name}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                        <div style={{ width: 48, height: 5, borderRadius: 3, background: '#F1F5F9', overflow: 'hidden' }}>
+                          <div style={{ width: `${pct}%`, height: '100%', background: cor, borderRadius: 3, transition: 'width 0.4s' }} />
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 800, color: '#0F172A', minWidth: 20, textAlign: 'right' }}>{entry.value}</span>
+                        <span style={{ fontSize: 10, color: '#94A3B8', minWidth: 28 }}>{pct}%</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           )}
         </div>
