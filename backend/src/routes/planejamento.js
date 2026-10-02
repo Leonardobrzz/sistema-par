@@ -1232,11 +1232,44 @@ router.post('/:id/travar', async (req, res, next) => {
       Travado_Por: req.user.nome || req.user.id,
     });
 
+    // ── Auto-vínculo do Cliente OPP (ID_OPP_Cliente) ──────────────────────
+    // O /centros-custo do OPP não traz o cliente junto (só id + nome). Mas
+    // todo lançamento real (contas a receber/pagar) tem id_centro_custos E
+    // id_cliente no mesmo registro — então dá pra descobrir o cliente de um
+    // Centro de Custo procurando qualquer lançamento que já exista com esse
+    // id_centro_custos. Isso fecha o vínculo necessário pro casamento por
+    // valor da tela de Medições sem precisar de nenhum script manual depois
+    // — só não funciona ainda pra projeto tão novo que o OPP não tem nenhum
+    // lançamento dele (aí fica pendente até a primeira conta ser lançada).
+    let clienteAutoVinculado = null;
+    try {
+      const proj = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === req.params.id);
+      if (proj && !proj.ID_OPP_Cliente) {
+        const { listarLancamentos } = require('../services/oppService');
+        const lancamentos = await listarLancamentos({});
+        const match = lancamentos.find((l) =>
+          String(l.id_centro_custos || '') === String(plan.ID_Centro_Custo_OPP) && l.id_cliente
+        );
+        if (match) {
+          await db.updateRowById('Projetos_Contratos', 'ID_Projeto', proj.ID_Projeto, {
+            ...proj,
+            ID_OPP_Cliente: String(match.id_cliente),
+          });
+          clienteAutoVinculado = { id: String(match.id_cliente), nome: match.nome_cliente || '' };
+        }
+      }
+    } catch (errAutoVinculo) {
+      console.error('[Travar OPP] Falha ao tentar auto-vincular cliente OPP (não bloqueante):', errAutoVinculo.message);
+    }
+
     res.json({
       ok: true,
       centroCusto: plan.Nr_Contrato_OS,
       centroCustoId: plan.ID_Centro_Custo_OPP,
-      message: `Vínculo travado. PAR vai buscar o centro de custo "${plan.Nr_Contrato_OS}" (ID ${plan.ID_Centro_Custo_OPP}) no OPP a partir de agora.`,
+      clienteOppVinculado: clienteAutoVinculado,
+      message: clienteAutoVinculado
+        ? `Vínculo travado. PAR vai buscar o centro de custo "${plan.Nr_Contrato_OS}" (ID ${plan.ID_Centro_Custo_OPP}) no OPP a partir de agora. Cliente OPP vinculado automaticamente: ${clienteAutoVinculado.nome} (ID ${clienteAutoVinculado.id}).`
+        : `Vínculo travado. PAR vai buscar o centro de custo "${plan.Nr_Contrato_OS}" (ID ${plan.ID_Centro_Custo_OPP}) no OPP a partir de agora.`,
     });
   } catch (err) { next(err); }
 });
