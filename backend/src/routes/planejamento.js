@@ -183,10 +183,36 @@ router.get('/', async (req, res, next) => {
       const valorGlobal = parseBR(proj.Valor_Global || 0);
       const valorOC = valorOCPorProjeto[p.ID_Projeto] || 0;
       // Prioridade: planejamento > Projetos_Contratos > soma das OCs no OPP
-      const valorFinal = valorContrato > 0 ? valorContrato : valorGlobal > 0 ? valorGlobal : valorOC;
+      //
+      // BUG CORRIGIDO (inflava a Carteira Aprovada do Dashboard normal em até
+      // 100x): quando valorContrato > 0 (o caso normal — o planejamento já
+      // tem um valor próprio), o código devolvia `String(valorFinal)`, ou
+      // seja, pegava o NÚMERO já convertido (parseBR já tirou o separador de
+      // milhar) e virava texto nativo do JS (ex.: 81486.55 → "81486.55",
+      // formato americano, ponto = decimal de verdade). O problema é que todo
+      // outro lugar do Par (Dashboard.jsx, dashboard-financeiro.js etc.) usa
+      // um parseBR() que assume formato BR (ponto = separador de milhar,
+      // vírgula = decimal) — ao reprocessar "81486.55" com essa regra, o
+      // ponto some e sobra "8148655", ou seja, o valor original × 100. Isso
+      // só afetava planejamentos com centavos (ex.: "81.486,55"); valores
+      // redondos como "4737088" não tinham ponto nenhum e passavam ilesos —
+      // por isso só 39 dos 61 projetos aprovados ficavam inflados, nunca
+      // todos. Confirmado com diagnosticar-carteira-inflada.js: Carteira
+      // Aprovada saltava de R$ 12.446.842 (certo) pra R$ 608.204.224 (errado,
+      // fator 48,86x) só por causa disso.
+      //
+      // Fix: quando o planejamento já tem Valor_Contrato próprio, devolve o
+      // texto ORIGINAL sem reprocessar (evita qualquer corrupção de ida e
+      // volta). Só quando precisa usar um valor de RESERVA (Valor_Global do
+      // projeto ou soma das O.C.) é que formata o número em BR de verdade
+      // (vírgula decimal, ponto de milhar), pro resto do sistema continuar
+      // lendo certo.
+      if (valorContrato > 0) return { ...p };
+      const valorFinal = valorGlobal > 0 ? valorGlobal : valorOC;
+      const valorFinalFormatadoBR = valorFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       return {
         ...p,
-        Valor_Contrato: String(valorFinal),
+        Valor_Contrato: valorFinalFormatadoBR,
       };
     });
     res.json(enriched);
