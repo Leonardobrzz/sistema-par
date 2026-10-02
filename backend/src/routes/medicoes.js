@@ -218,6 +218,54 @@ router.get('/', async (req, res, next) => {
       if (!vencimentoPorNF[nf] && r.vencimento_rec) vencimentoPorNF[nf] = r.vencimento_rec;
       if (!idContaReceberPorNF[nf] && r.id_conta_rec) idContaReceberPorNF[nf] = r.id_conta_rec;
     }
+    // O OPP frequentemente grava o Nº da NF em formato composto
+    // "NÚMERO - PARCELA" (ex.: "503 - 1"), mas o número que a gente extrai
+    // do texto da O.S./Referência (reNF, abaixo) é só a parte da frente, sem
+    // a parcela (ex.: "503"). Isso fazia a busca exata acima (receitaPorNF,
+    // vencimentoPorNF, idContaReceberPorNF) nunca bater pra maioria das
+    // linhas — confirmado com dados reais (diagnosticar-vencimento-nf.js):
+    // 12 de 17 NFs testadas só existiam no formato composto. Esse mapa
+    // agrupa por "número base" (antes do " - ") pra servir de reserva.
+    const porBaseNF = {};
+    for (const r of receitasOPP) {
+      const doc = String(r.n_documento_rec || '').trim();
+      if (!doc) continue;
+      const base = doc.split(/\s*-\s*/)[0].trim();
+      if (!base) continue;
+      (porBaseNF[base] = porBaseNF[base] || []).push(r);
+    }
+    // Só usa a reserva por base quando é seguro: se sobrar mais de um
+    // registro com a mesma base mas vencimento/conta DIFERENTES entre si
+    // (confirmado com dados reais pras NFs "91" e "95" — parcelas com datas
+    // diferentes sob o mesmo número base), fica ambíguo e não arrisca
+    // escolher a errada — melhor deixar em branco.
+    function resolverPorBaseNF(nfBase) {
+      const lista = porBaseNF[nfBase];
+      if (!lista || lista.length === 0) return null;
+      if (lista.length === 1) return lista[0];
+      const vencs = new Set(lista.map((x) => x.vencimento_rec || ''));
+      const contas = new Set(lista.map((x) => x.id_conta_rec || ''));
+      if (vencs.size === 1 && contas.size === 1) return lista[0];
+      return null;
+    }
+    function vencimentoDoNF(nf) {
+      if (!nf) return '';
+      if (vencimentoPorNF[nf]) return vencimentoPorNF[nf];
+      const r = resolverPorBaseNF(nf);
+      return r ? (r.vencimento_rec || '') : '';
+    }
+    function idContaReceberDoNF(nf) {
+      if (!nf) return '';
+      if (idContaReceberPorNF[nf]) return idContaReceberPorNF[nf];
+      const r = resolverPorBaseNF(nf);
+      return r ? (r.id_conta_rec || '') : '';
+    }
+    function liquidadoDoNF(nf) {
+      if (!nf) return false;
+      if (nf in receitaPorNF) return receitaPorNF[nf] === true;
+      const r = resolverPorBaseNF(nf);
+      return r ? r.liquidado_rec === 'Sim' : false;
+    }
     // Tolerância BEM pequena e fixa (não percentual) — só pra cobrir
     // arredondamento de centavos. Se o valor real for diferente do planejado
     // por reajuste ou qualquer outro motivo, é melhor NÃO casar: assim a
@@ -243,7 +291,7 @@ router.get('/', async (req, res, next) => {
 
         const nfMatch = (o.Referencia || '').match(reNF);
         const nf = nfMatch ? nfMatch[1] : '';
-        const liquidado = !!nf && receitaPorNF[nf] === true;
+        const liquidado = !!nf && liquidadoDoNF(nf);
         const dataRef = o.Data_Entrega || o.Data_Pedido || '';
         const isAtrasadaOS = !liquidado && !!dataRef && new Date(dataRef) < hoje;
         const statusFin = liquidado ? 'Recebido' : (nf ? 'Faturado' : (isAtrasadaOS ? 'Atrasado' : 'Pendente'));
@@ -263,8 +311,8 @@ router.get('/', async (req, res, next) => {
           // número pequeno que aparece na tela). Confirmado com URL real.
           ID_Ordem_OPP: o.ID_Ordem_OPP || '',
           Nr_NF: nf,
-          Data_Vencimento: nf ? (vencimentoPorNF[nf] || '') : '',
-          ID_Conta_Receber_OPP: nf ? (idContaReceberPorNF[nf] || '') : '',
+          Data_Vencimento: vencimentoDoNF(nf),
+          ID_Conta_Receber_OPP: idContaReceberDoNF(nf),
           Status_Financeiro: statusFin,
           atrasada: statusFin !== 'Recebido' && isAtrasadaOS,
           valorRecebidoOPP: statusFin === 'Recebido' ? pBR(o.Valor_Total) : 0,
@@ -326,9 +374,9 @@ router.get('/', async (req, res, next) => {
         // Data de vencimento real da NF no OPP (Contas a Receber). Prioriza o
         // que já estiver gravado manualmente na medição; só usa a do OPP como
         // reserva.
-        Data_Vencimento: m.Data_Vencimento || vencimentoPorNF[nrNF] || '',
+        Data_Vencimento: m.Data_Vencimento || vencimentoDoNF(nrNF),
         // ID interno da Conta a Receber — pro link direto dela no OPP.
-        ID_Conta_Receber_OPP: idContaReceberPorNF[nrNF] || '',
+        ID_Conta_Receber_OPP: idContaReceberDoNF(nrNF),
         // NUNCA mostra o Nr_OS_OPP do projeto quando ele tem mais de uma O.S.
         // colada (texto com vírgula) — esse campo é do contrato inteiro, não
         // dessa medição específica, e um contrato grande pode ter várias O.S.
@@ -403,8 +451,8 @@ router.get('/', async (req, res, next) => {
           atrasada: statusFin !== 'Recebido' && isAtrasada,
           valorRecebidoOPP: cobertoPeloOPP ? valorMed : 0,
           Nr_NF: nfDaEtapa,
-          Data_Vencimento: nfDaEtapa ? (vencimentoPorNF[nfDaEtapa] || '') : '',
-          ID_Conta_Receber_OPP: nfDaEtapa ? (idContaReceberPorNF[nfDaEtapa] || '') : '',
+          Data_Vencimento: vencimentoDoNF(nfDaEtapa),
+          ID_Conta_Receber_OPP: idContaReceberDoNF(nfDaEtapa),
           // Mesma regra da linha "enriched" acima: nunca cola mais de uma
           // O.S. numa etapa de prévia. Com mais de uma O.S. no projeto, essa
           // etapa específica ainda não tem uma O.S. confirmada — fica em
