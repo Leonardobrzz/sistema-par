@@ -196,7 +196,20 @@ export default function Medicoes() {
                   const setorSigla = setor.startsWith('Arq') ? 'ARQ' : setor.startsWith('San') ? 'SAN' : setor.startsWith('Inf') ? 'INF' : setor.startsWith('Adm') ? 'ADM' : setor.slice(0, 3).toUpperCase() || '—'
                   const setorColor = setor.startsWith('Arq') ? { bg: '#F0F9FF', color: '#0369A1' } : setor.startsWith('San') ? { bg: '#F0FDF4', color: '#15803D' } : setor.startsWith('Inf') ? { bg: '#FEF3C7', color: '#B45309' } : { bg: '#F5F3FF', color: '#7C3AED' }
                   const finSt = statusFinBadge(m.Status_Financeiro)
-                  const pBR = v => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0
+                  // IMPORTANTE: não dá pra tratar todo valor como texto em
+                  // formato BR (ponto = milhar). O backend às vezes manda um
+                  // número já certo (ex.: 77785.12) — aplicar essa regra cega
+                  // nele tira o ponto decimal e multiplica o valor por 100
+                  // (virava R$ 7.778.512,00 em vez de R$ 77.785,12). Só trata
+                  // como milhar quando o texto tem vírgula (formato BR de
+                  // verdade) ou quando o ponto não parece ser decimal.
+                  const pBR = v => {
+                    const s = String(v || 0).trim()
+                    if (s.includes(',')) return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0
+                    const partes = s.split('.')
+                    if (partes.length === 2 && partes[1].length <= 2) return parseFloat(s) || 0
+                    return parseFloat(s.replace(/\./g, '')) || 0
+                  }
                   const valorTotal = pBR(m.Valor_Medicao || m.Valor || 0)
                   const valorRecebido = m.Status_Financeiro === 'Recebido' ? valorTotal : (m.valorRecebidoOPP || 0)
                   const saldo = Math.max(0, valorTotal - valorRecebido)
