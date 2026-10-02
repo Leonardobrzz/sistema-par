@@ -289,17 +289,33 @@ router.get('/planejamento/:idProjeto/pdf', async (req, res, next) => {
 // GET /api/relatorios/terceirizados — relatório de todos os terceirizados
 router.get('/terceirizados', async (req, res, next) => {
   try {
-    const tercs = await db.readSheet('Terceirizados');
-    const projects = await db.readSheet('Projetos_Contratos');
+    const [tercs, projects, ocs] = await Promise.all([
+      db.readSheet('Terceirizados'),
+      db.readSheet('Projetos_Contratos'),
+      db.readSheet('OrdensCompra_OPP'),
+    ]);
     const map = {};
     for (const p of projects) { map[p.ID_Projeto] = { nome: p.Nome, valor: parseFloat(p.Valor_Global || 0) }; }
 
+    // Valor_Contratado não vem preenchido na tabela crua de Terceirizados — o
+    // valor de verdade mora na Ordem de Compra vinculada (igual já é feito em
+    // backend/src/routes/terceirizados.js). Sem esse cruzamento, essa tela
+    // mostrava R$ 0,00 pra praticamente todo mundo.
+    const porOC = {};
+    for (const oc of ocs) {
+      const id = String(oc.ID_OC || '').trim();
+      if (id) porOC[id] = parseFloat(oc.Valor_Total || 0) || 0;
+    }
+
     const enriched = tercs.map((t) => {
       const proj = map[t.ID_Projeto] || {};
+      const valorOC = t.OC ? porOC[String(t.OC).trim()] : undefined;
+      const valorContratado = valorOC !== undefined && valorOC > 0 ? valorOC : parseFloat(t.Valor_Contratado || 0);
       return {
         ...t,
+        Valor_Contratado: String(valorContratado),
         nomeProjeto: proj.nome || '',
-        percContrato: proj.valor > 0 ? ((parseFloat(t.Valor_Contratado || 0) / proj.valor) * 100).toFixed(2) : '0',
+        percContrato: proj.valor > 0 ? ((valorContratado / proj.valor) * 100).toFixed(2) : '0',
       };
     });
 

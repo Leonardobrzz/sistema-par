@@ -764,14 +764,21 @@ router.get('/extrato-por-projeto', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// GET /api/opp/financeiro-cliente?nome=... — busca lançamentos de um cliente no cache local
+// GET /api/opp/financeiro-cliente?idCliente=...&nome=... — busca lançamentos de um cliente no cache local
+// Prioriza o ID do cliente no OPP (ID_Cliente_OPP), que é exato. Casar só por
+// nome (texto) perde e mistura lançamentos (ex.: Itaú Unibanco: por ID achava
+// 105 lançamentos, por nome só 1) — nome fica como fallback só pra quem ainda
+// não tem o ID preenchido no cache local.
 router.get('/financeiro-cliente', async (req, res, next) => {
   try {
     const db = process.env.USE_POSTGRES === 'true' ? require('../services/postgresService') : require('../services/googleSheetsService');
+    const idCliente = String(req.query.idCliente || '').trim();
     const nome = (req.query.nome || '').toLowerCase().trim();
-    if (!nome) return res.json({ receitas: [], despesas: [] });
+    if (!idCliente && !nome) return res.json({ receitas: [], despesas: [] });
     const rows = await db.readSheet('Financeiro_OPP');
-    const match = r => (r.Nome_Cliente || '').toLowerCase().includes(nome);
+    const match = idCliente
+      ? (r => String(r.ID_Cliente_OPP || '') === idCliente)
+      : (r => (r.Nome_Cliente || '').toLowerCase().includes(nome));
     const receitas = rows.filter(r => (r.Tipo || '').toLowerCase() === 'receita' && match(r));
     const despesas = rows.filter(r => (r.Tipo || '').toLowerCase() === 'despesa' && match(r));
     res.json({ receitas, despesas });

@@ -121,8 +121,10 @@ export default function Comercial() {
     setDetalheLoading(true)
     try {
       const nomeCliente = (cliente.razao_cliente || cliente.fantasia_cliente || "").toLowerCase()
+      const idCliente = cliente.id_cliente ? String(cliente.id_cliente) : ""
+      const qs = idCliente ? `idCliente=${encodeURIComponent(idCliente)}` : `nome=${encodeURIComponent(nomeCliente)}`
       const [finRes, projRes] = await Promise.all([
-        api.get(`/opp/financeiro-cliente?nome=${encodeURIComponent(nomeCliente)}`).catch(() => ({ data: { receitas: [], despesas: [] } })),
+        api.get(`/opp/financeiro-cliente?${qs}`).catch(() => ({ data: { receitas: [], despesas: [] } })),
         api.get(`/projetos`).catch(() => ({ data: { projetos: [] } })),
       ])
       // Agrupa por Nr_Documento (mesma NF pode ter múltiplas baixas no OPP)

@@ -70,8 +70,9 @@ async function listarClientes(filtros = {}) {
   const todos = [];
   let offset = 0;
   const LIMIT = 100;
+  const filtrosComLixeira = { lixeira: 'Nao', ...filtros };
   while (true) {
-    const params = new URLSearchParams({ ...filtros, limit: LIMIT, offset }).toString();
+    const params = new URLSearchParams({ ...filtrosComLixeira, limit: LIMIT, offset }).toString();
     const resultado = await oppRequest('GET', `/clientes?${params}`);
     const lista = Array.isArray(resultado) ? resultado : resultado?.data || resultado?.clientes || [];
     if (lista.length === 0) break;
