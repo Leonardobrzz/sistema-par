@@ -477,27 +477,20 @@ export default function Dashboard() {
       }, {})
   ).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
 
-  // Gráfico à parte, pedido pelo chefe: "A Planejar" e "Planejado" são status
-  // financeiros/de planejamento do próprio PAR (antes de virar execução no
-  // ClickUp) — interessante de ver, mas não deve se misturar com o gráfico de
-  // status do ClickUp acima.
-  //
-  // O universo (quais projetos entram nesse gráfico) continua sendo os que
-  // estão na fase pré-ClickUp (Status 'A Planejar' ou 'Planejado' no
-  // Projetos_Contratos). Mas o que decide se um desses projetos é "Planejado"
-  // ou "A Planejar" NÃO é mais esse campo Status (que é só texto gravado uma
-  // vez, na hora de aprovar, e pode ficar desatualizado) — passou a ser o
-  // Status real e atual do Planejamento dele: "Aprovado" = Planejado;
-  // qualquer outra coisa (ou nenhum Planejamento ainda) = A Planejar. Isso
-  // bate direto com a definição que o chefe deu.
-  const STATUS_PLANEJAMENTO = new Set(['A Planejar', 'Planejado'])
-  const universoPlanejamento = projetosFiltrados.filter(p => STATUS_PLANEJAMENTO.has((p.Status || '').trim()))
+  // Gráfico à parte, pedido pelo chefe: dos projetos "Em Andamento" (o mesmo
+  // grupo do card "Projetos em Andamento" lá em cima), quantos já têm
+  // Planejamento Aprovado no PAR ("Planejado") e quantos ainda não
+  // ("A Planejar" — o restante do Em Andamento sem planejamento aprovado).
+  // Não usa mais o campo Status do projeto ('A Planejar'/'Planejado' gravado
+  // manualmente na hora de aprovar, que pode ficar desatualizado) — usa o
+  // Status real e atual do Planejamento: "Aprovado" = Planejado; qualquer
+  // outra coisa (ou nenhum Planejamento ainda) = A Planejar.
   const idsComPlanejamentoAprovado = new Set(
     planejamentos.filter(pl => pl.Status === 'Aprovado').map(pl => pl.ID_Projeto)
   )
   const statusDataPlanejamento = [
-    { name: 'Planejado', value: universoPlanejamento.filter(p => idsComPlanejamentoAprovado.has(p.ID_Projeto)).length },
-    { name: 'A Planejar', value: universoPlanejamento.filter(p => !idsComPlanejamentoAprovado.has(p.ID_Projeto)).length },
+    { name: 'Planejado', value: emAndamento.filter(p => idsComPlanejamentoAprovado.has(p.ID_Projeto)).length },
+    { name: 'A Planejar', value: emAndamento.filter(p => !idsComPlanejamentoAprovado.has(p.ID_Projeto)).length },
   ].sort((a, b) => b.value - a.value)
 
   const medicoesPorMes = (() => {
