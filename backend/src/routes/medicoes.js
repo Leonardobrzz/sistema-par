@@ -201,11 +201,16 @@ router.get('/', async (req, res, next) => {
     // Extrai o número da NF do texto da referência (ex.: "2ª MEDIÇÃO - NF_Nº 417")
     const reNF = /NF[_\s]*N?º?\s*(\d+)/i;
     const receitaPorNF = {};
+    // Data de vencimento real da NF, direto do Contas a Receber do OPP
+    // (campo vencimento_rec) — pedido do chefe pra aparecer na tela de
+    // Medições & Faturamento. Só existe quando já sabemos o Nº da NF.
+    const vencimentoPorNF = {};
     for (const r of receitasOPP) {
       const nf = String(r.n_documento_rec || '').trim();
       if (!nf) continue;
       if (r.liquidado_rec === 'Sim') receitaPorNF[nf] = true;
       else if (!(nf in receitaPorNF)) receitaPorNF[nf] = false;
+      if (!vencimentoPorNF[nf] && r.vencimento_rec) vencimentoPorNF[nf] = r.vencimento_rec;
     }
     // Tolerância BEM pequena e fixa (não percentual) — só pra cobrir
     // arredondamento de centavos. Se o valor real for diferente do planejado
@@ -248,6 +253,7 @@ router.get('/', async (req, res, next) => {
           Data_Realizacao: o.Data_Realizacao || (o.Status === 'Atendido' ? o.Data_Pedido : ''),
           Nr_OS_OPP: o.ID_OS_OPP,
           Nr_NF: nf,
+          Data_Vencimento: nf ? (vencimentoPorNF[nf] || '') : '',
           Status_Financeiro: statusFin,
           atrasada: statusFin !== 'Recebido' && isAtrasadaOS,
           valorRecebidoOPP: statusFin === 'Recebido' ? pBR(o.Valor_Total) : 0,
@@ -306,6 +312,10 @@ router.get('/', async (req, res, next) => {
         atrasada: statusFin !== 'Recebido' && isAtrasada,
         valorRecebidoOPP: cobertoPeloOPP ? pBR(m.Valor_Medicao || m.Valor || 0) : 0,
         Nr_NF: nrNF,
+        // Data de vencimento real da NF no OPP (Contas a Receber). Prioriza o
+        // que já estiver gravado manualmente na medição; só usa a do OPP como
+        // reserva.
+        Data_Vencimento: m.Data_Vencimento || vencimentoPorNF[nrNF] || '',
         // NUNCA mostra o Nr_OS_OPP do projeto quando ele tem mais de uma O.S.
         // colada (texto com vírgula) — esse campo é do contrato inteiro, não
         // dessa medição específica, e um contrato grande pode ter várias O.S.
@@ -364,6 +374,7 @@ router.get('/', async (req, res, next) => {
         const cobertoPeloOPP = totalRecebido > 0 && acumulado <= totalRecebido + 0.5;
         const isAtrasada = dataPrevisao && new Date(dataPrevisao + 'T00:00:00') < hojeZero;
         const statusFin = cobertoPeloOPP ? 'Recebido' : (isAtrasada ? 'Atrasado' : 'Pendente');
+        const nfDaEtapa = nfDoOSRealPlano || (cobertoPeloOPP ? (nfPorProjeto[plan.ID_Projeto] || '') : '');
         doPlanejamento.push({
           ID_Medicao: `plan_${plan.ID_Projeto}_${idx}`,
           ID_Projeto: plan.ID_Projeto,
@@ -376,7 +387,8 @@ router.get('/', async (req, res, next) => {
           Status_Financeiro: statusFin,
           atrasada: statusFin !== 'Recebido' && isAtrasada,
           valorRecebidoOPP: cobertoPeloOPP ? valorMed : 0,
-          Nr_NF: nfDoOSRealPlano || (cobertoPeloOPP ? (nfPorProjeto[plan.ID_Projeto] || '') : ''),
+          Nr_NF: nfDaEtapa,
+          Data_Vencimento: nfDaEtapa ? (vencimentoPorNF[nfDaEtapa] || '') : '',
           // Mesma regra da linha "enriched" acima: nunca cola mais de uma
           // O.S. numa etapa de prévia. Com mais de uma O.S. no projeto, essa
           // etapa específica ainda não tem uma O.S. confirmada — fica em

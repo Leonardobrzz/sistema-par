@@ -212,6 +212,7 @@ export default function Medicoes() {
                     { h: "Valor Recebido", align: "right" },
                     { h: "Saldo a Receber", align: "right" },
                     { h: "Nº NF", align: "center" },
+                    { h: "Vencimento", align: "center" },
                     { h: "Link", align: "center" },
                     { h: "Situação", align: "center" },
                     { h: "Ações", align: "right" },
@@ -225,7 +226,7 @@ export default function Medicoes() {
               <tbody>
                 {medicoesFiltradas.length === 0 ? (
                   <tr>
-                    <td colSpan={12} style={{ textAlign: "center", padding: 48, color: T.text2, fontSize: 13 }}>
+                    <td colSpan={13} style={{ textAlign: "center", padding: 48, color: T.text2, fontSize: 13 }}>
                       <ChartBarIcon style={{ width: 36, height: 36, margin: "0 auto 10px", opacity: 0.3 }} />
                       <div>Nenhuma medição encontrada</div>
                     </td>
@@ -258,6 +259,11 @@ export default function Medicoes() {
                   const nrOSInterna = m.Nr_OS_OPP || m.OC || ''
                   const dataMedicao = m.Data_Realizacao || m.Data_Prevista || m.Data_Previsao || ''
                   const linkProduto = m.Link_Produto || m.Link_Contrato || ''
+                  // Vencimento real da NF (vem do Contas a Receber do OPP).
+                  // Só existe quando já tem NF — fica em vermelho quando já
+                  // venceu e ainda não foi recebido, igual ao Saldo.
+                  const dataVencimento = m.Data_Vencimento || ''
+                  const vencimentoAtrasado = dataVencimento && m.Status_Financeiro !== 'Recebido' && new Date(dataVencimento) < new Date()
                   return (
                     <tr key={m.ID_Medicao} style={{ borderBottom: `1px solid ${T.border}`, transition: "background 0.12s" }}
                       onMouseEnter={e => e.currentTarget.style.background = isDark ? "#243048" : "#F8FAFC"}
@@ -307,6 +313,9 @@ export default function Medicoes() {
                         {m.Nr_NF ? (
                           <span style={{ fontSize: 12, fontWeight: 700, color: "#1D4ED8" }}>{m.Nr_NF}</span>
                         ) : <span style={{ color: "#CBD5E1" }}>—</span>}
+                      </td>
+                      <td style={{ padding: "11px 14px", textAlign: "center", fontSize: 12, fontWeight: vencimentoAtrasado ? 700 : 400, color: vencimentoAtrasado ? "#DC2626" : T.text2 }}>
+                        {dataVencimento ? formatDate(dataVencimento) : <span style={{ color: "#CBD5E1" }}>—</span>}
                       </td>
                       <td style={{ padding: "11px 14px", textAlign: "center" }}>
                         {(() => {
@@ -417,6 +426,7 @@ function MedicaoModal({ item, projetos, onClose, onSaved }) {
           <Input label="Previsão de NF" type="date" {...register('Previsao_NF')} />
           <Input label="Data de Emissão da NF" type="date" {...register('Data_Emissao_NF')} />
           <Input label="Número da NF" {...register('Nr_NF')} />
+          <Input label="Data de Vencimento da NF" type="date" {...register('Data_Vencimento')} />
           <Input label="Data de Recebimento" type="date" {...register('Data_Recebimento')} />
           <Input label="O.C. (Ordem de Compra OPP)" placeholder="Código da O.C. no OPP" {...register('OC')} />
           <div className="col-span-2">

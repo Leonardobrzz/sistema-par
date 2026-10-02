@@ -12,9 +12,12 @@ import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 
 const SETORES = ['ARQ', 'INF', 'SAN']
+// "Concluído" e "Arquivado" ficam fora de propósito: Planejamento Físico é
+// só pra trabalho ativo — projetos concluídos/arquivados não têm por que
+// aparecer aqui (pedido do chefe).
 const STATUS_LIST = [
-  'Backlog', 'Em Andamento', 'Em Andamento (Atrasado)', 'Paralisado', 'Concluído',
-  'Em Análise', 'Arquivado', 'Aguardando Faturamento', 'Pendência'
+  'Backlog', 'Em Andamento', 'Em Andamento (Atrasado)', 'Paralisado',
+  'Em Análise', 'Aguardando Faturamento', 'Pendência'
 ]
 
 // Filtro de status de TAREFA dentro da lista expandida de um projeto
@@ -351,8 +354,6 @@ export default function GestaoProjetos() {
               { label: 'Em Andamento',           color: '#D97706', bg: '#FEF3C7' },
               { label: 'Em Análise',             color: '#0891B2', bg: '#CFFAFE' },
               { label: 'Paralisado',             color: '#DC2626', bg: '#FEE2E2' },
-              { label: 'Concluído',              color: '#16A34A', bg: '#DCFCE7' },
-              { label: 'Arquivado',              color: '#475569', bg: '#E2E8F0' },
               { label: 'Aguardando Faturamento', color: '#1D4ED8', bg: '#DBEAFE' },
               { label: 'Pendência',              color: '#BE185D', bg: '#FCE7F3' },
             ].map(({ label, color, bg }) => {
@@ -392,11 +393,7 @@ export default function GestaoProjetos() {
               </button>
             )}
             <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: '#94A3B8' }}>
-              {loading ? '...' : (
-                filters.status.includes('Concluído') || filters.status.includes('Arquivado')
-                  ? `${projects.length} de ${allProjects.length} projeto${allProjects.length !== 1 ? 's' : ''} (inclui concluídos/arquivados)`
-                  : `${projects.length} de ${allProjects.length} projeto${allProjects.length !== 1 ? 's' : ''} ativo${allProjects.length !== 1 ? 's' : ''} (sem concluídos/arquivados)`
-              )}
+              {loading ? '...' : `${projects.length} de ${allProjects.length} projeto${allProjects.length !== 1 ? 's' : ''} ativo${allProjects.length !== 1 ? 's' : ''} (sem concluídos/arquivados)`}
             </span>
           </div>
         </div>
