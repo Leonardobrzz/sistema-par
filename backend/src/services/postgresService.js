@@ -105,6 +105,22 @@ async function ensureSheetsExist() {
       "Valor_Total" TEXT, "Valor_Liquidado" TEXT, "Data_Pedido" TEXT, "Situacao" TEXT,
       "Observacao" TEXT, "Sincronizado_Em" TEXT
     )`,
+    // Ordens de Serviço reais do OPP — cada medição de verdade vira sua
+    // própria O.S. lá (com valor e NF reais), bem diferente da única
+    // Nr_OS_OPP por projeto que o Par guardava até então. Usada pela tela de
+    // Medições & Faturamento pra mostrar o dado real, não só a prévia do
+    // planejamento.
+    `CREATE TABLE IF NOT EXISTS "OrdensServico_OPP" (
+      "ID_OS_OPP" TEXT PRIMARY KEY, "ID_Ordem_OPP" TEXT, "ID_Cliente_OPP" TEXT,
+      "Nome_Cliente" TEXT, "Referencia" TEXT, "Problema" TEXT, "Observacao" TEXT,
+      "Valor_Total" TEXT, "Status" TEXT, "Data_Pedido" TEXT, "Data_Entrega" TEXT,
+      "Data_Realizacao" TEXT, "Sincronizado_Em" TEXT
+    )`,
+    `CREATE INDEX IF NOT EXISTS "idx_os_opp_cliente" ON "OrdensServico_OPP" ("ID_Cliente_OPP")`,
+    // Vínculo do projeto do Par com o cliente real no OPP (por id, não por
+    // texto) — sem isso não dá pra casar com confiança as O.S./receitas do
+    // OPP com o projeto certo.
+    `ALTER TABLE "Projetos_Contratos" ADD COLUMN IF NOT EXISTS "ID_OPP_Cliente" TEXT`,
     // ── Índices úteis ────────────────────────────────────────────────────────
     `CREATE INDEX IF NOT EXISTS "idx_plan_projeto" ON "Planejamentos" ("ID_Projeto")`,
     `CREATE INDEX IF NOT EXISTS "idx_med_projeto" ON "Medicoes" ("ID_Projeto")`,

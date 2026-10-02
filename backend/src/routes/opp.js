@@ -796,6 +796,7 @@ router.post('/sync', async (req, res, next) => {
     const [result] = await Promise.all([
       opp.syncReceitasDespesas(db),
       opp.syncOrdensCompra(db),
+      opp.syncOrdensServico(db),
     ]);
     res.json({ ok: true, ...result, sincronizadoEm: new Date().toISOString() });
   } catch (err) {

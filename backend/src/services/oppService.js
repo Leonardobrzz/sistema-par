@@ -478,6 +478,56 @@ async function syncOrdensCompra(db) {
   return rows.length;
 }
 
+// Busca TODAS as Ordens de Serviço reais do OPP e salva na tabela
+// OrdensServico_OPP. Diferente de OrdensCompra_OPP (que é o lado de
+// fornecedor/Terceirizados), isso é o lado de cliente — cada medição de
+// verdade vira sua própria O.S. no OPP (confirmado: campo valor_total_os
+// preenchido, referência tipo "2ª MEDIÇÃO - NF_Nº 417"). O Par, até agora,
+// só guardava UM número de O.S. por projeto (Planejamentos.Nr_OS_OPP) — essa
+// tabela traz o dado real, usado pela tela de Medições & Faturamento.
+async function syncOrdensServico(db) {
+  console.log('[OPP OS] Sincronizando ordens de serviço...');
+  const LIMIT = 200;
+  let offset = 0;
+  const todas = [];
+  let primeiraIdPaginaAnterior = null;
+  while (true) {
+    const data = await oppRequest('GET', `/ordens-servico?limit=${LIMIT}&offset=${offset}`);
+    const lista = Array.isArray(data) ? data : (data?.data || []);
+    if (lista.length === 0) break;
+    // segurança: se a API ignorar "offset" e devolver sempre a mesma página, para
+    if (primeiraIdPaginaAnterior !== null && lista[0]?.id_pedido === primeiraIdPaginaAnterior) break;
+    primeiraIdPaginaAnterior = lista[0]?.id_pedido;
+    todas.push(...lista);
+    if (lista.length < LIMIT) break;
+    offset += LIMIT;
+    if (offset > 20000) break; // segurança
+  }
+
+  const rows = todas
+    .filter((o) => o.lixeira !== 'Sim' && o.id_pedido != null && String(o.id_pedido).trim() !== '')
+    .map((o) => ({
+      ID_OS_OPP: String(o.id_pedido),
+      ID_Ordem_OPP: String(o.id_ordem || ''),
+      ID_Cliente_OPP: String(o.id_cliente || ''),
+      Nome_Cliente: o.nome_cliente || '',
+      Referencia: o.referencia_ordem || '',
+      Problema: o.problema_ordem || '',
+      Observacao: o.obs_pedido || '',
+      Valor_Total: String(o.valor_total_os || 0),
+      Status: o.status_pedido || '',
+      Data_Pedido: o.data_pedido || '',
+      Data_Entrega: o.data_entrega || '',
+      Data_Realizacao: (o.data_realizacao && o.data_realizacao !== '0000-00-00') ? o.data_realizacao : '',
+      Sincronizado_Em: new Date().toISOString(),
+    }));
+
+  try { await db.clearSheetData('OrdensServico_OPP'); } catch {}
+  if (rows.length > 0) await db.insertManyRows('OrdensServico_OPP', rows);
+  console.log(`[OPP OS] ${rows.length} ordens de serviço sincronizadas.`);
+  return rows.length;
+}
+
 // ── Exports ───────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -500,6 +550,7 @@ module.exports = {
   listarDespesas,
   syncReceitasDespesas,
   syncOrdensCompra,
+  syncOrdensServico,
   reconcileMedicoes,
 
   // Utilitários

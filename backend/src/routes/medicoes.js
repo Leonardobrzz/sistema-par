@@ -47,10 +47,11 @@ router.get('/', async (req, res, next) => {
     }
 
     // Carrega projetos, planejamentos e receitas OPP em paralelo
-    const [projects, planejamentos, receitasOPP] = await Promise.all([
+    const [projects, planejamentos, receitasOPP, ordensServicoOPP] = await Promise.all([
       db.readSheet('Projetos_Contratos'),
       db.readSheet('Planejamentos'),
       fetchReceitasOPP(),
+      db.readSheet('OrdensServico_OPP').catch(() => []),
     ]);
     const projMap = {};
     for (const p of projects) { projMap[p.ID_Projeto] = p; }
@@ -125,6 +126,78 @@ router.get('/', async (req, res, next) => {
     }
 
     const hoje = new Date();
+
+    // ── O.S. reais do OPP ────────────────────────────────────────────────
+    // Cada medição de verdade é sua própria O.S. no OPP, com valor e NF
+    // reais (bem diferente do único Nr_OS_OPP por projeto que o Par guardava
+    // até agora — ver investigar-os-reais-opp.js). Só dá pra casar com
+    // confiança quando o cliente do OPP tem exatamente 1 projeto aprovado no
+    // Par: com mais de um, a O.S. não diz a qual contrato pertence, então
+    // esses continuam usando a prévia do planejamento (loop mais abaixo).
+    const reMedicao = /medi[cç][aã]o/i;
+    const osDeMedicao = (ordensServicoOPP || []).filter((o) =>
+      reMedicao.test(o.Referencia || '') || reMedicao.test(o.Observacao || '') || reMedicao.test(o.Problema || '')
+    );
+    const osPorIdClienteOPP = {};
+    for (const o of osDeMedicao) {
+      const idCli = String(o.ID_Cliente_OPP || '');
+      if (!idCli || idCli === '0') continue;
+      (osPorIdClienteOPP[idCli] = osPorIdClienteOPP[idCli] || []).push(o);
+    }
+    const aprovadosPorIdClienteOPP = {};
+    for (const pl of planejamentos) {
+      if (pl.Status !== 'Aprovado' || !pl.ID_Projeto) continue;
+      const projDoPlano = projMap[pl.ID_Projeto];
+      const idCli = projDoPlano?.ID_OPP_Cliente ? String(projDoPlano.ID_OPP_Cliente) : '';
+      if (!idCli) continue;
+      (aprovadosPorIdClienteOPP[idCli] = aprovadosPorIdClienteOPP[idCli] || []).push({ idProjeto: pl.ID_Projeto, plan: pl });
+    }
+    // Extrai o número da NF do texto da referência (ex.: "2ª MEDIÇÃO - NF_Nº 417")
+    const reNF = /NF[_\s]*N?º?\s*(\d+)/i;
+    const receitaPorNF = {};
+    for (const r of receitasOPP) {
+      const nf = String(r.n_documento_rec || '').trim();
+      if (!nf) continue;
+      if (r.liquidado_rec === 'Sim') receitaPorNF[nf] = true;
+      else if (!(nf in receitaPorNF)) receitaPorNF[nf] = false;
+    }
+
+    const idsProjetoComOSReal = new Set();
+    const realRows = [];
+    for (const [idCli, lista] of Object.entries(aprovadosPorIdClienteOPP)) {
+      if (lista.length !== 1) continue; // cliente com vários projetos — ambíguo, não dá pra casar sem palpite
+      const osDoCliente = osPorIdClienteOPP[idCli];
+      if (!osDoCliente || osDoCliente.length === 0) continue; // ainda sem O.S. real — mantém a prévia normal
+      const { idProjeto, plan } = lista[0];
+      const proj = projMap[idProjeto] || {};
+      idsProjetoComOSReal.add(idProjeto);
+      for (const o of osDoCliente) {
+        const nfMatch = (o.Referencia || '').match(reNF);
+        const nf = nfMatch ? nfMatch[1] : '';
+        const liquidado = !!nf && receitaPorNF[nf] === true;
+        const dataRef = o.Data_Entrega || o.Data_Pedido || '';
+        const isAtrasadaOS = !liquidado && !!dataRef && new Date(dataRef) < hoje;
+        const statusFin = liquidado ? 'Recebido' : (nf ? 'Faturado' : (isAtrasadaOS ? 'Atrasado' : 'Pendente'));
+        realRows.push({
+          ID_Medicao: `os_${o.ID_OS_OPP}`,
+          ID_Projeto: idProjeto,
+          nomeProjeto: proj.Nome || plan.Nome_Projeto || '',
+          cliente: proj.Cliente || proj.Nome_Cliente || '',
+          setor: proj.Setor || '',
+          Etapa: o.Referencia || o.Problema || 'Medição',
+          Valor_Medicao: o.Valor_Total,
+          Data_Previsao: dataRef,
+          Data_Realizacao: o.Data_Realizacao || (o.Status === 'Atendido' ? o.Data_Pedido : ''),
+          Nr_OS_OPP: o.ID_OS_OPP,
+          Nr_NF: nf,
+          Status_Financeiro: statusFin,
+          atrasada: statusFin !== 'Recebido' && isAtrasadaOS,
+          valorRecebidoOPP: statusFin === 'Recebido' ? pBR(o.Valor_Total) : 0,
+          Link_Produto: '',
+        });
+      }
+    }
+
     const enriched = rows.map((m) => {
       const proj = projMap[m.ID_Projeto] || {};
       const plan = planMap[m.ID_Projeto] || {};
@@ -176,7 +249,7 @@ router.get('/', async (req, res, next) => {
     const doPlanejamento = [];
     for (const plan of planejamentos) {
       if (plan.Status !== 'Aprovado') continue;
-      if (!plan.ID_Projeto || idsNaTabela.has(plan.ID_Projeto)) continue;
+      if (!plan.ID_Projeto || idsNaTabela.has(plan.ID_Projeto) || idsProjetoComOSReal.has(plan.ID_Projeto)) continue;
       const proj = projMap[plan.ID_Projeto] || {};
       let dados;
       try { dados = JSON.parse(plan.Dados_JSON || '{}'); } catch { continue; }
@@ -210,7 +283,7 @@ router.get('/', async (req, res, next) => {
       });
     }
 
-    res.json([...enriched, ...doPlanejamento]);
+    res.json([...enriched, ...realRows, ...doPlanejamento]);
   } catch (err) {
     next(err);
   }
