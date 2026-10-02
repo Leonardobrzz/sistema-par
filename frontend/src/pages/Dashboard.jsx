@@ -481,16 +481,24 @@ export default function Dashboard() {
   // financeiros/de planejamento do próprio PAR (antes de virar execução no
   // ClickUp) — interessante de ver, mas não deve se misturar com o gráfico de
   // status do ClickUp acima.
+  //
+  // O universo (quais projetos entram nesse gráfico) continua sendo os que
+  // estão na fase pré-ClickUp (Status 'A Planejar' ou 'Planejado' no
+  // Projetos_Contratos). Mas o que decide se um desses projetos é "Planejado"
+  // ou "A Planejar" NÃO é mais esse campo Status (que é só texto gravado uma
+  // vez, na hora de aprovar, e pode ficar desatualizado) — passou a ser o
+  // Status real e atual do Planejamento dele: "Aprovado" = Planejado;
+  // qualquer outra coisa (ou nenhum Planejamento ainda) = A Planejar. Isso
+  // bate direto com a definição que o chefe deu.
   const STATUS_PLANEJAMENTO = new Set(['A Planejar', 'Planejado'])
-  const statusDataPlanejamento = Object.entries(
-    projetosFiltrados
-      .filter(p => STATUS_PLANEJAMENTO.has((p.Status || '').trim()))
-      .reduce((acc, p) => {
-        const s = p.Status.trim()
-        acc[s] = (acc[s] || 0) + 1
-        return acc
-      }, {})
-  ).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
+  const universoPlanejamento = projetosFiltrados.filter(p => STATUS_PLANEJAMENTO.has((p.Status || '').trim()))
+  const idsComPlanejamentoAprovado = new Set(
+    planejamentos.filter(pl => pl.Status === 'Aprovado').map(pl => pl.ID_Projeto)
+  )
+  const statusDataPlanejamento = [
+    { name: 'Planejado', value: universoPlanejamento.filter(p => idsComPlanejamentoAprovado.has(p.ID_Projeto)).length },
+    { name: 'A Planejar', value: universoPlanejamento.filter(p => !idsComPlanejamentoAprovado.has(p.ID_Projeto)).length },
+  ].sort((a, b) => b.value - a.value)
 
   const medicoesPorMes = (() => {
     const _parseBR = v => { if (!v) return 0; const s = String(v).replace(/\./g, '').replace(',', '.'); return parseFloat(s) || 0 }

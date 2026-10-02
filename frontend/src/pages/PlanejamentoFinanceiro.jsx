@@ -401,6 +401,13 @@ export default function PlanejamentoFinanceiro() {
     return projetos.filter(p => {
       if (seen.has(p.ID_Projeto)) return false
       seen.add(p.ID_Projeto)
+      // Pedido do chefe: por padrão a lista só mostra projetos ativos.
+      // "Concluído" e "Arquivado" continuam existindo como filtro, mas só
+      // aparecem quando a pessoa clica exatamente nesse botão — nunca juntos
+      // com a visão padrão nem com outro filtro de status.
+      if (filtroStatus !== 'Concluído' && filtroStatus !== 'Arquivado') {
+        if (p.Status === 'Concluído' || p.Status === 'Arquivado') return false
+      }
       if (filtroSetor) {
         const prefix = SETOR_PREFIX[filtroSetor]
         if (prefix) {
@@ -427,6 +434,24 @@ export default function PlanejamentoFinanceiro() {
       return true
     })
   }, [projetos, filtroSetor, filtroCliente, filtroStatus, filtroBusca, filtroPlan])
+
+  const verConcluidosOuArquivados = filtroStatus === 'Concluído' || filtroStatus === 'Arquivado'
+  // Total de projetos ativos (sem concluídos/arquivados, sem duplicata) — usado
+  // só pro contador "X de Y" na visão padrão, pra não confundir com o total
+  // bruto (que inclui concluídos/arquivados, carregados de qualquer forma pro
+  // filtro de Planej. e pra busca funcionarem mesmo quando a pessoa já clicou
+  // em "Concluído"/"Arquivado" antes).
+  const totalProjetosAtivos = useMemo(() => {
+    const seen = new Set()
+    let n = 0
+    for (const p of projetos) {
+      if (seen.has(p.ID_Projeto)) continue
+      seen.add(p.ID_Projeto)
+      if (p.Status === 'Concluído' || p.Status === 'Arquivado') continue
+      n++
+    }
+    return n
+  }, [projetos])
 
   function validarCampos() {
     const v = form
@@ -1133,10 +1158,13 @@ export default function PlanejamentoFinanceiro() {
               { label: "Em Andamento",           color: "#D97706", bg: "#FEF3C7" },
               { label: "Em Análise",             color: "#0891B2", bg: "#CFFAFE" },
               { label: "Paralisado",             color: "#DC2626", bg: "#FEE2E2" },
-              { label: "Concluído",              color: "#16A34A", bg: "#DCFCE7" },
-              { label: "Arquivado",              color: "#475569", bg: "#E2E8F0" },
               { label: "Aguardando Faturamento", color: "#1D4ED8", bg: "#DBEAFE" },
               { label: "Pendência",              color: "#BE185D", bg: "#FCE7F3" },
+              // Concluído/Arquivado ficam por último de propósito: por padrão
+              // esses projetos nem aparecem na lista (ver projetosFiltrados) —
+              // só entram quando a pessoa clica num desses dois.
+              { label: "Concluído",              color: "#16A34A", bg: "#DCFCE7" },
+              { label: "Arquivado",              color: "#475569", bg: "#E2E8F0" },
             ].map(({ label, color, bg }) => {
               const active = filtroStatus === label
               return (
@@ -1170,7 +1198,9 @@ export default function PlanejamentoFinanceiro() {
               </button>
             )}
             <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 600, color: "#94A3B8" }}>
-              {loadingProjetos ? "..." : `${projetosFiltrados.length} de ${projetos.length} projeto${projetos.length !== 1 ? "s" : ""}`}
+              {loadingProjetos ? "..." : verConcluidosOuArquivados
+                ? `${projetosFiltrados.length} de ${projetos.length} projeto${projetos.length !== 1 ? "s" : ""}`
+                : `${projetosFiltrados.length} de ${totalProjetosAtivos} projeto${totalProjetosAtivos !== 1 ? "s" : ""} ativo${totalProjetosAtivos !== 1 ? "s" : ""}`}
             </span>
           </div>
 

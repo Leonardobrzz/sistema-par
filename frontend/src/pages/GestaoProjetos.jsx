@@ -392,7 +392,7 @@ export default function GestaoProjetos() {
               </button>
             )}
             <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 600, color: '#94A3B8' }}>
-              {loading ? '...' : `${projects.length} de ${allProjects.length} projeto${allProjects.length !== 1 ? 's' : ''}`}
+              {loading ? '...' : `${projects.length} de ${allProjects.length} projeto${allProjects.length !== 1 ? 's' : ''} ativo${allProjects.length !== 1 ? 's' : ''} (sem concluídos/arquivados)`}
             </span>
           </div>
         </div>
