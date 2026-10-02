@@ -43,6 +43,7 @@ export default function Medicoes() {
   const [filtroSetor, setFiltroSetor] = useState('')
   const [filtroFaturamento, setFiltroFaturamento] = useState('') // '' | 'faturadas' | 'nao_faturadas'
   const [filtroProjeto, setFiltroProjeto] = useState('')
+  const [filtroCliente, setFiltroCliente] = useState('')
   const [filtroBusca, setFiltroBusca] = useState('')
 
   const load = useCallback(async () => {
@@ -75,10 +76,42 @@ export default function Medicoes() {
 
   const projetoMap = useMemo(() => Object.fromEntries(projetos.map(p => [p.ID_Projeto, p])), [projetos])
 
+  // Dropdowns de Projeto e Cliente montados a partir das PRÓPRIAS medições
+  // carregadas (não da lista geral de /projetos, que inclui todo contrato já
+  // criado, até projeto antigo/concluído de anos atrás sem nenhuma medição
+  // cadastrada). Com a lista geral, selecionar um desses projetos antigos
+  // sempre voltava vazio — não porque tinha bug no filtro, mas porque não
+  // existe mesmo nenhuma linha pra mostrar ali. Montando a lista a partir do
+  // que já está na tela, toda opção do dropdown sempre tem pelo menos 1
+  // resultado.
+  const projetosComDados = useMemo(() => {
+    const porSetor = filtroSetor
+      ? medicoes.filter(m => (m.setor || projetoMap[m.ID_Projeto]?.Setor || '').toLowerCase().includes(filtroSetor.toLowerCase()))
+      : medicoes
+    const mapa = new Map()
+    for (const m of porSetor) {
+      if (m.ID_Projeto && !mapa.has(m.ID_Projeto)) mapa.set(m.ID_Projeto, m.nomeProjeto || projetoMap[m.ID_Projeto]?.Nome || m.ID_Projeto)
+    }
+    return [...mapa.entries()].sort((a, b) => a[1].localeCompare(b[1]))
+  }, [medicoes, filtroSetor, projetoMap])
+
+  const clientesComDados = useMemo(() => {
+    const porSetor = filtroSetor
+      ? medicoes.filter(m => (m.setor || projetoMap[m.ID_Projeto]?.Setor || '').toLowerCase().includes(filtroSetor.toLowerCase()))
+      : medicoes
+    const nomes = new Set()
+    for (const m of porSetor) {
+      const c = (m.cliente || '').trim()
+      if (c) nomes.add(c)
+    }
+    return [...nomes].sort((a, b) => a.localeCompare(b))
+  }, [medicoes, filtroSetor, projetoMap])
+
   const medicoesFiltradas = useMemo(() => medicoes.filter(m => {
     const setor = m.setor || projetoMap[m.ID_Projeto]?.Setor || ''
     if (filtroSetor && !setor.toLowerCase().includes(filtroSetor.toLowerCase())) return false
     if (filtroProjeto && m.ID_Projeto !== filtroProjeto) return false
+    if (filtroCliente && (m.cliente || '') !== filtroCliente) return false
     if (filtroFaturamento === 'faturadas' && !m.Nr_NF) return false
     if (filtroFaturamento === 'nao_faturadas' && m.Nr_NF) return false
     if (filtroBusca) {
@@ -89,7 +122,7 @@ export default function Medicoes() {
           !(m.Nr_NF || '').toLowerCase().includes(b)) return false
     }
     return true
-  }), [medicoes, filtroSetor, filtroFaturamento, filtroProjeto, filtroBusca, projetoMap])
+  }), [medicoes, filtroSetor, filtroFaturamento, filtroProjeto, filtroCliente, filtroBusca, projetoMap])
 
   return (
     <div style={{ padding: "28px 32px" }}>
@@ -137,14 +170,21 @@ export default function Medicoes() {
         <select value={filtroProjeto} onChange={e => setFiltroProjeto(e.target.value)}
           style={{ ...inp, width: "auto", paddingRight: 32 }}>
           <option value="">Projeto: Todos</option>
-          {projetos.filter(p => !filtroSetor || (p.Setor || '').toLowerCase().includes(filtroSetor.toLowerCase())).map(p => (
-            <option key={p.ID_Projeto} value={p.ID_Projeto}>{p.Nome}</option>
+          {projetosComDados.map(([id, nome]) => (
+            <option key={id} value={id}>{nome}</option>
+          ))}
+        </select>
+        <select value={filtroCliente} onChange={e => setFiltroCliente(e.target.value)}
+          style={{ ...inp, width: "auto", paddingRight: 32 }}>
+          <option value="">Cliente: Todos</option>
+          {clientesComDados.map(c => (
+            <option key={c} value={c}>{c}</option>
           ))}
         </select>
         <input value={filtroBusca} onChange={e => setFiltroBusca(e.target.value)} placeholder="Buscar projeto, cliente, NF..."
           style={{ ...inp, width: 240 }} />
-        {(filtroSetor || filtroFaturamento || filtroProjeto || filtroBusca) && (
-          <button onClick={() => { setFiltroSetor(''); setFiltroFaturamento(''); setFiltroProjeto(''); setFiltroBusca('') }}
+        {(filtroSetor || filtroFaturamento || filtroProjeto || filtroCliente || filtroBusca) && (
+          <button onClick={() => { setFiltroSetor(''); setFiltroFaturamento(''); setFiltroProjeto(''); setFiltroCliente(''); setFiltroBusca('') }}
             style={{ padding: "9px 14px", borderRadius: 8, border: "1.5px solid #FEE2E2", background: "#FFF5F5", color: "#DC2626", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
             Limpar
           </button>
