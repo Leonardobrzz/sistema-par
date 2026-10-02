@@ -256,6 +256,14 @@ router.get('/', async (req, res, next) => {
       }
     }
 
+    // O.S. que já foi casada com certeza (por valor) numa etapa ESPECÍFICA de
+    // um projeto. Importante pra não repetir o nome/NF dessa O.S. em OUTRAS
+    // etapas do mesmo projeto: se a O.S. 49 já é confirmada como "Projeto
+    // Executivo", ela não pode também aparecer como se fosse de
+    // "Levantamento Topográfico" só porque as duas compartilham o mesmo
+    // campo de O.S. do projeto.
+    const osJaConsumidaPorProjeto = new Set(realRows.map((r) => `${r.ID_Projeto}_${r.Nr_OS_OPP}`));
+
     const enriched = rows.map((m) => {
       const proj = projMap[m.ID_Projeto] || {};
       const plan = planMap[m.ID_Projeto] || {};
@@ -283,7 +291,8 @@ router.get('/', async (req, res, next) => {
       // — usada como fonte mais confiável de NF do que o "primeiro NF achado
       // pro projeto" (nfPorProjeto), que é a mesma aproximação pra todas as
       // linhas do projeto e pode não ser o NF de verdade desta medição.
-      const nrOsResolvido = (plan.Nr_OS_OPP && !String(plan.Nr_OS_OPP).includes(',')) ? plan.Nr_OS_OPP : '';
+      let nrOsResolvido = (plan.Nr_OS_OPP && !String(plan.Nr_OS_OPP).includes(',')) ? plan.Nr_OS_OPP : '';
+      if (nrOsResolvido && osJaConsumidaPorProjeto.has(`${m.ID_Projeto}_${nrOsResolvido}`)) nrOsResolvido = '';
       const osReal = nrOsResolvido ? osPorNumero[String(nrOsResolvido)] : null;
       const nfDoOSReal = osReal ? ((String(osReal.Referencia || '').match(reNF) || [])[1] || '') : '';
 
@@ -340,7 +349,8 @@ router.get('/', async (req, res, next) => {
       // "MEDIÇÃO - ETAPA 01" uma coisa que no OPP se chama "MEDIÇÃO* ÚNICA").
       // Isso vale pra TODAS as etapas desse planejamento, não só a "Recebido"
       // — o nome/NF da O.S. não muda com o status de pagamento da etapa.
-      const nrOsResolvidoPlano = (plan.Nr_OS_OPP && !String(plan.Nr_OS_OPP).includes(',')) ? plan.Nr_OS_OPP : '';
+      let nrOsResolvidoPlano = (plan.Nr_OS_OPP && !String(plan.Nr_OS_OPP).includes(',')) ? plan.Nr_OS_OPP : '';
+      if (nrOsResolvidoPlano && osJaConsumidaPorProjeto.has(`${plan.ID_Projeto}_${nrOsResolvidoPlano}`)) nrOsResolvidoPlano = '';
       const osRealPlano = nrOsResolvidoPlano ? osPorNumero[String(nrOsResolvidoPlano)] : null;
       const nfDoOSRealPlano = osRealPlano ? ((String(osRealPlano.Referencia || '').match(reNF) || [])[1] || '') : '';
 
