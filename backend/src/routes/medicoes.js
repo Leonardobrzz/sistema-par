@@ -280,7 +280,16 @@ router.get('/', async (req, res, next) => {
         atrasada: statusFin !== 'Recebido' && isAtrasada,
         valorRecebidoOPP: cobertoPeloOPP ? pBR(m.Valor_Medicao || m.Valor || 0) : 0,
         Nr_NF: nrNF,
-        Nr_OS_OPP: plan.Nr_OS_OPP || m.Nr_OS_OPP || '',
+        // NUNCA mostra o Nr_OS_OPP do projeto quando ele tem mais de uma O.S.
+        // colada (texto com vírgula) — esse campo é do contrato inteiro, não
+        // dessa medição específica, e um contrato grande pode ter várias O.S.
+        // de coisas totalmente diferentes (já confirmamos um caso real: O.S.
+        // de outra secretaria colada por engano). Só é seguro mostrar aqui
+        // quando sobra exatamente UMA O.S. sem ambiguidade; com mais de uma,
+        // melhor não mostrar nada do que arriscar colar a O.S. errada nesta
+        // linha — a linha de medição real (casada por valor, acima) já cobre
+        // o caso de saber exatamente qual O.S. é de qual etapa.
+        Nr_OS_OPP: (plan.Nr_OS_OPP && !String(plan.Nr_OS_OPP).includes(',')) ? plan.Nr_OS_OPP : '',
         Status_Financeiro: statusFin,
         Link_Produto: m.Link_Produto || m.Link_Contrato || '',
       };
@@ -328,7 +337,11 @@ router.get('/', async (req, res, next) => {
           atrasada: statusFin !== 'Recebido' && isAtrasada,
           valorRecebidoOPP: cobertoPeloOPP ? valorMed : 0,
           Nr_NF: cobertoPeloOPP ? (nfPorProjeto[plan.ID_Projeto] || '') : '',
-          Nr_OS_OPP: plan.Nr_OS_OPP || '',
+          // Mesma regra da linha "enriched" acima: nunca cola mais de uma
+          // O.S. numa etapa de prévia. Com mais de uma O.S. no projeto, essa
+          // etapa específica ainda não tem uma O.S. confirmada — fica em
+          // branco até a medição real bater por valor (vira uma realRow).
+          Nr_OS_OPP: (plan.Nr_OS_OPP && !String(plan.Nr_OS_OPP).includes(',')) ? plan.Nr_OS_OPP : '',
           Link_Produto: '',
           _doPlanejamento: true,
         });
