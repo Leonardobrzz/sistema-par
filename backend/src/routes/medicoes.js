@@ -129,11 +129,21 @@ router.get('/', async (req, res, next) => {
 
     // ── O.S. reais do OPP ────────────────────────────────────────────────
     // Cada medição de verdade é sua própria O.S. no OPP, com valor e NF
-    // reais (bem diferente do único Nr_OS_OPP por projeto que o Par guardava
-    // até agora — ver investigar-os-reais-opp.js). Só dá pra casar com
-    // confiança quando o cliente do OPP tem exatamente 1 projeto aprovado no
-    // Par: com mais de um, a O.S. não diz a qual contrato pertence, então
-    // esses continuam usando a prévia do planejamento (loop mais abaixo).
+    // reais. MAS: um mesmo cliente (ex.: uma prefeitura) pode ter O.S. de
+    // OUTRAS secretarias/serviços (SEINFRA, SEDUC, SAÚDE...) que não têm
+    // nada a ver com o contrato específico do Par — confirmado com dados
+    // reais em investigar-monte-castelo.js (cliente com só 1 projeto no Par,
+    // mas 18 O.S. no OPP, a maioria de outras coisas). Então "casar só pelo
+    // cliente" NÃO é seguro o suficiente.
+    //
+    // O sinal confiável de verdade é o VALOR: no mesmo exemplo, a O.S. real
+    // "31ª MEDIÇÃO - NF 361 - SEINFRA" tem valor R$ 77.785,12 — exatamente
+    // igual à etapa planejada "MEDIÇÃO - PROJETO EXECUTIVO" do cronograma
+    // desse projeto. Por isso, cada O.S. real só vira uma linha de medição
+    // de verdade quando o valor bate (com pequena tolerância) com uma única
+    // etapa ainda não usada do cronograma de algum projeto aprovado DAQUELE
+    // MESMO cliente. Sem esse match de valor, a O.S. fica de fora — melhor
+    // não mostrar do que mostrar vinculada ao projeto errado.
     const reMedicao = /medi[cç][aã]o/i;
     const osDeMedicao = (ordensServicoOPP || []).filter((o) =>
       reMedicao.test(o.Referencia || '') || reMedicao.test(o.Observacao || '') || reMedicao.test(o.Problema || '')
@@ -144,13 +154,25 @@ router.get('/', async (req, res, next) => {
       if (!idCli || idCli === '0') continue;
       (osPorIdClienteOPP[idCli] = osPorIdClienteOPP[idCli] || []).push(o);
     }
-    const aprovadosPorIdClienteOPP = {};
+    // Lista achatada de TODAS as etapas planejadas (de todos os projetos
+    // aprovados), agrupada por cliente do OPP
+    const etapasPorIdClienteOPP = {};
     for (const pl of planejamentos) {
       if (pl.Status !== 'Aprovado' || !pl.ID_Projeto) continue;
       const projDoPlano = projMap[pl.ID_Projeto];
       const idCli = projDoPlano?.ID_OPP_Cliente ? String(projDoPlano.ID_OPP_Cliente) : '';
       if (!idCli) continue;
-      (aprovadosPorIdClienteOPP[idCli] = aprovadosPorIdClienteOPP[idCli] || []).push({ idProjeto: pl.ID_Projeto, plan: pl });
+      let dadosPlano = {};
+      try { dadosPlano = JSON.parse(pl.Dados_JSON || '{}'); } catch {}
+      const dPlano = dadosPlano._baseline || dadosPlano;
+      const medsPlanejadas = dPlano.medicoesCronograma || dadosPlano.medicoes || [];
+      medsPlanejadas.forEach((m, idx) => {
+        const valorEtapa = pBR(m.valor || m.valorPlanejado || 0);
+        if (valorEtapa <= 0) return;
+        (etapasPorIdClienteOPP[idCli] = etapasPorIdClienteOPP[idCli] || []).push({
+          idProjeto: pl.ID_Projeto, plan: pl, etapaIdx: idx, valor: valorEtapa,
+        });
+      });
     }
     // Extrai o número da NF do texto da referência (ex.: "2ª MEDIÇÃO - NF_Nº 417")
     const reNF = /NF[_\s]*N?º?\s*(\d+)/i;
@@ -161,17 +183,29 @@ router.get('/', async (req, res, next) => {
       if (r.liquidado_rec === 'Sim') receitaPorNF[nf] = true;
       else if (!(nf in receitaPorNF)) receitaPorNF[nf] = false;
     }
+    // Tolerância BEM pequena e fixa (não percentual) — só pra cobrir
+    // arredondamento de centavos. Se o valor real for diferente do planejado
+    // por reajuste ou qualquer outro motivo, é melhor NÃO casar: assim a
+    // etapa continua aparecendo como prévia (pendente) em vez de esconder
+    // uma divergência de valor que é exatamente o que o chef quer enxergar.
+    const tolerancia = () => 0.5;
 
-    const idsProjetoComOSReal = new Set();
+    const etapasUsadas = new Set(); // `${idProjeto}_${etapaIdx}` já casada com uma O.S. real
     const realRows = [];
-    for (const [idCli, lista] of Object.entries(aprovadosPorIdClienteOPP)) {
-      if (lista.length !== 1) continue; // cliente com vários projetos — ambíguo, não dá pra casar sem palpite
+    for (const [idCli, etapas] of Object.entries(etapasPorIdClienteOPP)) {
       const osDoCliente = osPorIdClienteOPP[idCli];
-      if (!osDoCliente || osDoCliente.length === 0) continue; // ainda sem O.S. real — mantém a prévia normal
-      const { idProjeto, plan } = lista[0];
-      const proj = projMap[idProjeto] || {};
-      idsProjetoComOSReal.add(idProjeto);
+      if (!osDoCliente || osDoCliente.length === 0) continue;
       for (const o of osDoCliente) {
+        const valorOS = pBR(o.Valor_Total);
+        if (valorOS <= 0) continue;
+        const candidatas = etapas.filter((e) =>
+          !etapasUsadas.has(`${e.idProjeto}_${e.etapaIdx}`) && Math.abs(e.valor - valorOS) <= tolerancia(e.valor)
+        );
+        if (candidatas.length !== 1) continue; // sem match ou ambíguo (bateu em mais de uma etapa) — não arrisca
+        const e = candidatas[0];
+        etapasUsadas.add(`${e.idProjeto}_${e.etapaIdx}`);
+        const proj = projMap[e.idProjeto] || {};
+
         const nfMatch = (o.Referencia || '').match(reNF);
         const nf = nfMatch ? nfMatch[1] : '';
         const liquidado = !!nf && receitaPorNF[nf] === true;
@@ -180,8 +214,8 @@ router.get('/', async (req, res, next) => {
         const statusFin = liquidado ? 'Recebido' : (nf ? 'Faturado' : (isAtrasadaOS ? 'Atrasado' : 'Pendente'));
         realRows.push({
           ID_Medicao: `os_${o.ID_OS_OPP}`,
-          ID_Projeto: idProjeto,
-          nomeProjeto: proj.Nome || plan.Nome_Projeto || '',
+          ID_Projeto: e.idProjeto,
+          nomeProjeto: proj.Nome || e.plan.Nome_Projeto || '',
           cliente: proj.Cliente || proj.Nome_Cliente || '',
           setor: proj.Setor || '',
           Etapa: o.Referencia || o.Problema || 'Medição',
@@ -249,7 +283,7 @@ router.get('/', async (req, res, next) => {
     const doPlanejamento = [];
     for (const plan of planejamentos) {
       if (plan.Status !== 'Aprovado') continue;
-      if (!plan.ID_Projeto || idsNaTabela.has(plan.ID_Projeto) || idsProjetoComOSReal.has(plan.ID_Projeto)) continue;
+      if (!plan.ID_Projeto || idsNaTabela.has(plan.ID_Projeto)) continue;
       const proj = projMap[plan.ID_Projeto] || {};
       let dados;
       try { dados = JSON.parse(plan.Dados_JSON || '{}'); } catch { continue; }
@@ -257,6 +291,9 @@ router.get('/', async (req, res, next) => {
       const totalRecebido = totalRecebidoPorProjeto[plan.ID_Projeto] || 0;
       let acumulado = 0;
       meds.forEach((m, idx) => {
+        // Essa etapa específica já tem uma O.S. real casada por valor —
+        // não mostra a prévia duplicada, a linha real já cobre ela.
+        if (etapasUsadas.has(`${plan.ID_Projeto}_${idx}`)) return;
         const dataPrevisao = m.dataPrevisao || m.dataPrevista || '';
         const valorMed = pBR(m.valor || m.valorPlanejado || 0);
         acumulado += valorMed;
