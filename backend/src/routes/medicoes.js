@@ -64,7 +64,22 @@ router.get('/', async (req, res, next) => {
       if (pl.Nome_Projeto) planNomeMap[pl.ID_Projeto] = pl.Nome_Projeto;
     }
 
-    const pBR = (v) => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0;
+    // IMPORTANTE: não dá pra tratar todo valor como texto em formato BR
+    // (ponto = milhar). Os valores do cronograma do Par vêm como texto
+    // "77.785,12" (precisa dessa regra), mas os valores que vêm do OPP
+    // (o.Valor_Total da tabela OrdensServico_OPP) chegam como "77785.12"
+    // (ponto decimal de verdade, sem vírgula) — aplicar a regra cega neles
+    // tirava o ponto e multiplicava o valor por 100, fazendo o casamento
+    // por valor (O.S. real × etapa planejada) nunca bater. Só trata como
+    // milhar quando o texto tem vírgula (formato BR de verdade) ou quando
+    // o ponto não parece ser decimal.
+    const pBR = (v) => {
+      const s = String(v || 0).trim();
+      if (s.includes(',')) return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+      const partes = s.split('.');
+      if (partes.length === 2 && partes[1].length <= 2) return parseFloat(s) || 0;
+      return parseFloat(s.replace(/\./g, '')) || 0;
+    };
 
     // Mapa por id_centro_custos (fonte principal e confiável — mesmo vínculo
     // usado no Baseline x Real) e por texto de descrição (reserva, método
