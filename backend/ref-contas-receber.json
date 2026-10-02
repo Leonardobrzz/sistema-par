@@ -1,0 +1,3662 @@
+[
+ {
+  "linha": 9,
+  "vencimento": "30/04/2024",
+  "cliente": "PREFEITURA MUNICIPAL DE CARIDADE",
+  "receita": "33ª MEDIÇÃO - NF_Nº 13",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (19/06/2026)",
+  "valor_original": "R$ 3.526,00",
+  "valor_baixado": "R$ 3.526,00"
+ },
+ {
+  "linha": 11,
+  "vencimento": "10/08/2024",
+  "cliente": "PREFEITURA MUNICIPAL DE CARIDADE",
+  "receita": "2º O.S REF 42ª MEDIÇÃO*",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 6.438,24",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 13,
+  "vencimento": "20/01/2025",
+  "cliente": "PREFEITURA MUNICIPAL DE GENERAL SA...",
+  "receita": "NF_Nº 224",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 49.412,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 16,
+  "vencimento": "20/01/2025",
+  "cliente": "PREFEITURA MUNICIPAL DE GENERAL SA...",
+  "receita": "NF_Nº 225",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 25.650,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 19,
+  "vencimento": "20/06/2025",
+  "cliente": "PREFEITURA MUNICIPAL DE GENERAL SA...",
+  "receita": "NF_Nº 283",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 6.000,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 22,
+  "vencimento": "20/06/2025",
+  "cliente": "PREFEITURA MUNICIPAL DE GENERAL SA...",
+  "receita": "NF_Nº 284",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 49.156,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 25,
+  "vencimento": "26/06/2025",
+  "cliente": "PREFEITURA MUNICIPAL DE GENERAL SA...",
+  "receita": "NF_Nº 286",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 5.400,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 28,
+  "vencimento": "30/06/2025",
+  "cliente": "PREFEITURA MUNICIPAL DE CROATA",
+  "receita": "NF_Nº 285 - NF_Nº 410",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 116.246,00",
+  "valor_baixado": "R$ 106.000,00"
+ },
+ {
+  "linha": 30,
+  "vencimento": "31/07/2025",
+  "cliente": "PREFEITURA MUNICIPAL DE IPU",
+  "receita": "NF_Nº 301",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 62.510,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 32,
+  "vencimento": "31/07/2025",
+  "cliente": "PREFEITURA MUNICIPAL DE IPU",
+  "receita": "NF_Nº 302",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 62.510,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 34,
+  "vencimento": "05/09/2025",
+  "cliente": "PREFEITURA MUNICIPAL DE CARIDADE",
+  "receita": "66ª MEDIÇÃO - NF_Nº 323",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 8.636,00",
+  "valor_baixado": "R$ 8.204,20"
+ },
+ {
+  "linha": 36,
+  "vencimento": "25/09/2025",
+  "cliente": "PREFEITURA MUNICIPAL DE CROATA",
+  "receita": "NF 336 - NF_Nº 411",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 6.100,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 38,
+  "vencimento": "15/10/2025",
+  "cliente": "PREFEITURA MUNICIPAL DE APUIARES",
+  "receita": "NF_Nº 349",
+  "vendedor": "",
+  "situacao": "Pago (01/07/2026)",
+  "valor_original": "R$ 32.660,00",
+  "valor_baixado": "R$ 32.660,00"
+ },
+ {
+  "linha": 40,
+  "vencimento": "20/10/2025",
+  "cliente": "PREFEITURA MUNICIPAL DE MILHÃ",
+  "receita": "NF_Nº 359",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Pago (14/07/2026)",
+  "valor_original": "R$ 46.777,50",
+  "valor_baixado": "R$ 46.777,50"
+ },
+ {
+  "linha": 43,
+  "vencimento": "30/10/2025",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE",
+  "receita": "",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (11/09/2026)",
+  "valor_original": "R$ 77.785,12",
+  "valor_baixado": "R$ 36.000,00"
+ },
+ {
+  "linha": 46,
+  "vencimento": "31/10/2025",
+  "cliente": "PREFEITURA MUNICIPAL DE MILHÃ",
+  "receita": "NF_Nº 362",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Pago (11/09/2026)",
+  "valor_original": "R$ 10.240,00",
+  "valor_baixado": "R$ 10.240,00"
+ },
+ {
+  "linha": 48,
+  "vencimento": "10/11/2025",
+  "cliente": "PREFEITURA MUNICIPAL DE APUIARES",
+  "receita": "NF_Nº 369",
+  "vendedor": "",
+  "situacao": "Pago (01/07/2026)",
+  "valor_original": "R$ 6.050,55",
+  "valor_baixado": "R$ 6.050,55"
+ },
+ {
+  "linha": 51,
+  "vencimento": "20/11/2025",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE",
+  "receita": "",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (10/07/2026)",
+  "valor_original": "R$ 21.826,00",
+  "valor_baixado": "R$ 21.826,00"
+ },
+ {
+  "linha": 54,
+  "vencimento": "24/12/2025",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE",
+  "receita": "",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 62.777,07",
+  "valor_baixado": "R$ 28.174,00"
+ },
+ {
+  "linha": 57,
+  "vencimento": "30/12/2025",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE",
+  "receita": "NF_Nº 400",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 62.510,76",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 60,
+  "vencimento": "30/12/2025",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE",
+  "receita": "NF_Nº 401",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 5.295,79",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 63,
+  "vencimento": "30/12/2025",
+  "cliente": "PREFEITURA MUNICIPAL DE CARIDADE",
+  "receita": "41ª MEDIÇÃO - NF_Nº 412",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Pago (19/06/2026)",
+  "valor_original": "R$ 12.994,78",
+  "valor_baixado": "R$ 12.994,78"
+ },
+ {
+  "linha": 66,
+  "vencimento": "30/12/2025",
+  "cliente": "DEPARTAMENTO ESTADUAL DE IFRA- ESTR...",
+  "receita": "NF 390",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (26/03/2026)",
+  "valor_original": "R$ 25.020,00",
+  "valor_baixado": "R$ 25.020,00"
+ },
+ {
+  "linha": 69,
+  "vencimento": "31/12/2025",
+  "cliente": "JOTA BARROS PROJETOS E ASSESSORIA ...",
+  "receita": "SALDO INICIAL",
+  "vendedor": "",
+  "situacao": "Pago (31/12/2025)",
+  "valor_original": "R$ 150.430,11",
+  "valor_baixado": "R$ 150.430,11"
+ },
+ {
+  "linha": 72,
+  "vencimento": "31/12/2025",
+  "cliente": "JOTA BARROS PROJETOS E ASSESSORIA ...",
+  "receita": "SALDO INICIAL",
+  "vendedor": "",
+  "situacao": "Pago (31/12/2025)",
+  "valor_original": "R$ 56,76",
+  "valor_baixado": "R$ 56,76"
+ },
+ {
+  "linha": 75,
+  "vencimento": "31/12/2025",
+  "cliente": "JOTA BARROS PROJETOS E ASSESSORIA ...",
+  "receita": "SALDO INICIAL",
+  "vendedor": "",
+  "situacao": "Pago (31/12/2025)",
+  "valor_original": "R$ 63.727,39",
+  "valor_baixado": "R$ 63.727,39"
+ },
+ {
+  "linha": 78,
+  "vencimento": "31/12/2025",
+  "cliente": "JOTA BARROS PROJETOS E ASSESSORIA ...",
+  "receita": "SALDO INICIAL",
+  "vendedor": "",
+  "situacao": "Pago (31/12/2025)",
+  "valor_original": "R$ 8.345,16",
+  "valor_baixado": "R$ 8.345,16"
+ },
+ {
+  "linha": 81,
+  "vencimento": "31/12/2025",
+  "cliente": "BANCO INTER S.A",
+  "receita": "SALDO INICIAL",
+  "vendedor": "",
+  "situacao": "Pago (31/12/2025)",
+  "valor_original": "R$ 3,99",
+  "valor_baixado": "R$ 3,99"
+ },
+ {
+  "linha": 84,
+  "vencimento": "01/01/2026",
+  "cliente": "JOTA BARROS PROJETOS E ASSESSORIA ...",
+  "receita": "SALDO INICIAL",
+  "vendedor": "",
+  "situacao": "Pago (31/12/2025)",
+  "valor_original": "R$ 201.199,69",
+  "valor_baixado": "R$ 201.199,69"
+ },
+ {
+  "linha": 87,
+  "vencimento": "02/01/2026",
+  "cliente": "CARTÃO DE CÉDITO - ITAU",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 25.828,58",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 90,
+  "vencimento": "02/01/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTOS",
+  "vendedor": "",
+  "situacao": "Pago (02/01/2026)",
+  "valor_original": "R$ 1,00",
+  "valor_baixado": "R$ 1,00"
+ },
+ {
+  "linha": 92,
+  "vencimento": "05/01/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "Ordem de Serviço 3",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (05/01/2026)",
+  "valor_original": "R$ 201.004,44",
+  "valor_baixado": "R$ 201.004,44"
+ },
+ {
+  "linha": 95,
+  "vencimento": "06/01/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (06/01/2026)",
+  "valor_original": "R$ 4,97",
+  "valor_baixado": "R$ 4,97"
+ },
+ {
+  "linha": 97,
+  "vencimento": "07/01/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTOS",
+  "vendedor": "",
+  "situacao": "Pago (07/01/2026)",
+  "valor_original": "R$ 2,34",
+  "valor_baixado": "R$ 2,34"
+ },
+ {
+  "linha": 99,
+  "vencimento": "07/01/2026",
+  "cliente": "BRADESCO",
+  "receita": "RENDIMENTOS",
+  "vendedor": "",
+  "situacao": "Pago (07/01/2026)",
+  "valor_original": "R$ 10,97",
+  "valor_baixado": "R$ 10,97"
+ },
+ {
+  "linha": 101,
+  "vencimento": "08/01/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTOS",
+  "vendedor": "",
+  "situacao": "Pago (08/01/2026)",
+  "valor_original": "R$ 1,69",
+  "valor_baixado": "R$ 1,69"
+ },
+ {
+  "linha": 103,
+  "vencimento": "09/01/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTOS",
+  "vendedor": "",
+  "situacao": "Pago (09/01/2026)",
+  "valor_original": "R$ 0,07",
+  "valor_baixado": "R$ 0,07"
+ },
+ {
+  "linha": 105,
+  "vencimento": "09/01/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "Ordem de Serviço 7",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (09/01/2026)",
+  "valor_original": "R$ 3.896,33",
+  "valor_baixado": "R$ 3.896,33"
+ },
+ {
+  "linha": 108,
+  "vencimento": "12/01/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (12/01/2026)",
+  "valor_original": "R$ 0,01",
+  "valor_baixado": "R$ 0,01"
+ },
+ {
+  "linha": 110,
+  "vencimento": "13/01/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "PAGAMENTO ITAÚ SEGUROS",
+  "vendedor": "",
+  "situacao": "Pago (13/01/2026)",
+  "valor_original": "R$ 791,80",
+  "valor_baixado": "R$ 791,80"
+ },
+ {
+  "linha": 112,
+  "vencimento": "13/01/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTOS",
+  "vendedor": "",
+  "situacao": "Pago (13/01/2026)",
+  "valor_original": "R$ 0,04",
+  "valor_baixado": "R$ 0,04"
+ },
+ {
+  "linha": 114,
+  "vencimento": "13/01/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU",
+  "receita": "Ordem de Serviço 8",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (13/01/2026)",
+  "valor_original": "R$ 19.285,92",
+  "valor_baixado": "R$ 19.285,92"
+ },
+ {
+  "linha": 116,
+  "vencimento": "14/01/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTOS",
+  "vendedor": "",
+  "situacao": "Pago (14/01/2026)",
+  "valor_original": "R$ 0,03",
+  "valor_baixado": "R$ 0,03"
+ },
+ {
+  "linha": 118,
+  "vencimento": "15/01/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "REND PAGO APLIC AUT APR",
+  "vendedor": "",
+  "situacao": "Pago (15/01/2026)",
+  "valor_original": "R$ 0,44",
+  "valor_baixado": "R$ 0,44"
+ },
+ {
+  "linha": 120,
+  "vencimento": "15/01/2026",
+  "cliente": "BRADESCO",
+  "receita": "RENDIMENTOS",
+  "vendedor": "",
+  "situacao": "Pago (15/01/2026)",
+  "valor_original": "R$ 0,01",
+  "valor_baixado": "R$ 0,01"
+ },
+ {
+  "linha": 122,
+  "vencimento": "15/01/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE MILHÃ",
+  "receita": "NF_Nº 409",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Pago (11/09/2026)",
+  "valor_original": "R$ 11.990,00",
+  "valor_baixado": "R$ 11.990,00"
+ },
+ {
+  "linha": 124,
+  "vencimento": "16/01/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTOS",
+  "vendedor": "",
+  "situacao": "Pago (16/01/2026)",
+  "valor_original": "R$ 0,92",
+  "valor_baixado": "R$ 0,92"
+ },
+ {
+  "linha": 131,
+  "vencimento": "20/01/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTOS",
+  "vendedor": "P",
+  "situacao": "ago (20/01/2026)   R",
+  "valor_original": "$ 4,83          R",
+  "valor_baixado": "$ 4,83         20/01/2"
+ },
+ {
+  "linha": 133,
+  "vencimento": "21/01/2026",
+  "cliente": "BANCO DO NORDESTE",
+  "receita": "ENTRADA - INVESTIMENTO",
+  "vendedor": "P",
+  "situacao": "ago (21/01/2026)   R",
+  "valor_original": "$ 5.929,50      R",
+  "valor_baixado": "$ 5.929,50     21/01/2"
+ },
+ {
+  "linha": 135,
+  "vencimento": "22/01/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "P",
+  "situacao": "ago (22/01/2026)   R",
+  "valor_original": "$ 0,61          R",
+  "valor_baixado": "$ 0,61         22/01/2"
+ },
+ {
+  "linha": 137,
+  "vencimento": "23/01/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENIMENTO",
+  "vendedor": "P",
+  "situacao": "ago (23/01/2026)   R",
+  "valor_original": "$ 0,08          R",
+  "valor_baixado": "$ 0,08         23/01/2"
+ },
+ {
+  "linha": 139,
+  "vencimento": "26/01/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTOS",
+  "vendedor": "P",
+  "situacao": "ago (26/01/2026)   R",
+  "valor_original": "$ 0,05          R",
+  "valor_baixado": "$ 0,05         26/01/2"
+ },
+ {
+  "linha": 141,
+  "vencimento": "27/01/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTOS",
+  "vendedor": "P",
+  "situacao": "ago (27/01/2026)   R",
+  "valor_original": "$ 0,06          R",
+  "valor_baixado": "$ 0,06         27/01/2"
+ },
+ {
+  "linha": 143,
+  "vencimento": "28/01/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "P",
+  "situacao": "ago (28/01/2026)   R",
+  "valor_original": "$ 0,11          R",
+  "valor_baixado": "$ 0,11         28/01/2"
+ },
+ {
+  "linha": 145,
+  "vencimento": "30/01/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTOS",
+  "vendedor": "P",
+  "situacao": "ago (30/01/2026)   R",
+  "valor_original": "$ 0,64          R",
+  "valor_baixado": "$ 0,64         30/01/2"
+ },
+ {
+  "linha": 148,
+  "vencimento": "30/01/2026",
+  "cliente": "JOTA BARROS PROJETOS E ASSESSORIA ...",
+  "receita": "ENTRADA DE FUNDO FIXO",
+  "vendedor": "E",
+  "situacao": "m Atraso           R",
+  "valor_original": "$ 1.365,70      R",
+  "valor_baixado": "$ 0,00"
+ },
+ {
+  "linha": 151,
+  "vencimento": "30/01/2026",
+  "cliente": "DEPARTAMENTO ESTADUAL DE IFRA- ESTR...",
+  "receita": "NF_Nº 416                 A",
+  "vendedor": "RQUITETURA            P",
+  "situacao": "ago (14/05/2026)   R",
+  "valor_original": "$ 50.040,00     R",
+  "valor_baixado": "$ 50.040,00    14/05/2"
+ },
+ {
+  "linha": 153,
+  "vencimento": "02/02/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTOS",
+  "vendedor": "P",
+  "situacao": "ago (02/02/2026)   R",
+  "valor_original": "$ 0,39          R",
+  "valor_baixado": "$ 0,39         02/02/2"
+ },
+ {
+  "linha": 156,
+  "vencimento": "02/02/2026",
+  "cliente": "JOTA BARROS PROJETOS E ASSESSORIA ...",
+  "receita": "",
+  "vendedor": "P",
+  "situacao": "ago (02/02/2026)   R",
+  "valor_original": "$ 11.209,13     R",
+  "valor_baixado": "$ 11.209,13    02/02/2"
+ },
+ {
+  "linha": 159,
+  "vencimento": "02/02/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "Ordem de Serviço 4        S",
+  "vendedor": "ANEAMENTO             P",
+  "situacao": "ago (12/02/2026)   R",
+  "valor_original": "$ 3.994,79      R",
+  "valor_baixado": "$ 3.994,79     12/02/2"
+ },
+ {
+  "linha": 162,
+  "vencimento": "03/02/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE",
+  "receita": "Ordem de Serviço 14       I",
+  "vendedor": "NFRAESTRUTURA         P",
+  "situacao": "ago (03/02/2026)   R",
+  "valor_original": "$ 10.386,06     R",
+  "valor_baixado": "$ 10.386,06    03/02/2"
+ },
+ {
+  "linha": 165,
+  "vencimento": "03/02/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE",
+  "receita": "Ordem de Serviço 13       I",
+  "vendedor": "NFRAESTRUTURA         P",
+  "situacao": "ago (03/02/2026)   R",
+  "valor_original": "$ 5.514,22      R",
+  "valor_baixado": "$ 5.514,22     03/02/2"
+ },
+ {
+  "linha": 168,
+  "vencimento": "03/02/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE",
+  "receita": "Ordem de Serviço 12       A",
+  "vendedor": "RQUITETURA            P",
+  "situacao": "ago (03/02/2026)   R",
+  "valor_original": "$ 22.778,67     R",
+  "valor_baixado": "$ 22.778,67    03/02/2"
+ },
+ {
+  "linha": 171,
+  "vencimento": "03/02/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE",
+  "receita": "Ordem de Serviço 11       A",
+  "vendedor": "RQUITETURA            P",
+  "situacao": "ago (03/02/2026)   R",
+  "valor_original": "$ 14.629,12     R",
+  "valor_baixado": "$ 14.629,12    03/02/2"
+ },
+ {
+  "linha": 174,
+  "vencimento": "03/02/2026",
+  "cliente": "CODEVASF - COMPANHIA DE DESENVOLVI...",
+  "receita": "Ordem de Serviço 9        A",
+  "vendedor": "RQUITETURA            P",
+  "situacao": "ago (03/02/2026)   R",
+  "valor_original": "$ 13.860,00     R",
+  "valor_baixado": "$ 13.860,00    03/02/2"
+ },
+ {
+  "linha": 176,
+  "vencimento": "04/02/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTOS",
+  "vendedor": "P",
+  "situacao": "ago (04/02/2026)   R",
+  "valor_original": "$ 0,22          R",
+  "valor_baixado": "$ 0,22         04/02/2"
+ },
+ {
+  "linha": 178,
+  "vencimento": "06/02/2026",
+  "cliente": "",
+  "receita": "EMPRÉSTIMO ARRAIA",
+  "vendedor": "P",
+  "situacao": "ago (06/02/2026)   R",
+  "valor_original": "$ 9.000,00      R",
+  "valor_baixado": "$ 9.000,00     06/02/2"
+ },
+ {
+  "linha": 180,
+  "vencimento": "06/02/2026",
+  "cliente": "JOTA BARROS PROJETOS E",
+  "receita": "RENDIMENTOS",
+  "vendedor": "P",
+  "situacao": "ago (06/02/2026)   R",
+  "valor_original": "$ 0,15          R",
+  "valor_baixado": "$ 0,15         06/02/2"
+ },
+ {
+  "linha": 182,
+  "vencimento": "06/02/2026",
+  "cliente": "JOTA BARROS PROJETOS E ASSESSORIA ...",
+  "receita": "",
+  "vendedor": "P",
+  "situacao": "ago (06/02/2026)   R",
+  "valor_original": "$ 750,00        R",
+  "valor_baixado": "$ 750,00       06/02/2"
+ },
+ {
+  "linha": 185,
+  "vencimento": "06/02/2026",
+  "cliente": "JOTA BARROS PROJETOS E",
+  "receita": "RENDIMENTO",
+  "vendedor": "P",
+  "situacao": "ago (06/02/2026)   R",
+  "valor_original": "$ 1,57          R",
+  "valor_baixado": "$ 1,57         06/02/2"
+ },
+ {
+  "linha": 187,
+  "vencimento": "06/02/2026",
+  "cliente": "JOTA BARROS PROJETOS E ASSESSORIA ...",
+  "receita": "",
+  "vendedor": "E",
+  "situacao": "m Atraso           R",
+  "valor_original": "$ 750,00        R",
+  "valor_baixado": "$ 0,00"
+ },
+ {
+  "linha": 189,
+  "vencimento": "10/02/2026",
+  "cliente": "MUNICIPIO DE IPAPORANGA",
+  "receita": "Ordem de Serviço 24       S",
+  "vendedor": "ANEAMENTO             P",
+  "situacao": "ago (10/02/2026)   R",
+  "valor_original": "$ 76.160,00     R",
+  "valor_baixado": "$ 76.160,00    10/02/2"
+ },
+ {
+  "linha": 191,
+  "vencimento": "10/02/2026",
+  "cliente": "MUNICIPIO DE IPAPORANGA",
+  "receita": "Ordem de Serviço 25       S",
+  "vendedor": "ANEAMENTO             P",
+  "situacao": "ago (10/02/2026)   R",
+  "valor_original": "$ 78.840,00     R",
+  "valor_baixado": "$ 78.840,00    10/02/2"
+ },
+ {
+  "linha": 193,
+  "vencimento": "10/02/2026",
+  "cliente": "GOVERNO MUNICIPAL DE ORÓS",
+  "receita": "Ordem de Serviço 29       S",
+  "vendedor": "ANEAMENTO             P",
+  "situacao": "ago (10/02/2026)   R",
+  "valor_original": "$ 60.000,00     R",
+  "valor_baixado": "$ 60.000,00    10/02/2"
+ },
+ {
+  "linha": 195,
+  "vencimento": "10/02/2026",
+  "cliente": "JOTA BARROS PROJETOS E ASSESSORIA ...",
+  "receita": "ENTRADA",
+  "vendedor": "P",
+  "situacao": "ago (10/02/2026)   R",
+  "valor_original": "$ 750,00        R",
+  "valor_baixado": "$ 750,00       10/02/2"
+ },
+ {
+  "linha": 198,
+  "vencimento": "12/02/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "Ordem de Serviço 1        S",
+  "vendedor": "ANEAMENTO             P",
+  "situacao": "ago (11/02/2026)   R",
+  "valor_original": "$ 1.623,86      R",
+  "valor_baixado": "$ 1.623,86     11/02/2"
+ },
+ {
+  "linha": 200,
+  "vencimento": "13/02/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "REND PAGO APLIC AUT APR",
+  "vendedor": "P",
+  "situacao": "ago (13/02/2026)   R",
+  "valor_original": "$ 0,20          R",
+  "valor_baixado": "$ 0,20         13/02/2"
+ },
+ {
+  "linha": 202,
+  "vencimento": "13/02/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E",
+  "receita": "RENDIMENTO",
+  "vendedor": "P",
+  "situacao": "ago (13/02/2026)   R",
+  "valor_original": "$ 0,11          R",
+  "valor_baixado": "$ 0,11         13/02/2"
+ },
+ {
+  "linha": 204,
+  "vencimento": "13/02/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "Ordem de Serviço 5        S",
+  "vendedor": "ANEAMENTO             P",
+  "situacao": "ago (12/02/2026)   R",
+  "valor_original": "$ 139,82        R",
+  "valor_baixado": "$ 139,82       12/02/2"
+ },
+ {
+  "linha": 207,
+  "vencimento": "13/02/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "Ordem de Serviço 6        S",
+  "vendedor": "ANEAMENTO             P",
+  "situacao": "ago (12/02/2026)   R",
+  "valor_original": "$ 36.992,18     R",
+  "valor_baixado": "$ 36.992,18    12/02/2"
+ },
+ {
+  "linha": 209,
+  "vencimento": "14/02/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "REND PAGO APLIC AUT APR",
+  "vendedor": "E",
+  "situacao": "m Atraso           R",
+  "valor_original": "$ 0,20          R",
+  "valor_baixado": "$ 0,00"
+ },
+ {
+  "linha": 211,
+  "vencimento": "18/02/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "E",
+  "situacao": "m Atraso           R",
+  "valor_original": "$ 0,20          R",
+  "valor_baixado": "$ 0,00"
+ },
+ {
+  "linha": 213,
+  "vencimento": "19/02/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "P",
+  "situacao": "ago (19/02/2026)   R",
+  "valor_original": "$ 0,89          R",
+  "valor_baixado": "$ 0,89         19/02/2"
+ },
+ {
+  "linha": 215,
+  "vencimento": "19/02/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE CARIDADE",
+  "receita": "Ordem de Serviço 31       I",
+  "vendedor": "NFRAESTRUTURA         P",
+  "situacao": "ago (19/02/2026)   R",
+  "valor_original": "$ 40.828,42     R",
+  "valor_baixado": "$ 40.828,42    19/02/2"
+ },
+ {
+  "linha": 217,
+  "vencimento": "20/02/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "REND PAGO APLIC AUT APR",
+  "vendedor": "E",
+  "situacao": "m Atraso           R",
+  "valor_original": "$ 0,89          R",
+  "valor_baixado": "$ 0,00"
+ },
+ {
+  "linha": 219,
+  "vencimento": "23/02/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTOS",
+  "vendedor": "E",
+  "situacao": "m Atraso           R",
+  "valor_original": "$ 1,48          R",
+  "valor_baixado": "$ 0,00"
+ },
+ {
+  "linha": 221,
+  "vencimento": "23/02/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTOS",
+  "vendedor": "P",
+  "situacao": "ago (23/02/2026)   R",
+  "valor_original": "$ 1,48          R",
+  "valor_baixado": "$ 1,48         23/02/2"
+ },
+ {
+  "linha": 223,
+  "vencimento": "24/02/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTOS",
+  "vendedor": "P",
+  "situacao": "ago (24/02/2026)   R",
+  "valor_original": "$ 0,03          R",
+  "valor_baixado": "$ 0,03         24/02/2"
+ },
+ {
+  "linha": 225,
+  "vencimento": "25/02/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "P",
+  "situacao": "ago (25/02/2026)   R",
+  "valor_original": "$ 0,22          R",
+  "valor_baixado": "$ 0,22         25/02/2"
+ },
+ {
+  "linha": 227,
+  "vencimento": "26/02/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTOS",
+  "vendedor": "P",
+  "situacao": "ago (26/02/2026)   R",
+  "valor_original": "$ 0,25          R",
+  "valor_baixado": "$ 0,25         26/02/2"
+ },
+ {
+  "linha": 229,
+  "vencimento": "27/02/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "",
+  "vendedor": "P",
+  "situacao": "ago (27/02/2026)   R",
+  "valor_original": "$ 3,74          R",
+  "valor_baixado": "$ 3,74         27/02/2"
+ },
+ {
+  "linha": 231,
+  "vencimento": "27/02/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTOS",
+  "vendedor": "E",
+  "situacao": "m Atraso           R",
+  "valor_original": "$ 3,47          R",
+  "valor_baixado": "$ 0,00"
+ },
+ {
+  "linha": 233,
+  "vencimento": "27/02/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE NOVA MAMORÉ",
+  "receita": "2ª MEDIÇÃO - NF_Nº 446    A",
+  "vendedor": "RQUITETURA            P",
+  "situacao": "ago (02/04/2026)   R",
+  "valor_original": "$ 18.225,00     R",
+  "valor_baixado": "$ 18.225,00    02/04/2"
+ },
+ {
+  "linha": 235,
+  "vencimento": "02/03/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTOS",
+  "vendedor": "P",
+  "situacao": "ago (02/03/2026)   R",
+  "valor_original": "$ 0,44          R",
+  "valor_baixado": "$ 0,44         02/03/2"
+ },
+ {
+  "linha": 237,
+  "vencimento": "02/03/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "",
+  "vendedor": "P",
+  "situacao": "ago (02/03/2026)   R",
+  "valor_original": "$ 11.513,33     R",
+  "valor_baixado": "$ 11.513,33    02/03/2"
+ },
+ {
+  "linha": 240,
+  "vencimento": "03/03/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE IRAUÇUBA",
+  "receita": "Ordem de Serviço 52       S",
+  "vendedor": "ANEAMENTO             P",
+  "situacao": "ago (03/03/2026)   R",
+  "valor_original": "$ 7.558,70      R",
+  "valor_baixado": "$ 7.558,70     03/03/2"
+ },
+ {
+  "linha": 242,
+  "vencimento": "03/03/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE ITAPIÚNA",
+  "receita": "Ordem de Serviço 10       I",
+  "vendedor": "NFRAESTRUTURA         P",
+  "situacao": "ago (11/03/2026)   R",
+  "valor_original": "$ 29.000,00     R",
+  "valor_baixado": "$ 29.000,00    11/03/2"
+ },
+ {
+  "linha": 244,
+  "vencimento": "04/03/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "E",
+  "situacao": "m Atraso           R",
+  "valor_original": "$ 0,12          R",
+  "valor_baixado": "$ 0,00"
+ },
+ {
+  "linha": 253,
+  "vencimento": "04/03/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (04/03/2026)",
+  "valor_original": "R$ 0,04",
+  "valor_baixado": "R$ 0,04"
+ },
+ {
+  "linha": 255,
+  "vencimento": "05/03/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (05/03/2026)",
+  "valor_original": "R$ 0,01",
+  "valor_baixado": "R$ 0,01"
+ },
+ {
+  "linha": 257,
+  "vencimento": "05/03/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU",
+  "receita": "Ordem de Serviço 15",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (20/02/2026)",
+  "valor_original": "R$ 4.250,00",
+  "valor_baixado": "R$ 4.250,00"
+ },
+ {
+  "linha": 259,
+  "vencimento": "06/03/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (06/03/2026)",
+  "valor_original": "R$ 0,30",
+  "valor_baixado": "R$ 0,30"
+ },
+ {
+  "linha": 261,
+  "vencimento": "06/03/2026",
+  "cliente": "BRADESCO",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (06/03/2026)",
+  "valor_original": "R$ 2,38",
+  "valor_baixado": "R$ 2,38"
+ },
+ {
+  "linha": 263,
+  "vencimento": "06/03/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE FORTIM",
+  "receita": "Ordem de Serviço 17",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (16/04/2026)",
+  "valor_original": "R$ 2.157,40",
+  "valor_baixado": "R$ 2.157,40"
+ },
+ {
+  "linha": 265,
+  "vencimento": "09/03/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE",
+  "receita": "12ª MEDIÇÃO*",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 9.968,58",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 267,
+  "vencimento": "09/03/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE CARIDADE",
+  "receita": "72ª MEDIÇÃO*",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 25.860,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 269,
+  "vencimento": "13/03/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (13/03/2026)",
+  "valor_original": "R$ 0,09",
+  "valor_baixado": "R$ 0,09"
+ },
+ {
+  "linha": 271,
+  "vencimento": "13/03/2026",
+  "cliente": "BANCO DO BRADESCO",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (13/03/2026)",
+  "valor_original": "R$ 0,04",
+  "valor_baixado": "R$ 0,04"
+ },
+ {
+  "linha": 273,
+  "vencimento": "13/03/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU",
+  "receita": "Ordem de Serviço 30",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (20/02/2026)",
+  "valor_original": "R$ 52.200,00",
+  "valor_baixado": "R$ 52.200,00"
+ },
+ {
+  "linha": 275,
+  "vencimento": "16/03/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "REND PAGO APLIC AUT APR",
+  "vendedor": "",
+  "situacao": "Pago (16/03/2026)",
+  "valor_original": "R$ 0,01",
+  "valor_baixado": "R$ 0,01"
+ },
+ {
+  "linha": 277,
+  "vencimento": "17/03/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (17/03/2026)",
+  "valor_original": "R$ 0,01",
+  "valor_baixado": "R$ 0,01"
+ },
+ {
+  "linha": 279,
+  "vencimento": "18/03/2026",
+  "cliente": "CODEVASF - COMPANHIA DE DESENVOLVI...",
+  "receita": "",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (18/03/2023)",
+  "valor_original": "R$ 26.970,00",
+  "valor_baixado": "R$ 26.970,00"
+ },
+ {
+  "linha": 281,
+  "vencimento": "20/03/2026",
+  "cliente": "DESENVOLVI...",
+  "receita": "REND PAGO APLIC AUT APR",
+  "vendedor": "",
+  "situacao": "Pago (20/03/2026)",
+  "valor_original": "R$ 1,66",
+  "valor_baixado": "R$ 1,66"
+ },
+ {
+  "linha": 283,
+  "vencimento": "20/03/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE FORTIM",
+  "receita": "Ordem de Serviço 41",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (16/04/2026)",
+  "valor_original": "R$ 39.950,00",
+  "valor_baixado": "R$ 39.950,00"
+ },
+ {
+  "linha": 286,
+  "vencimento": "20/03/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE BARCARENA ...",
+  "receita": "2ª MEDIÇÃO - NF_ Nº 445",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (16/04/2026)",
+  "valor_original": "R$ 114.773,03",
+  "valor_baixado": "R$ 114.773,03"
+ },
+ {
+  "linha": 289,
+  "vencimento": "23/03/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE",
+  "receita": "Ordem de Serviço 34",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Pago (29/05/2026)",
+  "valor_original": "R$ 9.140,26",
+  "valor_baixado": "R$ 9.140,26"
+ },
+ {
+  "linha": 292,
+  "vencimento": "23/03/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE",
+  "receita": "43ª MEDIÇÃO - NF 433",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 10.386,85",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 294,
+  "vencimento": "23/03/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU",
+  "receita": "20ª MEDIÇÃO - NF_Nº 432",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Pago (22/06/2026)",
+  "valor_original": "R$ 20.600,00",
+  "valor_baixado": "R$ 20.600,00"
+ },
+ {
+  "linha": 296,
+  "vencimento": "24/03/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (24/03/2026)",
+  "valor_original": "R$ 0,18",
+  "valor_baixado": "R$ 0,18"
+ },
+ {
+  "linha": 299,
+  "vencimento": "24/03/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (24/03/2026)",
+  "valor_original": "R$ 0,30",
+  "valor_baixado": "R$ 0,30"
+ },
+ {
+  "linha": 302,
+  "vencimento": "26/03/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE CHOROZINHO",
+  "receita": "8ª MEDIÇÃO - NF 436",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (11/09/2026)",
+  "valor_original": "R$ 102.707,00",
+  "valor_baixado": "R$ 72.707,00"
+ },
+ {
+  "linha": 304,
+  "vencimento": "27/03/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (27/03/2026)",
+  "valor_original": "R$ 0,01",
+  "valor_baixado": "R$ 0,01"
+ },
+ {
+  "linha": 306,
+  "vencimento": "31/03/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE FORTIM",
+  "receita": "Ordem de Serviço 102",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Pago (16/04/2026)",
+  "valor_original": "R$ 51.788,32",
+  "valor_baixado": "R$ 51.788,32"
+ },
+ {
+  "linha": 308,
+  "vencimento": "03/04/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE APUIARES",
+  "receita": "Ordem de Serviço 35",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (10/03/2026)",
+  "valor_original": "R$ 152.879,30",
+  "valor_baixado": "R$ 152.879,30"
+ },
+ {
+  "linha": 310,
+  "vencimento": "07/04/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (07/04/2026)",
+  "valor_original": "R$ 0,04",
+  "valor_baixado": "R$ 0,04"
+ },
+ {
+  "linha": 312,
+  "vencimento": "08/04/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (08/04/2026)",
+  "valor_original": "R$ 0,02",
+  "valor_baixado": "R$ 0,02"
+ },
+ {
+  "linha": 314,
+  "vencimento": "09/04/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (09/04/2026)",
+  "valor_original": "R$ 0,10",
+  "valor_baixado": "R$ 0,10"
+ },
+ {
+  "linha": 316,
+  "vencimento": "10/04/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (10/04/2026)",
+  "valor_original": "R$ 0,13",
+  "valor_baixado": "R$ 0,13"
+ },
+ {
+  "linha": 319,
+  "vencimento": "10/04/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "Ordem de Serviço 83",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (10/04/2026)",
+  "valor_original": "R$ 77.862,50",
+  "valor_baixado": "R$ 77.862,50"
+ },
+ {
+  "linha": 322,
+  "vencimento": "10/04/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "Ordem de Serviço 84",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (10/04/2026)",
+  "valor_original": "R$ 3.083,35",
+  "valor_baixado": "R$ 3.083,35"
+ },
+ {
+  "linha": 325,
+  "vencimento": "14/04/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE CARIDADE",
+  "receita": "Ordem de Serviço 112",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Pago (14/04/2026)",
+  "valor_original": "R$ 61.180,00",
+  "valor_baixado": "R$ 61.180,00"
+ },
+ {
+  "linha": 327,
+  "vencimento": "15/04/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (15/04/2026)",
+  "valor_original": "R$ 0,21",
+  "valor_baixado": "R$ 0,21"
+ },
+ {
+  "linha": 329,
+  "vencimento": "15/04/2026",
+  "cliente": "BANCO DO BRADESCO",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (15/04/2026)",
+  "valor_original": "R$ 0,15",
+  "valor_baixado": "R$ 0,15"
+ },
+ {
+  "linha": 331,
+  "vencimento": "17/04/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "REND PAGO APLIC AUT APR",
+  "vendedor": "",
+  "situacao": "Pago (17/04/2026)",
+  "valor_original": "R$ 3,01",
+  "valor_baixado": "R$ 3,01"
+ },
+ {
+  "linha": 333,
+  "vencimento": "18/04/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE IRAUÇUBA",
+  "receita": "25ª MEDIÇÃO - NF_Nº 492",
+  "vendedor": "",
+  "situacao": "Pago (08/07/2026)",
+  "valor_original": "R$ 19.822,45",
+  "valor_baixado": "R$ 19.822,45"
+ },
+ {
+  "linha": 335,
+  "vencimento": "18/04/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE IRAUÇUBA",
+  "receita": "Ordem de Serviço 100",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (31/03/2026)",
+  "valor_original": "R$ 4.174,02",
+  "valor_baixado": "R$ 4.174,02"
+ },
+ {
+  "linha": 337,
+  "vencimento": "20/04/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "REND PAGO APLIC AUT APR",
+  "vendedor": "",
+  "situacao": "Pago (20/04/2026)",
+  "valor_original": "R$ 1,54",
+  "valor_baixado": "R$ 1,54"
+ },
+ {
+  "linha": 340,
+  "vencimento": "20/04/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE NOVA MAMORÉ",
+  "receita": "01ª MEDIÇÃO - NF_Nº 446",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (02/04/2026)",
+  "valor_original": "R$ 5.862,00",
+  "valor_baixado": "R$ 5.862,00"
+ },
+ {
+  "linha": 343,
+  "vencimento": "20/04/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE NOVA MAMORÉ",
+  "receita": "3ª MEDIÇÃO - NF_Nº 446",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (02/04/2026)",
+  "valor_original": "R$ 7.370,90",
+  "valor_baixado": "R$ 7.370,90"
+ },
+ {
+  "linha": 346,
+  "vencimento": "20/04/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE NOVA MAMORÉ",
+  "receita": "4ª MEDIÇÃO - NF_Nº 446",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (02/04/2026)",
+  "valor_original": "R$ 9.400,00",
+  "valor_baixado": "R$ 9.400,00"
+ },
+ {
+  "linha": 349,
+  "vencimento": "20/04/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE NOVA MAMORÉ",
+  "receita": "07ª MEDIÇÃO - NF_Nº 446",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Pago (02/04/2026)",
+  "valor_original": "R$ 171.140,00",
+  "valor_baixado": "R$ 171.140,00"
+ },
+ {
+  "linha": 352,
+  "vencimento": "22/04/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (22/04/2026)",
+  "valor_original": "R$ 0,24",
+  "valor_baixado": "R$ 0,24"
+ },
+ {
+  "linha": 354,
+  "vencimento": "23/04/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (23/04/2026)",
+  "valor_original": "R$ 0,38",
+  "valor_baixado": "R$ 0,38"
+ },
+ {
+  "linha": 357,
+  "vencimento": "23/04/2026",
+  "cliente": "ESTACIONAMENTO BANCO DO NORDESTE",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (23/04/2026)",
+  "valor_original": "R$ 430.000,00",
+  "valor_baixado": "R$ 430.000,00"
+ },
+ {
+  "linha": 360,
+  "vencimento": "24/04/2026",
+  "cliente": "ARRAIA ARQUITETURA E URBANISMO LTDA",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (24/04/2026)",
+  "valor_original": "R$ 19.000,00",
+  "valor_baixado": "R$ 19.000,00"
+ },
+ {
+  "linha": 363,
+  "vencimento": "24/04/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "REND PAGO APLIC AUT APR",
+  "vendedor": "",
+  "situacao": "Pago (24/04/2026)",
+  "valor_original": "R$ 0,29",
+  "valor_baixado": "R$ 0,29"
+ },
+ {
+  "linha": 365,
+  "vencimento": "27/04/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "EST PG FINANC VEIC29/42",
+  "vendedor": "",
+  "situacao": "Pago (27/04/2026)",
+  "valor_original": "R$ 3.297,76",
+  "valor_baixado": "R$ 3.297,76"
+ },
+ {
+  "linha": 367,
+  "vencimento": "27/04/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "EST PG FINANC VEIC30/42",
+  "vendedor": "",
+  "situacao": "Pago (27/04/2026)",
+  "valor_original": "R$ 3.298,70",
+  "valor_baixado": "R$ 3.298,70"
+ },
+ {
+  "linha": 369,
+  "vencimento": "28/04/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (28/04/2026)",
+  "valor_original": "R$ 0,07",
+  "valor_baixado": "R$ 0,07"
+ },
+ {
+  "linha": 371,
+  "vencimento": "29/04/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (29/04/2026)",
+  "valor_original": "R$ 0,01",
+  "valor_baixado": "R$ 0,01"
+ },
+ {
+  "linha": 380,
+  "vencimento": "30/04/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (30/04/2026)",
+  "valor_original": "R$ 4.134,72",
+  "valor_baixado": "R$ 4.134,72"
+ },
+ {
+  "linha": 383,
+  "vencimento": "30/04/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (30/04/2026)",
+  "valor_original": "R$ 0,51",
+  "valor_baixado": "R$ 0,51"
+ },
+ {
+  "linha": 386,
+  "vencimento": "08/05/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (08/05/2026)",
+  "valor_original": "R$ 0,09",
+  "valor_baixado": "R$ 0,09"
+ },
+ {
+  "linha": 388,
+  "vencimento": "08/05/2026",
+  "cliente": "JOTA BARROS PROJETOS E ASSESSORIA ...",
+  "receita": "ENTRADA",
+  "vendedor": "",
+  "situacao": "Pago (08/05/2026)",
+  "valor_original": "R$ 2.000,00",
+  "valor_baixado": "R$ 2.000,00"
+ },
+ {
+  "linha": 391,
+  "vencimento": "10/05/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "Ordem de Serviço 111",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (11/05/2026)",
+  "valor_original": "R$ 2.006,17",
+  "valor_baixado": "R$ 2.006,17"
+ },
+ {
+  "linha": 394,
+  "vencimento": "11/05/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE",
+  "receita": "45ª MEDIÇÃO - NF_ Nº 447",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 1.661,43",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 397,
+  "vencimento": "11/05/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE",
+  "receita": "13ª MEDIÇÃO - NF_Nº 448",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 1.661,43",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 400,
+  "vencimento": "11/05/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE",
+  "receita": "Ordem de Serviço 110",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (29/05/2026)",
+  "valor_original": "R$ 12.356,79",
+  "valor_baixado": "R$ 12.356,79"
+ },
+ {
+  "linha": 403,
+  "vencimento": "12/05/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (12/05/2026)",
+  "valor_original": "R$ 0,02",
+  "valor_baixado": "R$ 0,02"
+ },
+ {
+  "linha": 405,
+  "vencimento": "12/05/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "ENTRADA DE FUNDO FIXO",
+  "vendedor": "",
+  "situacao": "Pago (12/05/2026)",
+  "valor_original": "R$ 1.901,32",
+  "valor_baixado": "R$ 1.901,32"
+ },
+ {
+  "linha": 407,
+  "vencimento": "13/05/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE CARIDADE",
+  "receita": "43ª MEDIÇÃO - NF_Nº 463",
+  "vendedor": "",
+  "situacao": "Pago (19/06/2026)",
+  "valor_original": "R$ 44.310,04",
+  "valor_baixado": "R$ 44.310,04"
+ },
+ {
+  "linha": 410,
+  "vencimento": "14/05/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "Ordem de Serviço 113",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (14/05/2026)",
+  "valor_original": "R$ 956,81",
+  "valor_baixado": "R$ 956,81"
+ },
+ {
+  "linha": 413,
+  "vencimento": "14/05/2026",
+  "cliente": "JOTA BARROS PROJETOS E ASSESSORIA ...",
+  "receita": "ENTRADA",
+  "vendedor": "",
+  "situacao": "Pago (14/05/2026)",
+  "valor_original": "R$ 400,00",
+  "valor_baixado": "R$ 400,00"
+ },
+ {
+  "linha": 415,
+  "vencimento": "15/05/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (15/05/2026)",
+  "valor_original": "R$ 0,01",
+  "valor_baixado": "R$ 0,01"
+ },
+ {
+  "linha": 417,
+  "vencimento": "15/05/2026",
+  "cliente": "BRADESCO",
+  "receita": "RENTAB. INVESTIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (15/05/2026)",
+  "valor_original": "R$ 0,23",
+  "valor_baixado": "R$ 0,23"
+ },
+ {
+  "linha": 419,
+  "vencimento": "18/05/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (18/05/2026)",
+  "valor_original": "R$ 0,01",
+  "valor_baixado": "R$ 0,01"
+ },
+ {
+  "linha": 421,
+  "vencimento": "19/05/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (19/05/2026)",
+  "valor_original": "R$ 0,11",
+  "valor_baixado": "R$ 0,11"
+ },
+ {
+  "linha": 423,
+  "vencimento": "20/05/2026",
+  "cliente": "CODEVASF - COMPANHIA DE DESENVOLVI...",
+  "receita": "2ª MEDIÇÃO* - GRUPO 03",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 42.700,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 426,
+  "vencimento": "20/05/2026",
+  "cliente": "CODEVASF - COMPANHIA DE DESENVOLVI...",
+  "receita": "2ª MEDIÇÃO* - GRUPO 01",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 32.340,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 428,
+  "vencimento": "20/05/2026",
+  "cliente": "teste",
+  "receita": "Ordem de Serviço 126",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 20,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 431,
+  "vencimento": "20/05/2026",
+  "cliente": "",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (20/05/2026)",
+  "valor_original": "R$ 0,17",
+  "valor_baixado": "R$ 0,17"
+ },
+ {
+  "linha": 434,
+  "vencimento": "20/05/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "Ordem de Serviço 81",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (14/04/2026)",
+  "valor_original": "R$ 21.163,85",
+  "valor_baixado": "R$ 21.163,85"
+ },
+ {
+  "linha": 437,
+  "vencimento": "20/05/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "Ordem de Serviço 78",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (14/05/2026)",
+  "valor_original": "R$ 30.276,09",
+  "valor_baixado": "R$ 30.276,09"
+ },
+ {
+  "linha": 440,
+  "vencimento": "20/05/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "3ª MEDIÇÃO - NF_ Nº 473",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (10/07/2026)",
+  "valor_original": "R$ 31.530,05",
+  "valor_baixado": "R$ 31.530,05"
+ },
+ {
+  "linha": 443,
+  "vencimento": "20/05/2026",
+  "cliente": "BAHIA SECRETARIA DE SAUDE DO ESTADO",
+  "receita": "",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 67.201,74",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 446,
+  "vencimento": "20/05/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU",
+  "receita": "4ª MEDIÇÃO - NF_Nº 427",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (22/06/2026)",
+  "valor_original": "R$ 36.150,00",
+  "valor_baixado": "R$ 36.150,00"
+ },
+ {
+  "linha": 448,
+  "vencimento": "26/05/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (26/05/2026)",
+  "valor_original": "R$ 0,21",
+  "valor_baixado": "R$ 0,21"
+ },
+ {
+  "linha": 451,
+  "vencimento": "26/05/2026",
+  "cliente": "",
+  "receita": "RENTAB. INVESTI FACIL",
+  "vendedor": "",
+  "situacao": "Pago (26/05/2026)",
+  "valor_original": "R$ 0,62",
+  "valor_baixado": "R$ 0,62"
+ },
+ {
+  "linha": 454,
+  "vencimento": "27/05/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (27/05/2026)",
+  "valor_original": "R$ 0,16",
+  "valor_baixado": "R$ 0,16"
+ },
+ {
+  "linha": 457,
+  "vencimento": "28/05/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (28/05/2026)",
+  "valor_original": "R$ 0,01",
+  "valor_baixado": "R$ 0,01"
+ },
+ {
+  "linha": 460,
+  "vencimento": "29/05/2026",
+  "cliente": "CODEVASF - COMPANHIA DE DESENVOLVI...",
+  "receita": "1ª MEDIÇÃO - NF_Nº 458",
+  "vendedor": "",
+  "situacao": "Pago (09/06/2026)",
+  "valor_original": "R$ 130.281,97",
+  "valor_baixado": "R$ 130.281,97"
+ },
+ {
+  "linha": 463,
+  "vencimento": "29/05/2026",
+  "cliente": "BANCO ITAU",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (29/05/2026)",
+  "valor_original": "R$ 0,36",
+  "valor_baixado": "R$ 0,36"
+ },
+ {
+  "linha": 466,
+  "vencimento": "01/06/2026",
+  "cliente": "RENAN VEICULOS LTDA",
+  "receita": "",
+  "vendedor": "ADMINISTRAÇÃO",
+  "situacao": "Pago (01/06/2026)",
+  "valor_original": "R$ 118.887,78",
+  "valor_baixado": "R$ 118.887,78"
+ },
+ {
+  "linha": 468,
+  "vencimento": "02/06/2026",
+  "cliente": "ITAU UNIBANCO HOLDING S.A.",
+  "receita": "RENDIMENTOS",
+  "vendedor": "",
+  "situacao": "Pago (02/06/2026)",
+  "valor_original": "R$ 1,35",
+  "valor_baixado": "R$ 1,35"
+ },
+ {
+  "linha": 471,
+  "vencimento": "03/06/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (03/06/2026)",
+  "valor_original": "R$ 0,83",
+  "valor_baixado": "R$ 0,83"
+ },
+ {
+  "linha": 474,
+  "vencimento": "04/06/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE AIUABA",
+  "receita": "3ª MEDIÇÃO - NF_Nº 459",
+  "vendedor": "",
+  "situacao": "Pago (08/06/2026)",
+  "valor_original": "R$ 29.316,42",
+  "valor_baixado": "R$ 29.316,42"
+ },
+ {
+  "linha": 476,
+  "vencimento": "05/06/2026",
+  "cliente": "MUNICIPIO DE BEBERIBE",
+  "receita": "1ª MEDIÇÃO - NF_Nº 460",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (19/06/2026)",
+  "valor_original": "R$ 52.000,00",
+  "valor_baixado": "R$ 52.000,00"
+ },
+ {
+  "linha": 479,
+  "vencimento": "06/06/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE NOVA MAMORÉ",
+  "receita": "37ª MEDIÇÃO*",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 7.795,50",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 482,
+  "vencimento": "06/06/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "Ordem de Serviço 116",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (05/06/2026)",
+  "valor_original": "R$ 6.268,66",
+  "valor_baixado": "R$ 6.268,66"
+ },
+ {
+  "linha": 485,
+  "vencimento": "06/06/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "Ordem de Serviço 116",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (05/06/2026)",
+  "valor_original": "R$ 248,24",
+  "valor_baixado": "R$ 248,24"
+ },
+ {
+  "linha": 488,
+  "vencimento": "09/06/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE NOVA MAMORÉ",
+  "receita": "05ª MEDIÇÃO - NF_Nº 446",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (02/04/2026)",
+  "valor_original": "R$ 49.305,00",
+  "valor_baixado": "R$ 49.305,00"
+ },
+ {
+  "linha": 491,
+  "vencimento": "09/06/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE CHOROZINHO",
+  "receita": "Ordem de Serviço 22",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (10/03/2026)",
+  "valor_original": "R$ 31.270,00",
+  "valor_baixado": "R$ 31.270,00"
+ },
+ {
+  "linha": 494,
+  "vencimento": "10/06/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 0,83",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 497,
+  "vencimento": "10/06/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (10/06/2026)",
+  "valor_original": "R$ 0,86",
+  "valor_baixado": "R$ 0,86"
+ },
+ {
+  "linha": 500,
+  "vencimento": "11/06/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (11/06/2026)",
+  "valor_original": "R$ 0,04",
+  "valor_baixado": "R$ 0,04"
+ },
+ {
+  "linha": 503,
+  "vencimento": "15/06/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "AUT MAIS",
+  "vendedor": "",
+  "situacao": "Pago (15/06/2026)",
+  "valor_original": "R$ 0,02",
+  "valor_baixado": "R$ 0,02"
+ },
+ {
+  "linha": 505,
+  "vencimento": "16/06/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "AUT MAIS",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 0,02",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 515,
+  "vencimento": "16/06/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (16/06/2026)",
+  "valor_original": "R$ 0,02",
+  "valor_baixado": "R$ 0,02"
+ },
+ {
+  "linha": 518,
+  "vencimento": "17/06/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (17/06/2026)",
+  "valor_original": "R$ 0,44",
+  "valor_baixado": "R$ 0,44"
+ },
+ {
+  "linha": 521,
+  "vencimento": "17/06/2026",
+  "cliente": "JOTA BARROS PROJETOS E ASSESSORIA ...",
+  "receita": "ENTRADA",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 250,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 524,
+  "vencimento": "18/06/2026",
+  "cliente": "RENAN VEICULOS LTDA",
+  "receita": "",
+  "vendedor": "ADMINISTRAÇÃO",
+  "situacao": "Pago (01/06/2026)",
+  "valor_original": "R$ 59.422,22",
+  "valor_baixado": "R$ 59.422,22"
+ },
+ {
+  "linha": 527,
+  "vencimento": "19/06/2026",
+  "cliente": "BANCO DO BRADESCO",
+  "receita": "RENTAN. INVEST FACILCRED",
+  "vendedor": "",
+  "situacao": "Pago (19/06/2026)",
+  "valor_original": "R$ 0,50",
+  "valor_baixado": "R$ 0,50"
+ },
+ {
+  "linha": 529,
+  "vencimento": "20/06/2026",
+  "cliente": "CODEVASF - COMPANHIA DE DESENVOLVI...",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (07/07/2026)",
+  "valor_original": "R$ 26.520,00",
+  "valor_baixado": "R$ 26.520,00"
+ },
+ {
+  "linha": 532,
+  "vencimento": "20/06/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "Ordem de Serviço 81",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 9.078,86",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 535,
+  "vencimento": "20/06/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "5ª MEDIÇÃO*",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 110.762,14",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 538,
+  "vencimento": "20/06/2026",
+  "cliente": "CODEVASF - COMPANHIA DE DESENVOLVI...",
+  "receita": "GRUPO 02 - MEDIÇÃO*",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 34.200,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 541,
+  "vencimento": "22/06/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE NOVA MAMORÉ",
+  "receita": "06ª MEDIÇÃO - NF_Nº 446",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (02/04/2026)",
+  "valor_original": "R$ 60.711,00",
+  "valor_baixado": "R$ 60.711,00"
+ },
+ {
+  "linha": 544,
+  "vencimento": "22/06/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "REND PAGO APLIC AUT APR",
+  "vendedor": "",
+  "situacao": "Pago (22/06/2026)",
+  "valor_original": "R$ 0,71",
+  "valor_baixado": "R$ 0,71"
+ },
+ {
+  "linha": 547,
+  "vencimento": "23/06/2026",
+  "cliente": "",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (23/06/2026)",
+  "valor_original": "R$ 0,05",
+  "valor_baixado": "R$ 0,05"
+ },
+ {
+  "linha": 550,
+  "vencimento": "24/06/2026",
+  "cliente": "",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (24/06/2026)",
+  "valor_original": "R$ 0,04",
+  "valor_baixado": "R$ 0,04"
+ },
+ {
+  "linha": 552,
+  "vencimento": "25/06/2026",
+  "cliente": "",
+  "receita": "REND PAGO APLIC AUT APR",
+  "vendedor": "",
+  "situacao": "Pago (25/06/2026)",
+  "valor_original": "R$ 0,01",
+  "valor_baixado": "R$ 0,01"
+ },
+ {
+  "linha": 554,
+  "vencimento": "26/06/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "REND PAGO APLIC AUT APR",
+  "vendedor": "",
+  "situacao": "Pago (26/06/2026)",
+  "valor_original": "R$ 0,07",
+  "valor_baixado": "R$ 0,07"
+ },
+ {
+  "linha": 556,
+  "vencimento": "26/06/2026",
+  "cliente": "BRADESCO",
+  "receita": "RENTAB. INVEST FACILCRED",
+  "vendedor": "",
+  "situacao": "Pago (26/06/2026)",
+  "valor_original": "R$ 0,04",
+  "valor_baixado": "R$ 0,04"
+ },
+ {
+  "linha": 559,
+  "vencimento": "29/06/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (29/06/2026)",
+  "valor_original": "R$ 0,03",
+  "valor_baixado": "R$ 0,03"
+ },
+ {
+  "linha": 562,
+  "vencimento": "30/06/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE NOVA MAMORÉ",
+  "receita": "35ª MEDIÇÃO*",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 60.711,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 565,
+  "vencimento": "30/06/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 0,03",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 568,
+  "vencimento": "01/07/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "IOF 3827.93514-3/C/C",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 4,89",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 570,
+  "vencimento": "02/07/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (02/07/2026)",
+  "valor_original": "R$ 0,94",
+  "valor_baixado": "R$ 0,94"
+ },
+ {
+  "linha": 573,
+  "vencimento": "03/07/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (03/07/2026)",
+  "valor_original": "R$ 204,67",
+  "valor_baixado": "R$ 204,67"
+ },
+ {
+  "linha": 576,
+  "vencimento": "03/07/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "6ª MEDIÇÃO - NF_Nº 465",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (03/07/2026)",
+  "valor_original": "R$ 5.168,44",
+  "valor_baixado": "R$ 5.168,44"
+ },
+ {
+  "linha": 579,
+  "vencimento": "05/07/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "2ª MEDIÇÃO - NF_Nº 467",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (06/07/2026)",
+  "valor_original": "R$ 16.443,07",
+  "valor_baixado": "R$ 16.443,07"
+ },
+ {
+  "linha": 582,
+  "vencimento": "05/07/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (06/07/2026)",
+  "valor_original": "R$ 524,53",
+  "valor_baixado": "R$ 524,53"
+ },
+ {
+  "linha": 585,
+  "vencimento": "06/07/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE APUIARES",
+  "receita": "14ª MEDIÇÃO - NF_Nº 505",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (23/09/2026)",
+  "valor_original": "R$ 7.962,50",
+  "valor_baixado": "R$ 7.962,50"
+ },
+ {
+  "linha": 588,
+  "vencimento": "07/07/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (07/07/2026)",
+  "valor_original": "R$ 0,44",
+  "valor_baixado": "R$ 0,44"
+ },
+ {
+  "linha": 591,
+  "vencimento": "08/07/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE CHOROZINHO",
+  "receita": "9ª MEDIÇÃO - NF_Nº 469",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 37.500,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 594,
+  "vencimento": "08/07/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE IRAUÇUBA",
+  "receita": "27ª MEDIÇÃO - NF_Nº 470",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (19/06/2026)",
+  "valor_original": "R$ 2.400,36",
+  "valor_baixado": "R$ 2.400,36"
+ },
+ {
+  "linha": 596,
+  "vencimento": "09/07/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "9ª MEDIÇÃO - NF_N 471",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (10/07/2026)",
+  "valor_original": "R$ 3.112,95",
+  "valor_baixado": "R$ 3.112,95"
+ },
+ {
+  "linha": 599,
+  "vencimento": "09/07/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (10/07/2026)",
+  "valor_original": "R$ 103,04",
+  "valor_baixado": "R$ 103,04"
+ },
+ {
+  "linha": 602,
+  "vencimento": "09/07/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (09/07/2026)",
+  "valor_original": "R$ 0,01",
+  "valor_baixado": "R$ 0,01"
+ },
+ {
+  "linha": 605,
+  "vencimento": "10/07/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE BARCARENA ...",
+  "receita": "3ª MEDIÇÃO - NF_Nº 476",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (19/06/2026)",
+  "valor_original": "R$ 77.842,55",
+  "valor_baixado": "R$ 77.842,55"
+ },
+ {
+  "linha": 608,
+  "vencimento": "10/07/2026",
+  "cliente": "SECRETARIA DAS CIDADES",
+  "receita": "26ª MEDIÇÃO - NF_Nº 477",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (12/06/2026)",
+  "valor_original": "R$ 44.923,00",
+  "valor_baixado": "R$ 44.923,00"
+ },
+ {
+  "linha": 610,
+  "vencimento": "10/07/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE APUIARES",
+  "receita": "1ª MEDIÇÃO*",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 15.000,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 613,
+  "vencimento": "10/07/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (10/07/2026)",
+  "valor_original": "R$ 0,81",
+  "valor_baixado": "R$ 0,81"
+ },
+ {
+  "linha": 616,
+  "vencimento": "10/07/2026",
+  "cliente": "BANCO DO BRADESCO",
+  "receita": "RENTAB. INVEST FACILCRED",
+  "vendedor": "",
+  "situacao": "Pago (10/07/2026)",
+  "valor_original": "R$ 2,74",
+  "valor_baixado": "R$ 2,74"
+ },
+ {
+  "linha": 618,
+  "vencimento": "10/07/2026",
+  "cliente": "JOTA BARROS PROJETOS E ASSESSORIA ...",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 750,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 621,
+  "vencimento": "12/07/2026",
+  "cliente": "DELEGACIA DE POLÍCIA FEDERAL DE CA...",
+  "receita": "1ª MEDIÇÃO - NF_Nº 481",
+  "vendedor": "",
+  "situacao": "Pago (07/07/2026)",
+  "valor_original": "R$ 57.999,01",
+  "valor_baixado": "R$ 57.999,01"
+ },
+ {
+  "linha": 624,
+  "vencimento": "12/07/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE",
+  "receita": "47ª MEDIÇÃO - NF_Nº 483",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 1.661,43",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 626,
+  "vencimento": "14/07/2026",
+  "cliente": "BANCO DO BRADESCO",
+  "receita": "RENDIMENTO",
+  "vendedor": "",
+  "situacao": "Pago (14/07/2026)",
+  "valor_original": "R$ 0,13",
+  "valor_baixado": "R$ 0,13"
+ },
+ {
+  "linha": 629,
+  "vencimento": "15/07/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "1 MEDIÇÃO - NF_Nº 480",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (13/07/2026)",
+  "valor_original": "R$ 48.650,57",
+  "valor_baixado": "R$ 48.650,57"
+ },
+ {
+  "linha": 632,
+  "vencimento": "15/07/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE APUIARES",
+  "receita": "13ª MEDIÇÃO - NF_Nº 482",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Pago (23/09/2026)",
+  "valor_original": "R$ 3.496,35",
+  "valor_baixado": "R$ 3.496,35"
+ },
+ {
+  "linha": 634,
+  "vencimento": "15/07/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "REND PAGO APLIC AUT APR",
+  "vendedor": "",
+  "situacao": "Pago (15/07/2026)",
+  "valor_original": "R$ 0,22",
+  "valor_baixado": "R$ 0,22"
+ },
+ {
+  "linha": 637,
+  "vencimento": "16/07/2026",
+  "cliente": "DEPARTAMENTO ESTADUAL DE IFRA- ESTR...",
+  "receita": "4ª MEDIÇÃO - NF_Nº 502",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 50.040,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 640,
+  "vencimento": "17/07/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "REND PAGO PLIC AUT APR",
+  "vendedor": "",
+  "situacao": "Pago (17/07/2026)",
+  "valor_original": "R$ 0,07",
+  "valor_baixado": "R$ 0,07"
+ },
+ {
+  "linha": 642,
+  "vencimento": "18/07/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE IRAUÇUBA",
+  "receita": "29ª MEDIÇÃO - NF_Nº 484",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (30/06/2026)",
+  "valor_original": "R$ 5.400,00",
+  "valor_baixado": "R$ 5.400,00"
+ },
+ {
+  "linha": 651,
+  "vencimento": "19/07/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE APUIARES",
+  "receita": "29ª MEDIÇÃO - NF_Nº 485",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (01/07/2026)",
+  "valor_original": "R$ 36.301,50",
+  "valor_baixado": "R$ 36.301,50"
+ },
+ {
+  "linha": 654,
+  "vencimento": "20/07/2026",
+  "cliente": "CODEVASF - COMPANHIA DE DESENVOLVI...",
+  "receita": "2ª MEDIÇÃO - NF_Nº 489",
+  "vendedor": "",
+  "situacao": "Pago (21/07/2026)",
+  "valor_original": "R$ 106.342,78",
+  "valor_baixado": "R$ 106.342,78"
+ },
+ {
+  "linha": 657,
+  "vencimento": "20/07/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE CARIDADE",
+  "receita": "71ª MEDIÇÃO*",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 53.520,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 659,
+  "vencimento": "20/07/2026",
+  "cliente": "MUNICIPIO DE NOVA MAMORE",
+  "receita": "41ª MEDIÇÃO*",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 59.500,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 662,
+  "vencimento": "20/07/2026",
+  "cliente": "ARRAIA ARQUITETURA E URBANISMO LTDA",
+  "receita": "EMPRESTIMO ARRAIA",
+  "vendedor": "",
+  "situacao": "Pago (20/07/2026)",
+  "valor_original": "R$ 17.000,00",
+  "valor_baixado": "R$ 17.000,00"
+ },
+ {
+  "linha": 665,
+  "vencimento": "20/07/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "REND PAGO APLIC AUT MAIS",
+  "vendedor": "",
+  "situacao": "Pago (20/07/2026)",
+  "valor_original": "R$ 0,57",
+  "valor_baixado": "R$ 0,57"
+ },
+ {
+  "linha": 667,
+  "vencimento": "22/07/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "REND PAGO APLIC AUT MAIS",
+  "vendedor": "",
+  "situacao": "Pago (22/07/2026)",
+  "valor_original": "R$ 0,07",
+  "valor_baixado": "R$ 0,07"
+ },
+ {
+  "linha": 669,
+  "vencimento": "26/07/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE IRAUÇUBA",
+  "receita": "26ª MEDIÇÃO - NF_N 493",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (08/07/2026)",
+  "valor_original": "R$ 45.538,77",
+  "valor_baixado": "R$ 45.538,77"
+ },
+ {
+  "linha": 671,
+  "vencimento": "26/07/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE IRAUÇUBA",
+  "receita": "28ª MEDIÇÃO - NF_Nº 486",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (08/07/2026)",
+  "valor_original": "R$ 20.801,94",
+  "valor_baixado": "R$ 20.801,94"
+ },
+ {
+  "linha": 673,
+  "vencimento": "26/07/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE IRAUÇUBA",
+  "receita": "30ª MEDIÇÃO - NF_N 487",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Pago (08/07/2026)",
+  "valor_original": "R$ 14.214,66",
+  "valor_baixado": "R$ 14.214,66"
+ },
+ {
+  "linha": 675,
+  "vencimento": "27/07/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (27/07/2026)",
+  "valor_original": "R$ 0,02",
+  "valor_baixado": "R$ 0,02"
+ },
+ {
+  "linha": 678,
+  "vencimento": "27/07/2026",
+  "cliente": "BANCO DO BRADESCO",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (27/07/2026)",
+  "valor_original": "R$ 0,01",
+  "valor_baixado": "R$ 0,01"
+ },
+ {
+  "linha": 680,
+  "vencimento": "27/07/2026",
+  "cliente": "BANCO DO BRADESCO",
+  "receita": "RENTAB.INVEST FACIL CRED",
+  "vendedor": "",
+  "situacao": "Pago (27/07/2026)",
+  "valor_original": "R$ 0,02",
+  "valor_baixado": "R$ 0,02"
+ },
+ {
+  "linha": 682,
+  "vencimento": "29/07/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "REND PAGO APLIC AUT APR",
+  "vendedor": "",
+  "situacao": "Pago (29/07/2026)",
+  "valor_original": "R$ 0,40",
+  "valor_baixado": "R$ 0,40"
+ },
+ {
+  "linha": 684,
+  "vencimento": "31/07/2026",
+  "cliente": "SECRETARIA DAS CIDADES",
+  "receita": "20ª MEDIÇÃO - NF_Nº 478",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (12/06/2026)",
+  "valor_original": "R$ 30.820,61",
+  "valor_baixado": "R$ 30.820,61"
+ },
+ {
+  "linha": 686,
+  "vencimento": "02/08/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE CROATA",
+  "receita": "27ª MEDIÇÃO - NF_Nº 495",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 28.764,80",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 688,
+  "vencimento": "02/08/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE CROATA",
+  "receita": "27ª MEDIÇÃO - NF_Nº 494",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 51.100,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 690,
+  "vencimento": "03/08/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (03/08/2026)",
+  "valor_original": "R$ 0,53",
+  "valor_baixado": "R$ 0,53"
+ },
+ {
+  "linha": 693,
+  "vencimento": "04/08/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (04/08/2026)",
+  "valor_original": "R$ 0,01",
+  "valor_baixado": "R$ 0,01"
+ },
+ {
+  "linha": 696,
+  "vencimento": "06/08/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (06/08/2026)",
+  "valor_original": "R$ 0,14",
+  "valor_baixado": "R$ 0,14"
+ },
+ {
+  "linha": 698,
+  "vencimento": "07/08/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "REND PAGO APLIC AUT MAIS",
+  "vendedor": "",
+  "situacao": "Pago (07/08/2026)",
+  "valor_original": "R$ 0,52",
+  "valor_baixado": "R$ 0,52"
+ },
+ {
+  "linha": 700,
+  "vencimento": "08/08/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "7ª MEDIÇÃO - NF_Nº 496",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (07/08/2026)",
+  "valor_original": "R$ 2.584,23",
+  "valor_baixado": "R$ 2.584,23"
+ },
+ {
+  "linha": 703,
+  "vencimento": "08/08/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (07/08/2026)",
+  "valor_original": "R$ 102,34",
+  "valor_baixado": "R$ 102,34"
+ },
+ {
+  "linha": 705,
+  "vencimento": "09/08/2026",
+  "cliente": "MUNICIPIO DE CARIDADE",
+  "receita": "65ª MEDIÇÃO - NF_Nº 498",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (16/07/2026)",
+  "valor_original": "R$ 75.000,00",
+  "valor_baixado": "R$ 75.000,00"
+ },
+ {
+  "linha": 708,
+  "vencimento": "10/08/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "6ª MEDIÇÃO - NF_Nº 499",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (10/08/2026)",
+  "valor_original": "R$ 32.536,74",
+  "valor_baixado": "R$ 32.536,74"
+ },
+ {
+  "linha": 711,
+  "vencimento": "10/08/2026",
+  "cliente": "BANCO DO BRADESCO",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (10/08/2026)",
+  "valor_original": "R$ 0,01",
+  "valor_baixado": "R$ 0,01"
+ },
+ {
+  "linha": 714,
+  "vencimento": "11/08/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "VENCIMENTO CDB",
+  "vendedor": "",
+  "situacao": "Pago (11/08/2026)",
+  "valor_original": "R$ 53.141,46",
+  "valor_baixado": "R$ 53.141,46"
+ },
+ {
+  "linha": 716,
+  "vencimento": "12/08/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "VENCIMENTO CDB",
+  "vendedor": "",
+  "situacao": "Pago (12/08/2026)",
+  "valor_original": "R$ 118.509,36",
+  "valor_baixado": "R$ 118.509,36"
+ },
+ {
+  "linha": 718,
+  "vencimento": "13/08/2026",
+  "cliente": "CODEVASF - COMPANHIA DE DESENVOLVI...",
+  "receita": "",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (04/09/2026)",
+  "valor_original": "R$ 26.970,00",
+  "valor_baixado": "R$ 26.970,00"
+ },
+ {
+  "linha": 721,
+  "vencimento": "13/08/2026",
+  "cliente": "JOTA BARROS PROJETOS E ASSESSORIA ...",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 40.139,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 724,
+  "vencimento": "13/08/2026",
+  "cliente": "JOTA BARROS PROJETOS E ASSESSORIA ...",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (13/08/2026)",
+  "valor_original": "R$ 40.319,00",
+  "valor_baixado": "R$ 40.319,00"
+ },
+ {
+  "linha": 726,
+  "vencimento": "14/08/2026",
+  "cliente": "BANCO DO BRADESCO",
+  "receita": "RENTAB. INVEST FACILCRED",
+  "vendedor": "",
+  "situacao": "Pago (14/08/2026)",
+  "valor_original": "R$ 0,02",
+  "valor_baixado": "R$ 0,02"
+ },
+ {
+  "linha": 728,
+  "vencimento": "17/08/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (17/08/2026)",
+  "valor_original": "R$ 0,02",
+  "valor_baixado": "R$ 0,02"
+ },
+ {
+  "linha": 731,
+  "vencimento": "17/08/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Pago (17/08/2026)",
+  "valor_original": "R$ 0,02",
+  "valor_baixado": "R$ 0,02"
+ },
+ {
+  "linha": 733,
+  "vencimento": "18/08/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "VENCIMENTO CDB",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 67.051,19",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 735,
+  "vencimento": "19/08/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "VENCIMENTO CDB-",
+  "vendedor": "",
+  "situacao": "Pago (19/08/2026)",
+  "valor_original": "R$ 67.051,19",
+  "valor_baixado": "R$ 67.051,19"
+ },
+ {
+  "linha": 738,
+  "vencimento": "20/08/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "5ª MEDIÇÃO*",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 164.362,91",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 741,
+  "vencimento": "20/08/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU",
+  "receita": "2ª MEDIÇÃO - NF_Nº 504",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (05/08/2026)",
+  "valor_original": "R$ 15.000,00",
+  "valor_baixado": "R$ 15.000,00"
+ },
+ {
+  "linha": 743,
+  "vencimento": "20/08/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "REND PAGO APLIC AUT MAIS",
+  "vendedor": "",
+  "situacao": "Pago (20/08/2026)",
+  "valor_original": "R$ 2,05",
+  "valor_baixado": "R$ 2,05"
+ },
+ {
+  "linha": 745,
+  "vencimento": "20/08/2026",
+  "cliente": "JOTA BARROS PROJETOS E ASSESSORIA ...",
+  "receita": "",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 1.957,09",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 747,
+  "vencimento": "21/08/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "REND PAGO APLIC AUT APR",
+  "vendedor": "",
+  "situacao": "Pago (21/08/2026)",
+  "valor_original": "R$ 0,01",
+  "valor_baixado": "R$ 0,01"
+ },
+ {
+  "linha": 749,
+  "vencimento": "22/08/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE",
+  "receita": "50ª MEDIÇÃO - NF_ Nº 506",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 5.754,45",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 751,
+  "vencimento": "26/08/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "REND PAGO APLIC AUT APR",
+  "vendedor": "",
+  "situacao": "Pago (26/08/2026)",
+  "valor_original": "R$ 0,17",
+  "valor_baixado": "R$ 0,17"
+ },
+ {
+  "linha": 753,
+  "vencimento": "26/08/2026",
+  "cliente": "BRADESCO",
+  "receita": "RENTAB. INVEST FACILCRED",
+  "vendedor": "",
+  "situacao": "Pago (26/08/2026)",
+  "valor_original": "R$ 0,04",
+  "valor_baixado": "R$ 0,04"
+ },
+ {
+  "linha": 755,
+  "vencimento": "27/08/2026",
+  "cliente": "MUNICIPIO DE CARIDADE",
+  "receita": "58ª MEDIÇÃO* - NF_Nº 507",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (19/08/2026)",
+  "valor_original": "R$ 46.800,00",
+  "valor_baixado": "R$ 46.800,00"
+ },
+ {
+  "linha": 757,
+  "vencimento": "27/08/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "REND PAGO APLIC AUT APR -",
+  "vendedor": "",
+  "situacao": "Pago (27/08/2026)",
+  "valor_original": "R$ 0,01",
+  "valor_baixado": "R$ 0,01"
+ },
+ {
+  "linha": 759,
+  "vencimento": "28/08/2026",
+  "cliente": "AGENCIA SERGIPE DE DESENVOLVIMENTO...",
+  "receita": "1ª MEDIÇÃO*",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 25.421,40",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 761,
+  "vencimento": "28/08/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "REND PAGO APLIC AUT APR",
+  "vendedor": "",
+  "situacao": "Pago (28/08/2026)",
+  "valor_original": "R$ 0,06",
+  "valor_baixado": "R$ 0,06"
+ },
+ {
+  "linha": 764,
+  "vencimento": "28/08/2026",
+  "cliente": "JOTA BARROS PROJETOS E ASSESSORIA ...",
+  "receita": "EMPRESTIMO",
+  "vendedor": "",
+  "situacao": "Pago (28/08/2026)",
+  "valor_original": "R$ 700,00",
+  "valor_baixado": "R$ 700,00"
+ },
+ {
+  "linha": 767,
+  "vencimento": "29/08/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE",
+  "receita": "",
+  "vendedor": "ADMINISTRAÇÃO",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 37.718,85",
+  "valor_baixado": "R$ 10.000,00"
+ },
+ {
+  "linha": 777,
+  "vencimento": "31/08/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "2 MEDIÇÃO - NF_ Nº 501",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (14/08/2026)",
+  "valor_original": "R$ 19.358,25",
+  "valor_baixado": "R$ 19.358,25"
+ },
+ {
+  "linha": 779,
+  "vencimento": "31/08/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE APUIARES",
+  "receita": "15ª MEDIÇÃO - NF_Nº 503",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (23/09/2026)",
+  "valor_original": "R$ 16.894,80",
+  "valor_baixado": "R$ 16.894,80"
+ },
+ {
+  "linha": 781,
+  "vencimento": "31/08/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "REND PAGO APLIC AUT APR",
+  "vendedor": "",
+  "situacao": "Pago (31/08/2026)",
+  "valor_original": "R$ 0,28",
+  "valor_baixado": "R$ 0,28"
+ },
+ {
+  "linha": 784,
+  "vencimento": "31/08/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "10ª MEDIÇÃO*",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 42.193,96",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 787,
+  "vencimento": "03/09/2026",
+  "cliente": "SERVICO NACIONAL DE APRENDIZAGEM R...",
+  "receita": "1ª MEDIÇÃO - NF_Nº 509",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Pago (13/08/2026)",
+  "valor_original": "R$ 66.683,82",
+  "valor_baixado": "R$ 66.683,82"
+ },
+ {
+  "linha": 790,
+  "vencimento": "07/09/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "8ª MEDIÇÃO - NF_Nº 510",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (08/09/2026)",
+  "valor_original": "R$ 22.381,52",
+  "valor_baixado": "R$ 22.381,52"
+ },
+ {
+  "linha": 793,
+  "vencimento": "07/09/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (08/09/2026)",
+  "valor_original": "R$ 886,31",
+  "valor_baixado": "R$ 886,31"
+ },
+ {
+  "linha": 796,
+  "vencimento": "09/09/2026",
+  "cliente": "JOTA BARROS PROJETOS E ASSESSORIA ...",
+  "receita": "EMPRESTIMO",
+  "vendedor": "",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 79,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 799,
+  "vencimento": "10/09/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE FORTIM",
+  "receita": "11ª MEDIÇÃO*",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 14.700,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 801,
+  "vencimento": "10/09/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE FORTIM",
+  "receita": "12ª MEDIÇÃO*",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 5.538,80",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 803,
+  "vencimento": "11/09/2026",
+  "cliente": "ARRAIA ARQUITETURA E URBANISMO LTDA",
+  "receita": "EMPRESTIMO ARRAIA",
+  "vendedor": "",
+  "situacao": "Pago (11/09/2026)",
+  "valor_original": "R$ 15.000,00",
+  "valor_baixado": "R$ 15.000,00"
+ },
+ {
+  "linha": 806,
+  "vencimento": "14/09/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "4ª MEDIÇÃO - NF_ Nº 514",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Pago (14/09/2026)",
+  "valor_original": "R$ 27.958,16",
+  "valor_baixado": "R$ 27.958,16"
+ },
+ {
+  "linha": 809,
+  "vencimento": "15/09/2026",
+  "cliente": "CODEVASF - COMPANHIA DE DESENVOLVI...",
+  "receita": "",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 35.960,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 811,
+  "vencimento": "15/09/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "RESGATE CDB DI",
+  "vendedor": "",
+  "situacao": "Pago (15/09/2026)",
+  "valor_original": "R$ 102.162,13",
+  "valor_baixado": "R$ 102.162,13"
+ },
+ {
+  "linha": 813,
+  "vencimento": "16/09/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "REND PAGO APLIC AUT APR",
+  "vendedor": "",
+  "situacao": "Pago (16/09/2026)",
+  "valor_original": "R$ 0,01",
+  "valor_baixado": "R$ 0,01"
+ },
+ {
+  "linha": 815,
+  "vencimento": "18/09/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE FORTIM",
+  "receita": "7ª MEDIÇÃO* - SME",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 121.211,43",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 817,
+  "vencimento": "18/09/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "REND PAGO APLIC AUT APR",
+  "vendedor": "",
+  "situacao": "Pago (18/09/2026)",
+  "valor_original": "R$ 0,02",
+  "valor_baixado": "R$ 0,02"
+ },
+ {
+  "linha": 819,
+  "vencimento": "19/09/2026",
+  "cliente": "MUNICIPIO DE CARIDADE",
+  "receita": "47ª MEDIÇÃO - NF_Nº 516",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 38.610,00",
+  "valor_baixado": "R$ 30.000,00"
+ },
+ {
+  "linha": 821,
+  "vencimento": "20/09/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "4ª MEDIÇÃO*",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 32.525,71",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 824,
+  "vencimento": "20/09/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "6ª MEDIÇÃO*",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 45.913,13",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 826,
+  "vencimento": "21/09/2026",
+  "cliente": "BANCO ITAÚ",
+  "receita": "REND PAGO APLIC AUT MAIS",
+  "vendedor": "",
+  "situacao": "Pago (21/09/2026)",
+  "valor_original": "R$ 0,07",
+  "valor_baixado": "R$ 0,07"
+ },
+ {
+  "linha": 828,
+  "vencimento": "25/09/2026",
+  "cliente": "BRADESCO",
+  "receita": "RENTAB. INVEST FACILCRED",
+  "vendedor": "",
+  "situacao": "Pago (25/09/2026)",
+  "valor_original": "R$ 0,04",
+  "valor_baixado": "R$ 0,04"
+ },
+ {
+  "linha": 831,
+  "vencimento": "28/09/2026",
+  "cliente": "SECRETARIA DE EDUCACAO BEZERROS",
+  "receita": "1ª MEDIÇÃO - NF_Nº 520",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 27.878,35",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 834,
+  "vencimento": "30/09/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE BARCARENA ...",
+  "receita": "4ª MEDIÇÃO*",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 14.749,78",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 837,
+  "vencimento": "30/09/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "3 MEDIÇÃO*",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 187.023,64",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 840,
+  "vencimento": "01/10/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE APUIARES",
+  "receita": "18ª MEDIÇÃO - NF_Nº 519",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Em Atraso",
+  "valor_original": "R$ 69.490,75",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 842,
+  "vencimento": "01/10/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE APUIARES",
+  "receita": "17ª MEDIÇÃO - NF_Nº 518",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Pago (23/09/2026)",
+  "valor_original": "R$ 28.980,00",
+  "valor_baixado": "R$ 28.980,00"
+ },
+ {
+  "linha": 844,
+  "vencimento": "03/10/2026",
+  "cliente": "SECRETARIA DE EDUCACAO BEZERROS",
+  "receita": "2ª MEDIÇÃO*",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Em Aberto",
+  "valor_original": "R$ 14.868,45",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 846,
+  "vencimento": "03/10/2026",
+  "cliente": "MUNICIPIO DE CARIDADE",
+  "receita": "73ª MEDIÇÃO - NF_Nº 522",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Pago (03/09/2026)",
+  "valor_original": "R$ 28.160,00",
+  "valor_baixado": "R$ 28.160,00"
+ },
+ {
+  "linha": 848,
+  "vencimento": "05/10/2026",
+  "cliente": "CODEVASF - COMPANHIA DE DESENVOLVI...",
+  "receita": "3ª MEDIÇÃO*",
+  "vendedor": "",
+  "situacao": "Em Aberto",
+  "valor_original": "R$ 43.469,24",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 850,
+  "vencimento": "09/10/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU",
+  "receita": "27º MEDIÇÃO - NF_Nº 524",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Aberto",
+  "valor_original": "R$ 2.490,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 852,
+  "vencimento": "10/10/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU",
+  "receita": "5ª MEDIÇÃO - NF_Nº 525",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Aberto",
+  "valor_original": "R$ 4.500,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 855,
+  "vencimento": "11/10/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "9ª MEDIÇÃO - NF_Nº 526",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Aberto",
+  "valor_original": "R$ 2.584,23",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 858,
+  "vencimento": "11/10/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Aberto",
+  "valor_original": "R$ 102,34",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 861,
+  "vencimento": "15/10/2026",
+  "cliente": "DELEGACIA DE POLÍCIA FEDERAL DE CA...",
+  "receita": "2ª MEDIÇÃO*",
+  "vendedor": "",
+  "situacao": "Em Aberto",
+  "valor_original": "R$ 72.498,77",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 864,
+  "vencimento": "15/10/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "3ª MEDIÇÃO - NF_Nº 530",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Aberto",
+  "valor_original": "R$ 32.271,58",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 867,
+  "vencimento": "15/10/2026",
+  "cliente": "DEPARTAMENTO ESTADUAL DE IFRA- ESTR...",
+  "receita": "",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Aberto",
+  "valor_original": "R$ 75.060,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 870,
+  "vencimento": "15/10/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE CROATA",
+  "receita": "29ª MEDIÇÃO - NF_Nº 528",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Em Aberto",
+  "valor_original": "R$ 48.880,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 872,
+  "vencimento": "15/10/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE CROATA",
+  "receita": "30ª MEDIÇÃO - NF_Nº 529",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Em Aberto",
+  "valor_original": "R$ 35.850,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 874,
+  "vencimento": "15/10/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Aberto",
+  "valor_original": "R$ 1.029,46",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 876,
+  "vencimento": "16/10/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE CROATA",
+  "receita": "31ª MEDIÇÃO - NF_Nº 532",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Em Aberto",
+  "valor_original": "R$ 16.400,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 878,
+  "vencimento": "16/10/2026",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU",
+  "receita": "28ª MEDIÇÃO - NF_Nº 533",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Aberto",
+  "valor_original": "R$ 4.500,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 881,
+  "vencimento": "20/10/2026",
+  "cliente": "CODEVASF - COMPANHIA DE DESENVOLVI...",
+  "receita": "2ª MEDIÇÃO* - GRUPO 05",
+  "vendedor": "",
+  "situacao": "Em Aberto",
+  "valor_original": "R$ 61.880,00",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 884,
+  "vencimento": "20/10/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "5ª MEDIÇÃO*",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Aberto",
+  "valor_original": "R$ 10.795,69",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 887,
+  "vencimento": "20/10/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "7ª MEDIÇÃO*",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Aberto",
+  "valor_original": "R$ 12.503,37",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 890,
+  "vencimento": "25/10/2026",
+  "cliente": "EMPRESA BRASILEIRA DE CORREIOS E T...",
+  "receita": "",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Aberto",
+  "valor_original": "R$ 10.452,29",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 893,
+  "vencimento": "30/10/2026",
+  "cliente": "BAHIA SECRETARIA DE SAUDE DO ESTADO",
+  "receita": "NF_Nº 534",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Aberto",
+  "valor_original": "R$ 133.051,61",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 896,
+  "vencimento": "30/10/2026",
+  "cliente": "BAHIA SECRETARIA DE SAUDE DO ESTADO",
+  "receita": "NF_Nº 534",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Aberto",
+  "valor_original": "R$ 150.583,96",
+  "valor_baixado": "R$ 0,00"
+ },
+ {
+  "linha": 906,
+  "vencimento": "30/10/2026",
+  "cliente": "SECRETARIA DE EDUCACAO BEZERROS",
+  "receita": "3ª MEDIÇÃO*",
+  "vendedor": "INFRAESTRUTURA",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "16.178,94     R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 908,
+  "vencimento": "30/10/2026",
+  "cliente": "MUNICIPIO DE UMARI",
+  "receita": "1ª MEDIÇÃO - NF_Nº 536",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "16.955,52     R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 910,
+  "vencimento": "30/10/2026",
+  "cliente": "SECRETARIA DAS CIDADES",
+  "receita": "MEDIÇÃO 01 - NF_Nº 535",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "16.218,48     R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 913,
+  "vencimento": "01/11/2026",
+  "cliente": "CODEVASF - COMPANHIA DE DESENVOLVI...",
+  "receita": "2ª MEDIÇÃO - NF_Nº 537",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "5.700,00      R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 916,
+  "vencimento": "16/11/2026",
+  "cliente": "EMPRESA BRASILEIRA DE CORREIOS E T...",
+  "receita": "Ordem de Serviço 182",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "9.517,79      R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 919,
+  "vencimento": "20/11/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "6ª MEDIÇÃO*",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "22.331,28     R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 922,
+  "vencimento": "25/11/2026",
+  "cliente": "DELEGACIA DE POLÍCIA FEDERAL DE CA...",
+  "receita": "3ª MEDIÇÃO*",
+  "vendedor": "",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "86.998,52     R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 925,
+  "vencimento": "25/11/2026",
+  "cliente": "SECRETARIA DAS CIDADES",
+  "receita": "MEDIÇÃO* 02",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "39.758,04     R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 927,
+  "vencimento": "26/11/2026",
+  "cliente": "EMPRESA BRASILEIRA DE CORREIOS E T...",
+  "receita": "Ordem de Serviço 181",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "15.969,07     R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 930,
+  "vencimento": "29/11/2026",
+  "cliente": "DEPARTAMENTO ESTADUAL DE IFRA- ESTR...",
+  "receita": "",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "35.129,02     R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 933,
+  "vencimento": "30/11/2026",
+  "cliente": "CODEVASF - COMPANHIA DE DESENVOLVI...",
+  "receita": "4ª MEDIÇÃO*",
+  "vendedor": "",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "74.906,01     R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 936,
+  "vencimento": "30/11/2026",
+  "cliente": "DEPARTAMENTO ESTADUAL DE IFRA- ESTR...",
+  "receita": "",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "50.040,00     R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 939,
+  "vencimento": "30/11/2026",
+  "cliente": "MUNICIPIO DE UMARI",
+  "receita": "2ª MEDIÇÃO*",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "41.565,59     R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 941,
+  "vencimento": "02/12/2026",
+  "cliente": "EMPRESA BRASILEIRA DE CORREIOS E T...",
+  "receita": "",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "15.239,44     R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 944,
+  "vencimento": "06/12/2026",
+  "cliente": "EMPRESA BRASILEIRA DE CORREIOS E T...",
+  "receita": "",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "8.252,01      R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 947,
+  "vencimento": "20/12/2026",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "7ª MEDIÇÃO*",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "30.276,09     R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 949,
+  "vencimento": "30/12/2026",
+  "cliente": "MUNICIPIO DE UMARI",
+  "receita": "3ª MEDIÇÃO*",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "143.126,58    R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 951,
+  "vencimento": "30/12/2026",
+  "cliente": "SECRETARIA DAS CIDADES",
+  "receita": "MEDIÇÃO* 03",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "174.526,71    R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 953,
+  "vencimento": "07/01/2027",
+  "cliente": "EMPRESA BRASILEIRA DE CORREIOS E T...",
+  "receita": "",
+  "vendedor": "ARQUITETURA",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "47.370,88     R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 956,
+  "vencimento": "20/01/2027",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "8ª MEDIÇÃO*",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "4.300,00      R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 959,
+  "vencimento": "29/01/2027",
+  "cliente": "DELEGACIA DE POLÍCIA FEDERAL DE CA...",
+  "receita": "4ª MEDIÇÃO*",
+  "vendedor": "",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "72.498,77     R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 961,
+  "vencimento": "30/01/2027",
+  "cliente": "MUNICIPIO DE UMARI",
+  "receita": "4ª MEDIÇÃO*",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "79.933,28     R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 964,
+  "vencimento": "20/02/2027",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SANEAMEN...",
+  "receita": "9ª MEDIÇÃO*",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "4.377,97      R$",
+  "valor_baixado": "0,00"
+ },
+ {
+  "linha": 967,
+  "vencimento": "01/03/2027",
+  "cliente": "SECRETARIA DAS CIDADES",
+  "receita": "MEDIÇÃO* 04",
+  "vendedor": "SANEAMENTO",
+  "situacao": "Em Aberto       R$",
+  "valor_original": "76.427,91     R$",
+  "valor_baixado": "0,00"
+ }
+]

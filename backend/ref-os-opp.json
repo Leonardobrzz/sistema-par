@@ -1,0 +1,1370 @@
+[
+ {
+  "os": "1",
+  "linha": 8,
+  "valor": "R$ 1.623,86",
+  "data": "12/01/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "2",
+  "linha": 10,
+  "valor": "R$ 25.828,58",
+  "data": "02/01/2026",
+  "situacao": "Em Aberto",
+  "cliente": "CARTÃO DE CÉDITO - ITAU"
+ },
+ {
+  "os": "3",
+  "linha": 12,
+  "valor": "R$ 201.004,44",
+  "data": "04/12/2025",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "4",
+  "linha": 14,
+  "valor": "R$ 3.994,79",
+  "data": "13/01/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "5",
+  "linha": 16,
+  "valor": "R$ 139,82",
+  "data": "13/01/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "6",
+  "linha": 18,
+  "valor": "R$ 36.992,18",
+  "data": "19/01/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "7",
+  "linha": 20,
+  "valor": "R$ 3.896,33",
+  "data": "19/01/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "8",
+  "linha": 22,
+  "valor": "R$ 19.285,92",
+  "data": "20/01/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU"
+ },
+ {
+  "os": "9",
+  "linha": 25,
+  "valor": "R$ 13.860,00",
+  "data": "03/02/2026",
+  "situacao": "Atendido",
+  "cliente": ""
+ },
+ {
+  "os": "10",
+  "linha": 38,
+  "valor": "R$ 29.000,00",
+  "data": "03/02/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE ITAPIÚNA"
+ },
+ {
+  "os": "11",
+  "linha": 61,
+  "valor": "R$ 14.629,12",
+  "data": "04/02/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE"
+ },
+ {
+  "os": "12",
+  "linha": 73,
+  "valor": "R$ 22.778,67",
+  "data": "04/02/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE"
+ },
+ {
+  "os": "13",
+  "linha": 75,
+  "valor": "R$ 5.514,22",
+  "data": "04/02/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE"
+ },
+ {
+  "os": "14",
+  "linha": 77,
+  "valor": "R$ 10.386,06",
+  "data": "04/02/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE"
+ },
+ {
+  "os": "15",
+  "linha": 83,
+  "valor": "R$ 4.250,00",
+  "data": "05/02/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU"
+ },
+ {
+  "os": "17",
+  "linha": 90,
+  "valor": "R$ 2.157,40",
+  "data": "06/02/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE FORTIM"
+ },
+ {
+  "os": "18",
+  "linha": 92,
+  "valor": "R$ 35.100,00",
+  "data": "20/04/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU"
+ },
+ {
+  "os": "19",
+  "linha": 94,
+  "valor": "R$ 17.400,00",
+  "data": "09/02/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU"
+ },
+ {
+  "os": "20",
+  "linha": 96,
+  "valor": "R$ 102.707,00",
+  "data": "20/05/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE CHOROZINHO"
+ },
+ {
+  "os": "21",
+  "linha": 98,
+  "valor": "R$ 9.968,58",
+  "data": "09/02/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE"
+ },
+ {
+  "os": "22",
+  "linha": 100,
+  "valor": "R$ 31.270,00",
+  "data": "20/04/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE CHOROZINHO"
+ },
+ {
+  "os": "23",
+  "linha": 102,
+  "valor": "R$ 25.860,00",
+  "data": "09/02/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE CARIDADE"
+ },
+ {
+  "os": "24",
+  "linha": 103,
+  "valor": "R$ 76.160,00",
+  "data": "10/02/2026",
+  "situacao": "Atendido",
+  "cliente": "MUNICIPIO DE IPAPORANGA"
+ },
+ {
+  "os": "25",
+  "linha": 163,
+  "valor": "R$ 78.840,00",
+  "data": "10/02/2026",
+  "situacao": "Atendido",
+  "cliente": "MUNICIPIO DE IPAPORANGA"
+ },
+ {
+  "os": "26",
+  "linha": 186,
+  "valor": "R$ 18.225,00",
+  "data": "27/02/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE NOVA MAMORÉ"
+ },
+ {
+  "os": "27",
+  "linha": 188,
+  "valor": "R$ 53.520,00",
+  "data": "11/02/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE CARIDADE"
+ },
+ {
+  "os": "29",
+  "linha": 190,
+  "valor": "R$ 60.000,00",
+  "data": "10/02/2026",
+  "situacao": "Atendido",
+  "cliente": "GOVERNO MUNICIPAL DE ORÓS"
+ },
+ {
+  "os": "30",
+  "linha": 192,
+  "valor": "R$ 52.200,00",
+  "data": "13/02/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU"
+ },
+ {
+  "os": "31",
+  "linha": 194,
+  "valor": "R$ 40.828,42",
+  "data": "19/02/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE CARIDADE"
+ },
+ {
+  "os": "32",
+  "linha": 196,
+  "valor": "R$ 20.600,00",
+  "data": "23/02/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU"
+ },
+ {
+  "os": "33",
+  "linha": 198,
+  "valor": "R$ 10.386,85",
+  "data": "23/02/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE"
+ },
+ {
+  "os": "34",
+  "linha": 200,
+  "valor": "R$ 9.140,26",
+  "data": "23/02/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE"
+ },
+ {
+  "os": "35",
+  "linha": 202,
+  "valor": "R$ 152.879,30",
+  "data": "04/03/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE APUIARES"
+ },
+ {
+  "os": "36",
+  "linha": 204,
+  "valor": "R$ 49.305,00",
+  "data": "24/02/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE NOVA MAMORÉ"
+ },
+ {
+  "os": "38",
+  "linha": 206,
+  "valor": "R$ 133.051,61",
+  "data": "24/02/2026",
+  "situacao": "Em Aberto",
+  "cliente": "BAHIA SECRETARIA DE SAUDE DO ESTADO"
+ },
+ {
+  "os": "39",
+  "linha": 208,
+  "valor": "R$ 67.201,74",
+  "data": "24/02/2026",
+  "situacao": "Em Aberto",
+  "cliente": "BAHIA SECRETARIA DE SAUDE DO ESTADO"
+ },
+ {
+  "os": "40",
+  "linha": 210,
+  "valor": "R$ 150.583,96",
+  "data": "24/02/2026",
+  "situacao": "Em Aberto",
+  "cliente": "BAHIA SECRETARIA DE SAUDE DO ESTADO"
+ },
+ {
+  "os": "41",
+  "linha": 212,
+  "valor": "R$ 39.950,00",
+  "data": "20/03/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE FORTIM"
+ },
+ {
+  "os": "42",
+  "linha": 214,
+  "valor": "R$ 36.150,00",
+  "data": "24/02/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU"
+ },
+ {
+  "os": "43",
+  "linha": 216,
+  "valor": "R$ 175.140,00",
+  "data": "24/02/2026",
+  "situacao": "Em Aberto",
+  "cliente": ""
+ },
+ {
+  "os": "44",
+  "linha": 218,
+  "valor": "R$ 60.711,00",
+  "data": "24/06/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE NOVA MAMORÉ"
+ },
+ {
+  "os": "45",
+  "linha": 220,
+  "valor": "R$ 8.636,00",
+  "data": "27/02/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE CARIDADE"
+ },
+ {
+  "os": "46",
+  "linha": 221,
+  "valor": "R$ 6.438,24",
+  "data": "27/02/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE CARIDADE"
+ },
+ {
+  "os": "47",
+  "linha": 235,
+  "valor": "R$ 3.526,00",
+  "data": "27/02/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE CARIDADE"
+ },
+ {
+  "os": "48",
+  "linha": 240,
+  "valor": "R$ 12.994,78",
+  "data": "27/02/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE CARIDADE"
+ },
+ {
+  "os": "49",
+  "linha": 242,
+  "valor": "R$ 77.785,12",
+  "data": "27/02/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE"
+ },
+ {
+  "os": "50",
+  "linha": 244,
+  "valor": "R$ 21.826,00",
+  "data": "27/02/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE"
+ },
+ {
+  "os": "51",
+  "linha": 246,
+  "valor": "R$ 62.777,07",
+  "data": "27/02/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE"
+ },
+ {
+  "os": "52",
+  "linha": 255,
+  "valor": "R$ 7.558,70",
+  "data": "04/03/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE IRAUÇUBA"
+ },
+ {
+  "os": "53",
+  "linha": 265,
+  "valor": "R$ 46.777,50",
+  "data": "20/09/2025",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE MILHÃ"
+ },
+ {
+  "os": "54",
+  "linha": 267,
+  "valor": "R$ 10.240,00",
+  "data": "31/10/2025",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE MILHÃ"
+ },
+ {
+  "os": "55",
+  "linha": 269,
+  "valor": "R$ 11.990,00",
+  "data": "15/12/2025",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE MILHÃ"
+ },
+ {
+  "os": "56",
+  "linha": 271,
+  "valor": "R$ 62.510,00",
+  "data": "31/07/2025",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE IPU"
+ },
+ {
+  "os": "57",
+  "linha": 273,
+  "valor": "R$ 62.510,00",
+  "data": "31/07/2025",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE IPU"
+ },
+ {
+  "os": "58",
+  "linha": 276,
+  "valor": "R$ 116.246,00",
+  "data": "30/06/2025",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE CROATA"
+ },
+ {
+  "os": "59",
+  "linha": 279,
+  "valor": "R$ 6.100,00",
+  "data": "25/09/2025",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE CROATA"
+ },
+ {
+  "os": "60",
+  "linha": 281,
+  "valor": "R$ 32.660,00",
+  "data": "15/10/2025",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE APUIARES"
+ },
+ {
+  "os": "61",
+  "linha": 283,
+  "valor": "R$ 6.050,55",
+  "data": "10/11/2025",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE APUIARES"
+ },
+ {
+  "os": "62",
+  "linha": 286,
+  "valor": "R$ 25.020,00",
+  "data": "30/12/2025",
+  "situacao": "Atendido",
+  "cliente": ""
+ },
+ {
+  "os": "63",
+  "linha": 301,
+  "valor": "R$ 50.040,00",
+  "data": "30/01/2026",
+  "situacao": "Atendido",
+  "cliente": ""
+ },
+ {
+  "os": "65",
+  "linha": 315,
+  "valor": "R$ 62.510,76",
+  "data": "30/11/2025",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE"
+ },
+ {
+  "os": "66",
+  "linha": 317,
+  "valor": "R$ 5.295,79",
+  "data": "30/12/2025",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE"
+ },
+ {
+  "os": "67",
+  "linha": 319,
+  "valor": "R$ 49.412,00",
+  "data": "20/01/2025",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE GENERAL SAMPAIO"
+ },
+ {
+  "os": "68",
+  "linha": 321,
+  "valor": "R$ 25.650,00",
+  "data": "20/01/2025",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE GENERAL SAMPAIO"
+ },
+ {
+  "os": "69",
+  "linha": 323,
+  "valor": "R$ 6.000,00",
+  "data": "20/06/2025",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE GENERAL SAMPAIO"
+ },
+ {
+  "os": "70",
+  "linha": 325,
+  "valor": "R$ 49.156,00",
+  "data": "20/06/2025",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE GENERAL SAMPAIO"
+ },
+ {
+  "os": "71",
+  "linha": 327,
+  "valor": "R$ 5.400,00",
+  "data": "26/06/2025",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE GENERAL SAMPAIO"
+ },
+ {
+  "os": "72",
+  "linha": 329,
+  "valor": "R$ 110.762,14",
+  "data": "20/06/2026",
+  "situacao": "Em Aberto",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "73",
+  "linha": 331,
+  "valor": "R$ 32.536,76",
+  "data": "20/05/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "74",
+  "linha": 333,
+  "valor": "R$ 29.316,40",
+  "data": "30/04/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE AIUABA"
+ },
+ {
+  "os": "76",
+  "linha": 335,
+  "valor": "R$ 52.000,00",
+  "data": "20/05/2026",
+  "situacao": "Atendido",
+  "cliente": "MUNICIPIO DE BEBERIBE"
+ },
+ {
+  "os": "77",
+  "linha": 337,
+  "valor": "R$ 282.267,62",
+  "data": "09/03/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "78",
+  "linha": 339,
+  "valor": "R$ 177.116,09",
+  "data": "09/03/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "79",
+  "linha": 361,
+  "valor": "R$ 355.000,00",
+  "data": "09/03/2026",
+  "situacao": "Atendido",
+  "cliente": ""
+ },
+ {
+  "os": "80",
+  "linha": 364,
+  "valor": "R$ 3.112,95",
+  "data": "09/03/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "81",
+  "linha": 366,
+  "valor": "R$ 30.242,71",
+  "data": "09/03/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "82",
+  "linha": 368,
+  "valor": "R$ 207.365,36",
+  "data": "20/05/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE BARCARENA - PA"
+ },
+ {
+  "os": "83",
+  "linha": 370,
+  "valor": "R$ 77.862,50",
+  "data": "11/03/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "84",
+  "linha": 372,
+  "valor": "R$ 3.083,35",
+  "data": "11/03/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "85",
+  "linha": 374,
+  "valor": "R$ 30.000,00",
+  "data": "30/06/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE IRAUÇUBA"
+ },
+ {
+  "os": "86",
+  "linha": 376,
+  "valor": "R$ 74.917,22",
+  "data": "16/03/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "87",
+  "linha": 378,
+  "valor": "R$ 30.820,61",
+  "data": "31/07/2026",
+  "situacao": "Atendido",
+  "cliente": "SECRETARIA DAS CIDADES"
+ },
+ {
+  "os": "88",
+  "linha": 380,
+  "valor": "R$ 44.923,00",
+  "data": "31/07/2026",
+  "situacao": "Atendido",
+  "cliente": "SECRETARIA DAS CIDADES"
+ },
+ {
+  "os": "89",
+  "linha": 382,
+  "valor": "R$ 10.000,00",
+  "data": "29/05/2026",
+  "situacao": "Cancelado",
+  "cliente": "PREFEITURA MUNICIPAL DE IRAUÇUBA"
+ },
+ {
+  "os": "90",
+  "linha": 384,
+  "valor": "R$ 289.995,07",
+  "data": "16/03/2026",
+  "situacao": "Atendido",
+  "cliente": ""
+ },
+ {
+  "os": "91",
+  "linha": 387,
+  "valor": "R$ 39.900,00",
+  "data": "16/03/2026",
+  "situacao": "Em Aberto",
+  "cliente": ""
+ },
+ {
+  "os": "92",
+  "linha": 390,
+  "valor": "R$ 42.700,00",
+  "data": "16/03/2026",
+  "situacao": "Em Aberto",
+  "cliente": ""
+ },
+ {
+  "os": "93",
+  "linha": 393,
+  "valor": "R$ 32.340,00",
+  "data": "16/03/2026",
+  "situacao": "Em Aberto",
+  "cliente": ""
+ },
+ {
+  "os": "94",
+  "linha": 396,
+  "valor": "R$ 89.900,00",
+  "data": "16/03/2026",
+  "situacao": "Atendido",
+  "cliente": ""
+ },
+ {
+  "os": "95",
+  "linha": 399,
+  "valor": "R$ 88.400,00",
+  "data": "16/03/2026",
+  "situacao": "Atendido",
+  "cliente": ""
+ },
+ {
+  "os": "96",
+  "linha": 401,
+  "valor": "R$ 5.862,00",
+  "data": "09/02/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE NOVA MAMORÉ"
+ },
+ {
+  "os": "97",
+  "linha": 403,
+  "valor": "R$ 7.370,90",
+  "data": "06/02/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE NOVA MAMORÉ"
+ },
+ {
+  "os": "98",
+  "linha": 405,
+  "valor": "R$ 9.400,00",
+  "data": "16/03/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE NOVA MAMORÉ"
+ },
+ {
+  "os": "99",
+  "linha": 407,
+  "valor": "R$ 171.140,00",
+  "data": "16/03/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE NOVA MAMORÉ"
+ },
+ {
+  "os": "100",
+  "linha": 409,
+  "valor": "R$ 4.174,02",
+  "data": "18/03/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE IRAUÇUBA"
+ },
+ {
+  "os": "101",
+  "linha": 411,
+  "valor": "R$ 19.822,45",
+  "data": "18/03/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE IRAUÇUBA"
+ },
+ {
+  "os": "102",
+  "linha": 413,
+  "valor": "R$ 51.788,32",
+  "data": "18/03/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE FORTIM"
+ },
+ {
+  "os": "103",
+  "linha": 415,
+  "valor": "R$ 37.500,00",
+  "data": "20/03/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE CHOROZINHO"
+ },
+ {
+  "os": "104",
+  "linha": 417,
+  "valor": "R$ 51.100,00",
+  "data": "30/03/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE CROATA"
+ },
+ {
+  "os": "105",
+  "linha": 419,
+  "valor": "R$ 28.764,80",
+  "data": "01/04/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE CROATA"
+ },
+ {
+  "os": "106",
+  "linha": 421,
+  "valor": "R$ 1.661,43",
+  "data": "09/04/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE"
+ },
+ {
+  "os": "107",
+  "linha": 423,
+  "valor": "R$ 1.661,43",
+  "data": "09/04/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE"
+ },
+ {
+  "os": "108",
+  "linha": 425,
+  "valor": "R$ 24.000,00",
+  "data": "09/04/2026",
+  "situacao": "Cancelado",
+  "cliente": "MUNICIPIO DE MULUNGU"
+ },
+ {
+  "os": "109",
+  "linha": 427,
+  "valor": "R$ 23.020,00",
+  "data": "09/04/2026",
+  "situacao": "Cancelado",
+  "cliente": "MUNICIPIO DE MULUNGU"
+ },
+ {
+  "os": "110",
+  "linha": 429,
+  "valor": "R$ 12.356,79",
+  "data": "09/04/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE"
+ },
+ {
+  "os": "111",
+  "linha": 431,
+  "valor": "R$ 2.006,17",
+  "data": "10/04/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "112",
+  "linha": 433,
+  "valor": "R$ 61.180,00",
+  "data": "14/04/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE CARIDADE"
+ },
+ {
+  "os": "113",
+  "linha": 435,
+  "valor": "R$ 956,81",
+  "data": "15/04/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "114",
+  "linha": 437,
+  "valor": "R$ 5.600,00",
+  "data": "27/10/2025",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE CARIDADE"
+ },
+ {
+  "os": "115",
+  "linha": 439,
+  "valor": "R$ 255.032,46",
+  "data": "05/05/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "116",
+  "linha": 441,
+  "valor": "R$ 6.516,90",
+  "data": "06/05/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "117",
+  "linha": 443,
+  "valor": "R$ 7.795,50",
+  "data": "06/05/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE NOVA MAMORÉ"
+ },
+ {
+  "os": "118",
+  "linha": 445,
+  "valor": "R$ 36.301,50",
+  "data": "07/05/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE APUIARES"
+ },
+ {
+  "os": "119",
+  "linha": 447,
+  "valor": "R$ 54.536,79",
+  "data": "08/05/2026",
+  "situacao": "Em Aberto",
+  "cliente": "SECRETARIA DE EDUCACAO BEZERROS"
+ },
+ {
+  "os": "120",
+  "linha": 449,
+  "valor": "R$ 60.711,00",
+  "data": "08/05/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE NOVA MAMORÉ"
+ },
+ {
+  "os": "121",
+  "linha": 451,
+  "valor": "R$ 430.000,00",
+  "data": "12/05/2026",
+  "situacao": "Atendido",
+  "cliente": "ESTACIONAMENTO BANCO DO NORDESTE"
+ },
+ {
+  "os": "122",
+  "linha": 453,
+  "valor": "R$ 44.310,04",
+  "data": "13/05/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE CARIDADE"
+ },
+ {
+  "os": "126",
+  "linha": 455,
+  "valor": "R$ 20,00",
+  "data": "20/05/2026",
+  "situacao": "Em Aberto",
+  "cliente": "teste"
+ },
+ {
+  "os": "127",
+  "linha": 457,
+  "valor": "R$ 121.211,43",
+  "data": "27/05/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE FORTIM"
+ },
+ {
+  "os": "129",
+  "linha": 459,
+  "valor": "R$ 204,67",
+  "data": "03/06/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "130",
+  "linha": 466,
+  "valor": "R$ 524,53",
+  "data": "05/06/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "132",
+  "linha": 468,
+  "valor": "R$ 2.400,36",
+  "data": "08/06/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE IRAUÇUBA"
+ },
+ {
+  "os": "133",
+  "linha": 470,
+  "valor": "R$ 103,04",
+  "data": "09/06/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "134",
+  "linha": 472,
+  "valor": "R$ 14.749,78",
+  "data": "10/06/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE BARCARENA - PA"
+ },
+ {
+  "os": "135",
+  "linha": 474,
+  "valor": "R$ 1.661,43",
+  "data": "12/06/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE"
+ },
+ {
+  "os": "136",
+  "linha": 476,
+  "valor": "R$ 3.496,35",
+  "data": "15/06/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE APUIARES"
+ },
+ {
+  "os": "137",
+  "linha": 482,
+  "valor": "R$ 118.887,86",
+  "data": "18/06/2026",
+  "situacao": "Atendido",
+  "cliente": "RENAN VEICULOS LTDA ADMINISTRAÇÃO"
+ },
+ {
+  "os": "138",
+  "linha": 490,
+  "valor": "R$ 59.422,22",
+  "data": "01/06/2026",
+  "situacao": "Atendido",
+  "cliente": "RENAN VEICULOS LTDA ADMINISTRAÇÃO"
+ },
+ {
+  "os": "139",
+  "linha": 495,
+  "valor": "R$ 5.400,00",
+  "data": "18/06/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE IRAUÇUBA"
+ },
+ {
+  "os": "140",
+  "linha": 497,
+  "valor": "R$ 14.400,00",
+  "data": "23/06/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU"
+ },
+ {
+  "os": "141",
+  "linha": 499,
+  "valor": "R$ 20.801,94",
+  "data": "26/06/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE IRAUÇUBA"
+ },
+ {
+  "os": "142",
+  "linha": 501,
+  "valor": "R$ 14.214,66",
+  "data": "26/06/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE IRAUÇUBA"
+ },
+ {
+  "os": "143",
+  "linha": 504,
+  "valor": "R$ 25.421,40",
+  "data": "30/06/2026",
+  "situacao": "Em Aberto",
+  "cliente": "AGENCIA SERGIPE DE DESENVOLVIMENTO S.A"
+ },
+ {
+  "os": "144",
+  "linha": 506,
+  "valor": "R$ 15.000,00",
+  "data": "30/06/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE APUIARES"
+ },
+ {
+  "os": "145",
+  "linha": 508,
+  "valor": "R$ 59.500,00",
+  "data": "30/06/2026",
+  "situacao": "Em Aberto",
+  "cliente": "MUNICIPIO DE NOVA MAMORE"
+ },
+ {
+  "os": "146",
+  "linha": 510,
+  "valor": "R$ 102,34",
+  "data": "08/07/2026",
+  "situacao": "Atendido",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "147",
+  "linha": 512,
+  "valor": "R$ 75.000,00",
+  "data": "09/07/2026",
+  "situacao": "Atendido",
+  "cliente": "MUNICIPIO DE CARIDADE"
+ },
+ {
+  "os": "148",
+  "linha": 514,
+  "valor": "R$ 59.747,25",
+  "data": "13/07/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE APUIARES"
+ },
+ {
+  "os": "149",
+  "linha": 517,
+  "valor": "R$ 66.683,82",
+  "data": "13/07/2026",
+  "situacao": "Atendido",
+  "cliente": ""
+ },
+ {
+  "os": "152",
+  "linha": 520,
+  "valor": "R$ 16.894,80",
+  "data": "17/07/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE APUIARES"
+ },
+ {
+  "os": "153",
+  "linha": 522,
+  "valor": "R$ 15.000,00",
+  "data": "20/07/2026",
+  "situacao": "Atendido",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU"
+ },
+ {
+  "os": "154",
+  "linha": 524,
+  "valor": "R$ 5.754,45",
+  "data": "20/07/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE"
+ },
+ {
+  "os": "155",
+  "linha": 526,
+  "valor": "R$ 14.700,00",
+  "data": "20/07/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE FORTIM"
+ },
+ {
+  "os": "156",
+  "linha": 528,
+  "valor": "R$ 7.962,50",
+  "data": "20/07/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE APUIARES"
+ },
+ {
+  "os": "157",
+  "linha": 530,
+  "valor": "R$ 46.800,00",
+  "data": "27/07/2026",
+  "situacao": "Atendido",
+  "cliente": "MUNICIPIO DE CARIDADE"
+ },
+ {
+  "os": "158",
+  "linha": 532,
+  "valor": "R$ 37.718,85",
+  "data": "29/07/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE SOLONOPOLE ADMINISTRAÇÃO"
+ },
+ {
+  "os": "159",
+  "linha": 534,
+  "valor": "R$ 44.778,19",
+  "data": "07/08/2026",
+  "situacao": "Em Aberto",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "160",
+  "linha": 536,
+  "valor": "R$ 886,31",
+  "data": "10/08/2026",
+  "situacao": "Em Aberto",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "161",
+  "linha": 538,
+  "valor": "R$ 5.538,80",
+  "data": "10/08/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE FORTIM"
+ },
+ {
+  "os": "162",
+  "linha": 540,
+  "valor": "R$ 14.200,00",
+  "data": "06/05/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU"
+ },
+ {
+  "os": "163",
+  "linha": 542,
+  "valor": "R$ 38.610,00",
+  "data": "19/08/2026",
+  "situacao": "Em Aberto",
+  "cliente": "MUNICIPIO DE CARIDADE"
+ },
+ {
+  "os": "164",
+  "linha": 544,
+  "valor": "R$ 28.980,00",
+  "data": "01/09/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE APUIARES"
+ },
+ {
+  "os": "165",
+  "linha": 546,
+  "valor": "R$ 28.160,00",
+  "data": "03/09/2026",
+  "situacao": "Em Aberto",
+  "cliente": "MUNICIPIO DE CARIDADE"
+ },
+ {
+  "os": "166",
+  "linha": 548,
+  "valor": "R$ 4.500,00",
+  "data": "04/09/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU"
+ },
+ {
+  "os": "167",
+  "linha": 550,
+  "valor": "R$ 2.490,00",
+  "data": "09/09/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU"
+ },
+ {
+  "os": "168",
+  "linha": 552,
+  "valor": "R$ 42.193,96",
+  "data": "14/09/2026",
+  "situacao": "Em Aberto",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "169",
+  "linha": 554,
+  "valor": "R$ 102,34",
+  "data": "14/09/2026",
+  "situacao": "Em Aberto",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "170",
+  "linha": 556,
+  "valor": "R$ 48.880,00",
+  "data": "15/09/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE CROATA"
+ },
+ {
+  "os": "171",
+  "linha": 558,
+  "valor": "R$ 35.850,00",
+  "data": "15/09/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE CROATA"
+ },
+ {
+  "os": "172",
+  "linha": 560,
+  "valor": "R$ 1.029,46",
+  "data": "15/09/2026",
+  "situacao": "Em Aberto",
+  "cliente": "EMPRESA BAIANA DE AGUAS E SA"
+ },
+ {
+  "os": "173",
+  "linha": 561,
+  "valor": "R$ 16.400,00",
+  "data": "16/09/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE CROATA"
+ },
+ {
+  "os": "174",
+  "linha": 588,
+  "valor": "R$ 4.500,00",
+  "data": "16/09/2026",
+  "situacao": "Em Aberto",
+  "cliente": "PREFEITURA MUNICIPAL DE MULUNGU"
+ },
+ {
+  "os": "175",
+  "linha": 590,
+  "valor": "R$ 281.590,68",
+  "data": "16/09/2026",
+  "situacao": "Em Aberto",
+  "cliente": "MUNICIPIO DE UMARI"
+ },
+ {
+  "os": "176",
+  "linha": 592,
+  "valor": "R$ 306.960,70",
+  "data": "17/09/2026",
+  "situacao": "Em Aberto",
+  "cliente": "SECRETARIA DAS CIDADES"
+ },
+ {
+  "os": "177",
+  "linha": 594,
+  "valor": "R$ 8.252,01",
+  "data": "17/09/2026",
+  "situacao": "Em Aberto",
+  "cliente": ""
+ },
+ {
+  "os": "178",
+  "linha": 597,
+  "valor": "R$ 47.370,88",
+  "data": "17/09/2026",
+  "situacao": "Em Aberto",
+  "cliente": ""
+ },
+ {
+  "os": "179",
+  "linha": 600,
+  "valor": "R$ 15.239,44",
+  "data": "17/09/2026",
+  "situacao": "Em Aberto",
+  "cliente": ""
+ },
+ {
+  "os": "180",
+  "linha": 603,
+  "valor": "R$ 10.452,29",
+  "data": "17/09/2026",
+  "situacao": "Em Aberto",
+  "cliente": ""
+ },
+ {
+  "os": "181",
+  "linha": 606,
+  "valor": "R$ 15.969,07",
+  "data": "17/09/2026",
+  "situacao": "Em Aberto",
+  "cliente": ""
+ },
+ {
+  "os": "182",
+  "linha": 609,
+  "valor": "R$ 9.517,79",
+  "data": "17/09/2026",
+  "situacao": "Em Aberto",
+  "cliente": ""
+ },
+ {
+  "os": "183",
+  "linha": 612,
+  "valor": "R$ 35.129,02",
+  "data": "17/09/2026",
+  "situacao": "Em Aberto",
+  "cliente": ""
+ }
+]
