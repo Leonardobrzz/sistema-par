@@ -444,37 +444,65 @@ async function testarConexao() {
   }
 }
 
+// Tenta achar, pra uma Ordem de Compra (fornecedor + valor), uma conta a
+// pagar única que bata os dois — já que o OPP não tem nenhum campo que ligue
+// uma conta a pagar de volta à O.C. (confirmado com dados reais: nem
+// id_pedido/id_ordem_compra, nem o filtro ?id_pedido=X, que a API ignora e
+// sempre devolve a mesma lista genérica). Testado com 8 O.C. reais: 4 bateram
+// único (fornecedor+valor exatos), 4 não bateram nada — provavelmente ainda
+// não pagas, pagas em parcelas, ou fornecedor com nome escrito diferente no
+// Contas a Pagar. Então isso é "melhor esforço": acerta boa parte, mas não
+// todas. Só usa o match quando sobra EXATAMENTE UMA conta — com mais de uma
+// batendo o mesmo fornecedor+valor, ou nenhuma, fica em branco (desconhecido)
+// em vez de arriscar mostrar o valor errado.
+function casarValorPagoPorFornecedorValor(oc, contasPagar) {
+  const norm = (s) => (s || '').toString().toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const fornecedorOC = norm(oc.nome_cliente);
+  const valorOC = parseFloat(oc.valor_total_nota || 0);
+  if (!fornecedorOC || valorOC <= 0) return null;
+  const tolerancia = 0.5;
+  const candidatas = contasPagar.filter((c) => {
+    const fornecedorConta = norm(c.nome_fornecedor);
+    if (!fornecedorConta) return false;
+    if (!(fornecedorConta.includes(fornecedorOC) || fornecedorOC.includes(fornecedorConta))) return false;
+    const valorConta = parseFloat(c.valor_pag || 0);
+    return Math.abs(valorConta - valorOC) <= tolerancia;
+  });
+  if (candidatas.length !== 1) return null;
+  return candidatas[0];
+}
+
 // Busca ordens de compra do OPP e salva na aba OrdensCompra_OPP
 async function syncOrdensCompra(db) {
   console.log('[OPP OC] Sincronizando ordens de compra...');
-  const todos = await listarComPaginacao('/ordens-compra');
+  const [todos, contasPagar] = await Promise.all([
+    listarComPaginacao('/ordens-compra'),
+    listarComPaginacao('/contas-pagar').catch(() => []),
+  ]);
   const rows = todos
     .filter(o => o.id_pedido != null && String(o.id_pedido).trim() !== '')
-    .map(o => ({
-      ID_OC: String(o.id_pedido),
-      ID_Ordem_OPP: String(o.id_ordem || ''),
-      Nome_Fornecedor: o.nome_cliente || '',
-      Valor_Total: String(o.valor_total_nota || 0),
-      // Valor_Liquidado fica vazio de propósito — o OPP não tem um jeito
-      // confiável de ligar uma conta a pagar a uma Ordem de Compra específica.
-      // /contas-pagar?id_pedido=X parece um filtro válido mas a API do OPP
-      // ignora esse parâmetro e devolve uma lista genérica qualquer (testado
-      // e confirmado: o mesmo lançamento genérico volta não importa a OC
-      // pedida, e inclusive já vinha de registro na lixeira). Isso fazia TODAS
-      // as OCs ficarem com o mesmo Valor_Liquidado, baseado numa lista que não
-      // tem nada a ver com cada uma — então é melhor deixar vazio (=desconhecido)
-      // do que mostrar um número que parece certo mas não é. Se o OPP/VHSys
-      // tiver um relatório ou endpoint correto pra isso, dá pra plugar aqui.
-      Valor_Liquidado: '',
-      Data_Pedido: o.data_pedido || '',
-      Situacao: o.situacao_pedido || o.status_pedido || '',
-      Observacao: o.obs_pedido || '',
-      Sincronizado_Em: new Date().toISOString(),
-    }));
+    .map(o => {
+      const contaPaga = casarValorPagoPorFornecedorValor(o, contasPagar);
+      return {
+        ID_OC: String(o.id_pedido),
+        ID_Ordem_OPP: String(o.id_ordem || ''),
+        Nome_Fornecedor: o.nome_cliente || '',
+        Valor_Total: String(o.valor_total_nota || 0),
+        // Valor_Liquidado: melhor esforço, casado por fornecedor+valor (ver
+        // comentário em casarValorPagoPorFornecedorValor). Fica vazio quando
+        // não achou um match único — "desconhecido", não "não pago".
+        Valor_Liquidado: contaPaga ? String(contaPaga.valor_pag || 0) : '',
+        Data_Pedido: o.data_pedido || '',
+        Situacao: o.situacao_pedido || o.status_pedido || '',
+        Observacao: o.obs_pedido || '',
+        Sincronizado_Em: new Date().toISOString(),
+      };
+    });
 
   try { await db.clearSheetData('OrdensCompra_OPP'); } catch {}
   if (rows.length > 0) await db.insertManyRows('OrdensCompra_OPP', rows);
-  console.log(`[OPP OC] ${rows.length} ordens de compra sincronizadas (valor liquidado por OC não disponível na API do OPP).`);
+  const comValor = rows.filter(r => r.Valor_Liquidado).length;
+  console.log(`[OPP OC] ${rows.length} ordens de compra sincronizadas (${comValor} com Valor Liquidado casado por fornecedor+valor; o restante fica em branco por falta de vínculo confiável no OPP).`);
   return rows.length;
 }
 

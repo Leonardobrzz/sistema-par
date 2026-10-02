@@ -87,10 +87,12 @@ router.get('/', async (req, res, next) => {
       const oppEntry = r.OC ? (porOC[String(r.OC).trim()] || null) : null;
 
       const valorContratadoOPP = oppEntry?.total || 0;
-      // Valor Liquidado por OC não existe de verdade na API do OPP (ver
-      // comentário em syncOrdensCompra, em oppService.js) — fica sempre 0 aqui
-      // até o OPP oferecer um jeito confiável de ligar pagamento à OC. Então
-      // Saldo, por enquanto, é sempre igual ao Valor Contratado.
+      // Valor Liquidado: o OPP não tem um campo que ligue direto uma conta a
+      // pagar a uma Ordem de Compra (ver comentário em syncOrdensCompra, em
+      // oppService.js), então isso vem de um casamento por fornecedor+valor
+      // feito lá no sync — só quando bate uma única conta. Funciona pra boa
+      // parte das O.C. (testado: 4 de 8), mas fica 0 quando não achou um
+      // match seguro (não significa necessariamente que não foi pago).
       const valorPagoOPP       = oppEntry?.pago  || 0;
       const valorContratadoPAR = pBR(r.Valor_Contratado || r.Valor_Estimado || 0);
 
@@ -107,7 +109,14 @@ router.get('/', async (req, res, next) => {
         ...r,
         nomeProjeto: proj?.Nome || r.ID_Projeto || '',
         Cliente: r.Cliente || proj?.Cliente || proj?.Nome_Cliente || '',
-        Setor: proj?.Setor || r.Setor || '',
+        // Prioriza o campo personalizado "SETOR*" preenchido na própria
+        // tarefa do ClickUp (sincronizado em syncTerceirizadosClickUp) — é
+        // mais confiável que o Setor do projeto vinculado, porque o vínculo
+        // com o projeto às vezes falha (linked_tasks quebrado, URL errada) e
+        // aí o Setor ficava em branco mesmo a tarefa já tendo o setor
+        // marcado certinho no ClickUp. Só cai pro Setor do projeto quando a
+        // tarefa realmente não tem esse campo preenchido.
+        Setor: r.Setor || proj?.Setor || '',
         Descricao_Servico: r.Descricao_Servico || r.Servico || '',
         // Fornecedor é o nome da empresa terceirizada (campo "Fornecedor" do
         // ClickUp). Responsavel é quem está cuidando da tarefa internamente

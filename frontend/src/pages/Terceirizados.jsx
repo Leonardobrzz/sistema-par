@@ -101,21 +101,19 @@ export default function Terceirizados() {
 
   useEffect(() => { load() }, [load])
 
-  function handleEdit(item) { setEditItem(item); setShowModal(true) }
-
-  async function handleDelete(id) {
-    if (!window.confirm('Cancelar este serviço terceirizado?')) return
-    try {
-      await api.delete(`/terceirizados/${id}`)
-      toast.success('Cancelado com sucesso')
-      load()
-    } catch (err) { toast.error(err.response?.data?.error || 'Erro ao cancelar') }
-  }
+  // Terceirizados arquivados no ClickUp (status "Arquivada" na lista de
+  // Solicitação) não representam demanda real nenhuma — são pedidos que
+  // foram engavetados. Pedido do chefe: tirar eles de tudo (contagem,
+  // painel de etapas, filtros e tabela), não só escondê-los atrás do filtro
+  // "Contratos ativos".
+  const terceirizadosVisiveis = useMemo(() =>
+    terceirizados.filter(t => !(t.Status_ClickUp || '').toLowerCase().includes('arquiv')),
+    [terceirizados])
 
   // Agrupa por etapa para o painel de resumo
   const resumoPorEtapa = useMemo(() => {
     const grupos = {}
-    for (const t of terceirizados) {
+    for (const t of terceirizadosVisiveis) {
       const ek = getEtapaKey(t.Etapa_ClickUp)
       if (!ek) continue
       if (!grupos[ek]) grupos[ek] = {}
@@ -123,17 +121,17 @@ export default function Terceirizados() {
       grupos[ek][s] = (grupos[ek][s] || 0) + 1
     }
     return grupos
-  }, [terceirizados])
+  }, [terceirizadosVisiveis])
 
   const fornecedoresUnicos = useMemo(() =>
-    [...new Set(terceirizados.filter(t => t.Fornecedor).map(t => t.Fornecedor))].sort(),
-    [terceirizados])
+    [...new Set(terceirizadosVisiveis.filter(t => t.Fornecedor).map(t => t.Fornecedor))].sort(),
+    [terceirizadosVisiveis])
 
   const clientesUnicos = useMemo(() =>
-    [...new Set(terceirizados.filter(t => t.Cliente).map(t => t.Cliente))].sort(),
-    [terceirizados])
+    [...new Set(terceirizadosVisiveis.filter(t => t.Cliente).map(t => t.Cliente))].sort(),
+    [terceirizadosVisiveis])
 
-  const tercFiltrados = useMemo(() => terceirizados.filter(t => {
+  const tercFiltrados = useMemo(() => terceirizadosVisiveis.filter(t => {
     if (filtroSetor && !(t.Setor || '').toLowerCase().includes(filtroSetor.toLowerCase())) return false
     if (filtroFornecedor && t.Fornecedor !== filtroFornecedor) return false
     if (filtroCliente && t.Cliente !== filtroCliente) return false
@@ -145,7 +143,7 @@ export default function Terceirizados() {
     if (filtroEtapa && getEtapaKey(t.Etapa_ClickUp) !== filtroEtapa) return false
     if (filtroStatusClickUp && (t.Status_ClickUp || '').toLowerCase() !== filtroStatusClickUp.toLowerCase()) return false
     return true
-  }), [terceirizados, filtroSetor, filtroFornecedor, filtroCliente, filtroStatus, filtroVencimentoDe, filtroVencimentoAte, filtroEtapa, filtroStatusClickUp])
+  }), [terceirizadosVisiveis, filtroSetor, filtroFornecedor, filtroCliente, filtroStatus, filtroVencimentoDe, filtroVencimentoAte, filtroEtapa, filtroStatusClickUp])
 
   function selecionarEtapaStatus(etapaKey, status) {
     if (filtroEtapa === etapaKey && filtroStatusClickUp === status) {
@@ -173,8 +171,8 @@ export default function Terceirizados() {
   }
 
   const statusClickUpUnicos = useMemo(() =>
-    [...new Set(terceirizados.filter(t => t.Status_ClickUp).map(t => t.Status_ClickUp))].sort(),
-    [terceirizados])
+    [...new Set(terceirizadosVisiveis.filter(t => t.Status_ClickUp).map(t => t.Status_ClickUp))].sort(),
+    [terceirizadosVisiveis])
 
   const ativoEtapaBadge = filtroEtapa || filtroStatusClickUp
   const temFiltroAtivo = filtroSetor || filtroFornecedor || filtroCliente || filtroVencimentoDe || filtroVencimentoAte || filtroStatusClickUp
@@ -352,7 +350,6 @@ export default function Terceirizados() {
                     { h: "Setor",           align: "center" },
                     { h: "Status",          align: "center" },
                     { h: "Doc.",            align: "center" },
-                    { h: "Ações",           align: "right"  },
                   ].map(({ h, align }) => (
                     <th key={h} style={{ padding: "12px 14px", fontSize: 11, fontWeight: 700, color: T.text2, textAlign: align, letterSpacing: 0.5, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
                   ))}
@@ -361,7 +358,7 @@ export default function Terceirizados() {
               <tbody>
                 {tercFiltrados.length === 0 ? (
                   <tr>
-                    <td colSpan={12} style={{ textAlign: "center", padding: 48, color: T.text2, fontSize: 13 }}>
+                    <td colSpan={11} style={{ textAlign: "center", padding: 48, color: T.text2, fontSize: 13 }}>
                       <UsersIcon style={{ width: 36, height: 36, margin: "0 auto 10px", opacity: 0.3 }} />
                       <div>Nenhum registro encontrado</div>
                     </td>
@@ -466,14 +463,6 @@ export default function Terceirizados() {
                         ) : <span style={{ color: "#E2E8F0" }}>—</span>}
                       </td>
 
-                      {/* Ações */}
-                      <td style={{ padding: "11px 14px", textAlign: "right" }}>
-                        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                          <button onClick={() => handleEdit(t)} style={{ fontSize: 11, color: "#00788A", fontWeight: 700, background: "none", border: "none", cursor: "pointer" }}>EDITAR</button>
-                          <span style={{ color: "#E2E8F0" }}>|</span>
-                          <button onClick={() => handleDelete(t.ID_Terceirizado || t.ID)} style={{ fontSize: 11, color: "#EF4444", fontWeight: 700, background: "none", border: "none", cursor: "pointer" }}>CANCELAR</button>
-                        </div>
-                      </td>
                     </tr>
                   )
                 })}

@@ -1116,6 +1116,13 @@ async function syncTerceirizadosClickUp() {
       const status = task.status?.status || '';
       const responsavel = task.assignees?.map(a => a.username).join(', ') || '';
       const fornecedor = getCustomField(task, 'Fornecedor') || getCustomField(task, 'fornecedor') || '';
+      // Campo personalizado "SETOR*" da própria tarefa — pedido do chefe,
+      // em vez de depender só do Setor do projeto vinculado (que ficava em
+      // branco quando o vínculo com o projeto falhava). getCustomField já
+      // resolve dropdown certo; getAnyFieldContaining é só uma reserva pra
+      // não quebrar se o nome exato do campo no ClickUp tiver alguma
+      // variação (ex.: sem o "*", ou com espaço extra).
+      const setorClickUp = getCustomField(task, 'SETOR*') || getAnyFieldContaining(task, 'setor') || '';
       const descricao = task.name || '';
       const dataEntrega = task.due_date ? new Date(parseInt(task.due_date)).toISOString().split('T')[0] : '';
 
@@ -1165,7 +1172,10 @@ async function syncTerceirizadosClickUp() {
         // versão antiga do parser) nunca se corrigia sozinho num re-sync,
         // porque nenhuma outra condição mudava pra essas tarefas.
         const fornecedorMudou = fornecedor && existente.Fornecedor !== fornecedor;
-        if (ocMudou || statusMudou || etapaMudou || respMudou || projetoMudou || fornecedorMudou || statusDesatualizado || !existente.Responsavel) {
+        // Mesma lógica do Fornecedor: sem isso, um Setor vazio ou errado de
+        // um sync antigo (antes desse campo existir) nunca se corrigia.
+        const setorMudou = setorClickUp && existente.Setor !== setorClickUp;
+        if (ocMudou || statusMudou || etapaMudou || respMudou || projetoMudou || fornecedorMudou || setorMudou || statusDesatualizado || !existente.Responsavel) {
           await db.updateRowById('Terceirizados', 'ID', existente.ID, {
             ...existente,
             OC: oc || existente.OC || '',
@@ -1174,6 +1184,7 @@ async function syncTerceirizadosClickUp() {
             Etapa_ClickUp: etapa,
             Responsavel: responsavel || existente.Responsavel || '',
             Fornecedor: fornecedor || existente.Fornecedor || '',
+            Setor: setorClickUp || existente.Setor || '',
             ID_Projeto: idProjeto || existente.ID_Projeto || '',
           });
           atualizados++;
@@ -1185,6 +1196,7 @@ async function syncTerceirizadosClickUp() {
           ID_Projeto: idProjeto,
           Servico: descricao,
           Fornecedor: fornecedor,
+          Setor: setorClickUp,
           Valor_Contratado: '',
           Valor_Pago: '',
           Status: etapa.includes('Execução') ? 'Confirmado' : etapa.includes('Contratação') ? 'Confirmado' : 'Solicitado',
