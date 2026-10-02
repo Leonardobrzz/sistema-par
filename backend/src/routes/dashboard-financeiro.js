@@ -280,9 +280,16 @@ router.get('/', async (req, res, next) => {
       const totalDespInt = (d.despesasInternas|| []).reduce((s, x) => s + pBR(x.custo), 0);
       const lucro   = recLiq - totalTercs - totalEq - totalDesp - totalDespInt;
       const margem  = V > 0 ? (lucro / V) * 100 : 0;
-      const recebido = medicoesTabela
-        .filter(m => m.ID_Projeto === plan.ID_Projeto && m.Status_Financeiro === 'Recebido')
-        .reduce((s, m) => s + pBR(m.Valor), 0);
+      // Antes isso filtrava medicoesTabela pelo campo Status_Financeiro ===
+      // 'Recebido' gravado na própria linha da medição — só que esse campo
+      // é calculado na hora (enriquecido) toda vez que a tela de Medições é
+      // aberta, e NUNCA é salvo de volta na tabela. Resultado: a coluna
+      // "Recebido" desta tabela de Rentabilidade por Projeto vinha sempre
+      // R$ 0 pra todo mundo, mesmo com o card "Total Recebido" no topo (que
+      // usa recebidoOPPPorProjeto, calculado logo acima a partir do
+      // liquidado_rec do OPP) mostrando valor correto. Usa a mesma fonte
+      // confiável aqui, pra bater com o card do topo.
+      const recebido = recebidoOPPPorProjeto[plan.ID_Projeto] || 0;
 
       return {
         id: plan.ID_Projeto,
