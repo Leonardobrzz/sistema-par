@@ -205,12 +205,18 @@ router.get('/', async (req, res, next) => {
     // (campo vencimento_rec) — pedido do chefe pra aparecer na tela de
     // Medições & Faturamento. Só existe quando já sabemos o Nº da NF.
     const vencimentoPorNF = {};
+    // ID interno da Conta a Receber (id_conta_rec) — usado pro link direto
+    // dela no OPP (#!editar/<id_conta_rec>, confirmado com URL real). É
+    // diferente do número da NF (n_documento_rec) que a gente mostra na
+    // tela.
+    const idContaReceberPorNF = {};
     for (const r of receitasOPP) {
       const nf = String(r.n_documento_rec || '').trim();
       if (!nf) continue;
       if (r.liquidado_rec === 'Sim') receitaPorNF[nf] = true;
       else if (!(nf in receitaPorNF)) receitaPorNF[nf] = false;
       if (!vencimentoPorNF[nf] && r.vencimento_rec) vencimentoPorNF[nf] = r.vencimento_rec;
+      if (!idContaReceberPorNF[nf] && r.id_conta_rec) idContaReceberPorNF[nf] = r.id_conta_rec;
     }
     // Tolerância BEM pequena e fixa (não percentual) — só pra cobrir
     // arredondamento de centavos. Se o valor real for diferente do planejado
@@ -258,6 +264,7 @@ router.get('/', async (req, res, next) => {
           ID_Ordem_OPP: o.ID_Ordem_OPP || '',
           Nr_NF: nf,
           Data_Vencimento: nf ? (vencimentoPorNF[nf] || '') : '',
+          ID_Conta_Receber_OPP: nf ? (idContaReceberPorNF[nf] || '') : '',
           Status_Financeiro: statusFin,
           atrasada: statusFin !== 'Recebido' && isAtrasadaOS,
           valorRecebidoOPP: statusFin === 'Recebido' ? pBR(o.Valor_Total) : 0,
@@ -320,6 +327,8 @@ router.get('/', async (req, res, next) => {
         // que já estiver gravado manualmente na medição; só usa a do OPP como
         // reserva.
         Data_Vencimento: m.Data_Vencimento || vencimentoPorNF[nrNF] || '',
+        // ID interno da Conta a Receber — pro link direto dela no OPP.
+        ID_Conta_Receber_OPP: idContaReceberPorNF[nrNF] || '',
         // NUNCA mostra o Nr_OS_OPP do projeto quando ele tem mais de uma O.S.
         // colada (texto com vírgula) — esse campo é do contrato inteiro, não
         // dessa medição específica, e um contrato grande pode ter várias O.S.
@@ -395,6 +404,7 @@ router.get('/', async (req, res, next) => {
           valorRecebidoOPP: cobertoPeloOPP ? valorMed : 0,
           Nr_NF: nfDaEtapa,
           Data_Vencimento: nfDaEtapa ? (vencimentoPorNF[nfDaEtapa] || '') : '',
+          ID_Conta_Receber_OPP: nfDaEtapa ? (idContaReceberPorNF[nfDaEtapa] || '') : '',
           // Mesma regra da linha "enriched" acima: nunca cola mais de uma
           // O.S. numa etapa de prévia. Com mais de uma O.S. no projeto, essa
           // etapa específica ainda não tem uma O.S. confirmada — fica em
