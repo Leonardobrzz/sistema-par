@@ -1069,8 +1069,17 @@ async function syncTerceirizadosClickUp() {
     if (!tercFolder) { console.log('[ClickUp Terc] Pasta Terceirizados não encontrada no espaço Gestão.'); return 0; }
 
     const LISTAS_ALVO = ['solicitação', 'contratação', 'execução', 'execucao', 'pagamento'];
+    // "Cadastro de Terceirizados" é um catálogo de fornecedores, não uma
+    // demanda de serviço — nunca deve virar registro na tabela Terceirizados.
+    // Excluído explicitamente aqui (além de já não bater com LISTAS_ALVO) pra
+    // não se repetir o problema de ~2000 registros de cadastro aparecendo
+    // marcados "Cancelado" na tela de Demandas (não eram cancelamentos reais).
+    const LISTAS_EXCLUIR = ['cadastro'];
     const allLists = await getLists(tercFolder.id);
-    const lists = allLists.filter(l => LISTAS_ALVO.some(kw => l.name?.toLowerCase().includes(kw)));
+    const lists = allLists.filter(l =>
+      LISTAS_ALVO.some(kw => l.name?.toLowerCase().includes(kw)) &&
+      !LISTAS_EXCLUIR.some(kw => l.name?.toLowerCase().includes(kw))
+    );
     console.log(`[ClickUp Terc] Listas filtradas: ${lists.map(l => l.name).join(', ')}`);
     const allTasks = [];
     for (const list of lists) {
