@@ -163,6 +163,15 @@ router.get('/', async (req, res, next) => {
     const osDeMedicao = (ordensServicoOPP || []).filter((o) =>
       reMedicao.test(o.Referencia || '') || reMedicao.test(o.Observacao || '') || reMedicao.test(o.Problema || '')
     );
+    // Mapa direto por número de O.S. — usado pra buscar o nome/NF reais do
+    // OPP sempre que a linha já sabe qual é a O.S. (vínculo único, sem
+    // ambiguidade), mesmo quando essa linha não passou pelo casamento por
+    // valor acima (ex.: um projeto com 4 etapas planejadas mas só 1 O.S. real
+    // cobrindo o valor somado das 4 — não dá pra casar por valor em cada
+    // etapa, mas já sabemos qual O.S. é, então não tem motivo pra mostrar um
+    // nome inventado pelo planejamento em vez do nome real do OPP).
+    const osPorNumero = {};
+    for (const o of (ordensServicoOPP || [])) osPorNumero[String(o.ID_OS_OPP)] = o;
     const osPorIdClienteOPP = {};
     for (const o of osDeMedicao) {
       const idCli = String(o.ID_Cliente_OPP || '');
@@ -270,7 +279,15 @@ router.get('/', async (req, res, next) => {
         statusFin = isAtrasada ? 'Atrasado' : 'Pendente';
       }
 
-      const nrNF = m.Nr_NF || (cobertoPeloOPP ? (nfPorProjeto[m.ID_Projeto] || '') : '');
+      // O.S. única e confirmada deste projeto (se o campo não tiver vírgula)
+      // — usada como fonte mais confiável de NF do que o "primeiro NF achado
+      // pro projeto" (nfPorProjeto), que é a mesma aproximação pra todas as
+      // linhas do projeto e pode não ser o NF de verdade desta medição.
+      const nrOsResolvido = (plan.Nr_OS_OPP && !String(plan.Nr_OS_OPP).includes(',')) ? plan.Nr_OS_OPP : '';
+      const osReal = nrOsResolvido ? osPorNumero[String(nrOsResolvido)] : null;
+      const nfDoOSReal = osReal ? ((String(osReal.Referencia || '').match(reNF) || [])[1] || '') : '';
+
+      const nrNF = m.Nr_NF || nfDoOSReal || (cobertoPeloOPP ? (nfPorProjeto[m.ID_Projeto] || '') : '');
 
       return {
         ...m,
@@ -289,7 +306,7 @@ router.get('/', async (req, res, next) => {
         // melhor não mostrar nada do que arriscar colar a O.S. errada nesta
         // linha — a linha de medição real (casada por valor, acima) já cobre
         // o caso de saber exatamente qual O.S. é de qual etapa.
-        Nr_OS_OPP: (plan.Nr_OS_OPP && !String(plan.Nr_OS_OPP).includes(',')) ? plan.Nr_OS_OPP : '',
+        Nr_OS_OPP: nrOsResolvido,
         Status_Financeiro: statusFin,
         Link_Produto: m.Link_Produto || m.Link_Contrato || '',
       };
@@ -314,6 +331,19 @@ router.get('/', async (req, res, next) => {
       const meds = dados.medicoes || dados._baseline?.medicoesCronograma || [];
       const totalRecebido = totalRecebidoPorProjeto[plan.ID_Projeto] || 0;
       let acumulado = 0;
+
+      // Mesma regra da linha "enriched": só confia no Nr_OS_OPP do projeto
+      // quando não tem vírgula (uma O.S. só, sem ambiguidade). Com essa O.S.
+      // em mãos, busca o nome/NF REAIS dela no OPP em vez de usar o nome que
+      // foi digitado no cronograma planejado do Par — que pode ter sido
+      // escrito diferente do que está no OPP de verdade (ex.: Par chama de
+      // "MEDIÇÃO - ETAPA 01" uma coisa que no OPP se chama "MEDIÇÃO* ÚNICA").
+      // Isso vale pra TODAS as etapas desse planejamento, não só a "Recebido"
+      // — o nome/NF da O.S. não muda com o status de pagamento da etapa.
+      const nrOsResolvidoPlano = (plan.Nr_OS_OPP && !String(plan.Nr_OS_OPP).includes(',')) ? plan.Nr_OS_OPP : '';
+      const osRealPlano = nrOsResolvidoPlano ? osPorNumero[String(nrOsResolvidoPlano)] : null;
+      const nfDoOSRealPlano = osRealPlano ? ((String(osRealPlano.Referencia || '').match(reNF) || [])[1] || '') : '';
+
       meds.forEach((m, idx) => {
         // Essa etapa específica já tem uma O.S. real casada por valor —
         // não mostra a prévia duplicada, a linha real já cobre ela.
@@ -332,16 +362,16 @@ router.get('/', async (req, res, next) => {
           setor: proj.Setor || '',
           Data_Previsao: dataPrevisao,
           Valor: valorMed,
-          Descricao: m.descricao || m.etapa || `Medição ${idx + 1}`,
+          Descricao: (osRealPlano && osRealPlano.Referencia) ? osRealPlano.Referencia : (m.descricao || m.etapa || `Medição ${idx + 1}`),
           Status_Financeiro: statusFin,
           atrasada: statusFin !== 'Recebido' && isAtrasada,
           valorRecebidoOPP: cobertoPeloOPP ? valorMed : 0,
-          Nr_NF: cobertoPeloOPP ? (nfPorProjeto[plan.ID_Projeto] || '') : '',
+          Nr_NF: nfDoOSRealPlano || (cobertoPeloOPP ? (nfPorProjeto[plan.ID_Projeto] || '') : ''),
           // Mesma regra da linha "enriched" acima: nunca cola mais de uma
           // O.S. numa etapa de prévia. Com mais de uma O.S. no projeto, essa
           // etapa específica ainda não tem uma O.S. confirmada — fica em
           // branco até a medição real bater por valor (vira uma realRow).
-          Nr_OS_OPP: (plan.Nr_OS_OPP && !String(plan.Nr_OS_OPP).includes(',')) ? plan.Nr_OS_OPP : '',
+          Nr_OS_OPP: nrOsResolvidoPlano,
           Link_Produto: '',
           _doPlanejamento: true,
         });
