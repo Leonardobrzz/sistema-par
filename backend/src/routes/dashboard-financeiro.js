@@ -49,13 +49,38 @@ async function fetchOppReceitas() {
   } catch { return []; }
 }
 
+// Motor de O.S./NF da tela de Medições (medicoesService.js), reaproveitado
+// aqui. O casamento só por centro de custo (recebidoOPPPorProjeto, mais
+// abaixo) só achava recebimento pra 15 dos 61 projetos aprovados —
+// confirmado com diagnosticar-formato-centro-custo.js: a maioria das contas
+// a receber liquidadas no OPP nem é de projeto (é lançamento administrativo,
+// tipo juros de banco), e a maioria dos projetos que TÊM centro de custo
+// cadastrado não tem nenhuma conta liquidada com esse ID específico. O
+// motor de Medições casa por valor da O.S./etapa do cronograma + NF, que já
+// é comprovadamente mais abrangente (é o que a própria tela de Medições usa
+// pra mostrar "Recebido"). Ver medicoesService.js pro motor completo.
+const { calcularMedicoesComOPP } = require('../services/medicoesService');
+
 router.get('/', async (req, res, next) => {
   try {
-    const [planejamentos, medicoesTabela, oppReceitas] = await Promise.all([
+    const [planejamentos, medicoesTabela, oppReceitas, medicoesComOPP] = await Promise.all([
       db.readSheet('Planejamentos'),
       db.readSheet('Medicoes'),
       fetchOppReceitas(),
+      calcularMedicoesComOPP(db, {}),
     ]);
+
+    // Recebido por projeto, usando o motor de O.S./NF (igual a tela de
+    // Medições) — soma o valorRecebidoOPP de toda linha (real ou prévia) de
+    // cada projeto. Essa é a fonte PRIMÁRIA, bem mais abrangente que o
+    // casamento só por centro de custo (recebidoOPPPorProjeto, calculado
+    // mais abaixo), que fica só como reserva pro caso raro de um projeto não
+    // aparecer em nenhuma linha do motor de Medições.
+    const recebidoMedicoesPorProjeto = {};
+    medicoesComOPP.forEach(m => {
+      if (!m.ID_Projeto) return;
+      recebidoMedicoesPorProjeto[m.ID_Projeto] = (recebidoMedicoesPorProjeto[m.ID_Projeto] || 0) + (m.valorRecebidoOPP || 0);
+    });
 
     const aprovados = planejamentos.filter(p => p.Status === 'Aprovado');
 
@@ -274,7 +299,10 @@ router.get('/', async (req, res, next) => {
 
     // ── KPIs ──────────────────────────────────────────────────────────────
     const totalCarteira  = aprovados.reduce((s, p) => s + pBR(p.Valor_Contrato), 0);
-    const totalRecebido  = Object.values(recebidoOPPPorProjeto).reduce((s, v) => s + v, 0);
+    // Soma o mesmo valor (motor de Medições, com reserva por centro de
+    // custo) usado na coluna "Recebido" da tabela de Rentabilidade abaixo —
+    // garante que esse card do topo e a tabela sempre batem.
+    const totalRecebido  = aprovados.reduce((s, p) => s + (recebidoMedicoesPorProjeto[p.ID_Projeto] || recebidoOPPPorProjeto[p.ID_Projeto] || 0), 0);
     const totalAReceber  = todasMedicoes.filter(m => m.statusFinanceiro !== 'Recebido').reduce((s, m) => s + m.valor, 0);
     const totalAtrasado  = aging.total;
 
@@ -294,16 +322,20 @@ router.get('/', async (req, res, next) => {
       const totalDespInt = (d.despesasInternas|| []).reduce((s, x) => s + pBR(x.custo), 0);
       const lucro   = recLiq - totalTercs - totalEq - totalDesp - totalDespInt;
       const margem  = V > 0 ? (lucro / V) * 100 : 0;
-      // Antes isso filtrava medicoesTabela pelo campo Status_Financeiro ===
-      // 'Recebido' gravado na própria linha da medição — só que esse campo
-      // é calculado na hora (enriquecido) toda vez que a tela de Medições é
-      // aberta, e NUNCA é salvo de volta na tabela. Resultado: a coluna
-      // "Recebido" desta tabela de Rentabilidade por Projeto vinha sempre
-      // R$ 0 pra todo mundo, mesmo com o card "Total Recebido" no topo (que
-      // usa recebidoOPPPorProjeto, calculado logo acima a partir do
-      // liquidado_rec do OPP) mostrando valor correto. Usa a mesma fonte
-      // confiável aqui, pra bater com o card do topo.
-      const recebido = recebidoOPPPorProjeto[plan.ID_Projeto] || 0;
+      // Histórico: 1) isso filtrava medicoesTabela por Status_Financeiro
+      // === 'Recebido' gravado na própria linha — mas esse campo é só
+      // calculado na hora (nunca salvo de volta), então vinha sempre R$ 0.
+      // 2) Depois passou a usar recebidoOPPPorProjeto (casamento só por
+      // centro de custo do OPP) — melhorou, mas esse vínculo só cobria 15
+      // dos 61 projetos aprovados (a maioria das contas liquidadas no OPP
+      // nem é de projeto, e a maioria dos projetos com centro de custo
+      // cadastrado não tem nenhuma conta liquidada com esse ID específico —
+      // confirmado com diagnosticar-formato-centro-custo.js). Agora usa o
+      // motor de O.S./NF da tela de Medições (recebidoMedicoesPorProjeto,
+      // calculado no topo do arquivo), que casa por valor da O.S./etapa do
+      // cronograma + NF — a mesma lógica que já prova funcionar bem na tela
+      // de Medições — com o casamento por centro de custo só como reserva.
+      const recebido = recebidoMedicoesPorProjeto[plan.ID_Projeto] || recebidoOPPPorProjeto[plan.ID_Projeto] || 0;
 
       return {
         id: plan.ID_Projeto,
@@ -355,11 +387,6 @@ router.get('/', async (req, res, next) => {
     }));
 
     res.json({
-      // Marcador TEMPORÁRIO só pra confirmar, via API, que essa versão do
-      // código (com o filtro lixeira=Nao em fetchOppReceitas) realmente
-      // está no ar — remover depois de confirmado.
-      _debugBuild: 'lixeira-fix-v1',
-      _debugContasReceberBrutas: oppReceitas.length,
       kpis: {
         totalCarteira:  Math.round(totalCarteira),
         totalRecebido:  Math.round(totalRecebido),
