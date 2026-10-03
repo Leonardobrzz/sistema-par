@@ -355,6 +355,11 @@ router.get('/', async (req, res, next) => {
     }));
 
     res.json({
+      // Marcador TEMPORÁRIO só pra confirmar, via API, que essa versão do
+      // código (com o filtro lixeira=Nao em fetchOppReceitas) realmente
+      // está no ar — remover depois de confirmado.
+      _debugBuild: 'lixeira-fix-v1',
+      _debugContasReceberBrutas: oppReceitas.length,
       kpis: {
         totalCarteira:  Math.round(totalCarteira),
         totalRecebido:  Math.round(totalRecebido),
