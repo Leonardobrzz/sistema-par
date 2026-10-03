@@ -19,12 +19,26 @@ function mesYM(dateStr) {
 }
 
 // Busca contas-receber do OPP (receitas liquidadas e pendentes)
+//
+// BUG CORRIGIDO: essa busca nunca excluía a lixeira do OPP, diferente de
+// TODO outro lugar do sistema que lê /contas-receber ou /contas-pagar
+// (medicoes.js, opp.js, e o helper listarComPaginacao de oppService.js
+// sempre mandam &lixeira=Nao). Resultado: a gente contava registros
+// jogados fora/substituídos no OPP junto com os de verdade — confirmado
+// com diagnosticar-lixeira-contas-receber.js: SEM esse filtro, só 26% das
+// contas liquidadas tinham centro de custo preenchido; FILTRANDO a
+// lixeira, esse número sobe pra 97% (bate com o que o chef via direto no
+// OPP: o campo "Centro de custos" vem preenchido na quase totalidade das
+// contas de verdade). Isso explicava a maior parte dos projetos aparecendo
+// com Recebido R$ 0 na tabela de Rentabilidade — a gente tava tentando
+// casar lixo (contas excluídas, sem centro de custo) junto com as contas
+// reais.
 async function fetchOppReceitas() {
   try {
     const { oppRequest } = require('../services/oppService');
     let offset = 0, todos = [];
     while (true) {
-      const r = await oppRequest('GET', `/contas-receber?limit=250&offset=${offset}`);
+      const r = await oppRequest('GET', `/contas-receber?limit=250&offset=${offset}&lixeira=Nao`);
       const lista = Array.isArray(r) ? r : (r?.data || []);
       if (lista.length === 0) break;
       todos.push(...lista);
