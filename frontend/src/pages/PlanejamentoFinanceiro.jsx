@@ -1969,72 +1969,84 @@ export default function PlanejamentoFinanceiro() {
                 </div>
               )}
 
-              {/* ── TERCEIRIZADOS — Previsto vs Gasto ── */}
-              {(() => {
-                const previsto = comparativo.terceirizadosPlanejados?.total || 0
-                // Só o gasto real nas categorias de terceiro/subcontratado da OPP (2.1.x +
-                // qualquer categoria "Terceirizado"/"Subcontratado"), não o gasto total do
-                // centro de custo — senão compara orçamento de terceiros com material,
-                // folha, viagem etc. misturados junto.
-                const gasto = comparativo.despesasOPP?.totalGastoTerceirizados ?? comparativo.despesasOPP?.totalGasto ?? 0
-                const saldo = previsto - gasto
-                const itens = comparativo.terceirizadosPlanejados?.itens || []
-                return (previsto > 0 || gasto > 0) ? (
-                  <div style={{ background: T.card, borderRadius: 14, border: `1.5px solid ${T.border}`, overflow: "hidden" }}>
-                    <div style={{ padding: "14px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: T.text3, textTransform: "uppercase", letterSpacing: "0.07em" }}>🏗 Terceirizados</span>
-                      <div style={{ display: "flex", gap: 20 }}>
-                        <div style={{ textAlign: "right" }}>
-                          <div style={{ fontSize: 10, color: T.text3, fontWeight: 600, textTransform: "uppercase" }}>Total Previsto</div>
-                          <div style={{ fontSize: 14, fontWeight: 800, color: "#7C3AED" }}>{fmt(previsto)}</div>
-                        </div>
-                        <div style={{ textAlign: "right" }}>
-                          <div style={{ fontSize: 10, color: T.text3, fontWeight: 600, textTransform: "uppercase" }}>Gasto (OPP — Terceiros)</div>
-                          <div style={{ fontSize: 14, fontWeight: 800, color: gasto > previsto ? "#DC2626" : T.text1 }}>{fmt(gasto)}</div>
-                        </div>
-                        <div style={{ textAlign: "right" }}>
-                          <div style={{ fontSize: 10, color: T.text3, fontWeight: 600, textTransform: "uppercase" }}>Saldo Atual</div>
-                          <div style={{ fontSize: 14, fontWeight: 800, color: saldo < 0 ? "#DC2626" : "#15803D" }}>{fmt(saldo)}</div>
+              {/* ── TERCEIRIZADOS + DESPESAS INTERNAS lado a lado ── */}
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: (
+                  ((comparativo.terceirizadosPlanejados?.total || 0) > 0 || (comparativo.despesasOPP?.totalGastoTerceirizados ?? comparativo.despesasOPP?.totalGasto ?? 0) > 0)
+                  && (comparativo.despesasPlanejadas?.length || 0) > 0
+                ) ? "1fr 1fr" : "1fr",
+                gap: 16, alignItems: "start",
+              }}>
+                {/* ── TERCEIRIZADOS — Previsto vs Gasto ── */}
+                {(() => {
+                  const previsto = comparativo.terceirizadosPlanejados?.total || 0
+                  // Só o gasto real nas categorias de terceiro/subcontratado da OPP (2.1.x +
+                  // qualquer categoria "Terceirizado"/"Subcontratado"), não o gasto total do
+                  // centro de custo — senão compara orçamento de terceiros com material,
+                  // folha, viagem etc. misturados junto.
+                  const gasto = comparativo.despesasOPP?.totalGastoTerceirizados ?? comparativo.despesasOPP?.totalGasto ?? 0
+                  const saldo = previsto - gasto
+                  const itens = comparativo.terceirizadosPlanejados?.itens || []
+                  return (previsto > 0 || gasto > 0) ? (
+                    <div style={{ background: T.card, borderRadius: 14, border: `1.5px solid ${T.border}`, overflow: "hidden" }}>
+                      <div style={{ padding: "14px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: T.text3, textTransform: "uppercase", letterSpacing: "0.07em" }}>🏗 Terceirizados</span>
+                        <div style={{ display: "flex", gap: 16 }}>
+                          <div style={{ textAlign: "right" }}>
+                            <div style={{ fontSize: 10, color: T.text3, fontWeight: 600, textTransform: "uppercase" }}>Previsto</div>
+                            <div style={{ fontSize: 13, fontWeight: 800, color: "#7C3AED" }}>{fmt(previsto)}</div>
+                          </div>
+                          <div style={{ textAlign: "right" }}>
+                            <div style={{ fontSize: 10, color: T.text3, fontWeight: 600, textTransform: "uppercase" }}>Gasto (Terceiros)</div>
+                            <div style={{ fontSize: 13, fontWeight: 800, color: gasto > previsto ? "#DC2626" : T.text1 }}>{fmt(gasto)}</div>
+                          </div>
+                          <div style={{ textAlign: "right" }}>
+                            <div style={{ fontSize: 10, color: T.text3, fontWeight: 600, textTransform: "uppercase" }}>Saldo</div>
+                            <div style={{ fontSize: 13, fontWeight: 800, color: saldo < 0 ? "#DC2626" : "#15803D" }}>{fmt(saldo)}</div>
+                          </div>
                         </div>
                       </div>
+                      {itens.length > 0 && (
+                        <div style={{ padding: "12px 20px", display: "flex", flexDirection: "column", gap: 6 }}>
+                          {itens.map((t, i) => (
+                            <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "8px 10px", background: T.cardAlt, borderRadius: 8 }}>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: T.text1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.descricao || "—"}</span>
+                              <span style={{ flex: 1, minWidth: 12, borderBottom: `1px dotted ${T.border}`, transform: "translateY(-3px)" }} />
+                              <span style={{ fontSize: 12, fontWeight: 700, color: T.text2, whiteSpace: "nowrap" }}>{fmt(t.custo)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    {itens.length > 0 && (
+                  ) : null
+                })()}
+
+                {/* ── DESPESAS INTERNAS ── */}
+                {comparativo.despesasPlanejadas?.length > 0 && (() => {
+                  const total = comparativo.despesasPlanejadas.reduce((s, d) => s + d.valor, 0)
+                  return (
+                    <div style={{ background: T.card, borderRadius: 14, border: `1.5px solid ${T.border}`, overflow: "hidden" }}>
+                      <div style={{ padding: "14px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: T.text3, textTransform: "uppercase", letterSpacing: "0.07em" }}>📎 Despesas Internas</span>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontSize: 10, color: T.text3, fontWeight: 600, textTransform: "uppercase" }}>Total Planejado</div>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: T.text1 }}>{fmt(total)}</div>
+                        </div>
+                      </div>
                       <div style={{ padding: "12px 20px", display: "flex", flexDirection: "column", gap: 6 }}>
-                        {itens.map((t, i) => (
-                          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", background: T.cardAlt, borderRadius: 8 }}>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: T.text1 }}>{t.descricao || "—"}</span>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: T.text2 }}>{fmt(t.custo)}</span>
+                        {comparativo.despesasPlanejadas.map((d, i) => (
+                          <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "8px 10px", background: T.cardAlt, borderRadius: 8 }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: T.text1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.descricao || "—"}</span>
+                            <span style={{ flex: 1, minWidth: 12, borderBottom: `1px dotted ${T.border}`, transform: "translateY(-3px)" }} />
+                            <span style={{ fontSize: 12, fontWeight: 700, color: T.text2, whiteSpace: "nowrap" }}>{fmt(d.valor)}</span>
                           </div>
                         ))}
                       </div>
-                    )}
-                  </div>
-                ) : null
-              })()}
-
-              {/* ── DESPESAS INTERNAS ── */}
-              {comparativo.despesasPlanejadas?.length > 0 && (() => {
-                const total = comparativo.despesasPlanejadas.reduce((s, d) => s + d.valor, 0)
-                return (
-                  <div style={{ background: T.card, borderRadius: 14, border: `1.5px solid ${T.border}`, overflow: "hidden" }}>
-                    <div style={{ padding: "14px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: T.text3, textTransform: "uppercase", letterSpacing: "0.07em" }}>📎 Despesas Internas</span>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: 10, color: T.text3, fontWeight: 600, textTransform: "uppercase" }}>Total Planejado</div>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: T.text1 }}>{fmt(total)}</div>
-                      </div>
                     </div>
-                    <div style={{ padding: "12px 20px", display: "flex", flexDirection: "column", gap: 6 }}>
-                      {comparativo.despesasPlanejadas.map((d, i) => (
-                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", background: T.cardAlt, borderRadius: 8 }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: T.text1 }}>{d.descricao || "—"}</span>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: T.text2 }}>{fmt(d.valor)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )
-              })()}
+                  )
+                })()}
+              </div>
 
               {/* ── EQUIPE INTERNA ── */}
               {comparativo.equipePlanejada?.length > 0 && (() => {
