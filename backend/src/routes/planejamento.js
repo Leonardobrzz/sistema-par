@@ -823,8 +823,14 @@ router.get('/:id/comparativo', async (req, res, next) => {
               descricao: d.nome_conta || '',
               fornecedor: d.nome_fornecedor || '',
               categoria: d.categoria || d.nome_categoria || d.categoria_pag || '',
-              valor: parseBR(d.valor_pag || 0),
-              valorPago: parseBR(d.valor_pago || 0),
+              // parseBR é pra número DIGITADO em formato BR ("5.000,00") — a OPP
+              // devolve o valor em formato decimal comum ("1750.00"), e o parseBR
+              // tratava o "." como separador de milhar, inflando tudo em 100x
+              // (ex: "1750.00" virava 175000). O resto do sistema (medicoesService,
+              // oppService) já usa parseFloat puro pra ler valor da OPP — só esse
+              // trecho e o de baixo (GET /despesas-opp) estavam errados.
+              valor: parseFloat(d.valor_pag || 0),
+              valorPago: parseFloat(d.valor_pago || 0),
               liquidado: d.liquidado_pag === 'Sim',
               data: d.vencimento_pag || d.data_emissao || '',
             }));
@@ -1117,8 +1123,9 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
         descricao: d.nome_conta || '',
         fornecedor: d.nome_fornecedor || '',
         categoria: d.categoria || d.nome_categoria || d.categoria_pag || '',
-        valor: parseBR(d.valor_pag || 0),
-        valorPago: parseBR(d.valor_pago || 0),
+        // Mesmo bug do /comparativo acima — valor da OPP não é formato BR.
+        valor: parseFloat(d.valor_pag || 0),
+        valorPago: parseFloat(d.valor_pago || 0),
         situacao: d.situacao || '',
         liquidado: d.liquidado_pag === 'Sim',
         data: d.vencimento_pag || d.data_emissao || '',
