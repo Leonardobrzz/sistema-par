@@ -35,6 +35,7 @@ const TIPO_LABEL = {
   PAR_PLANEJAMENTO_ATRASADO:{ label: 'Planejamento Atrasado',  color: '#D97706', bg: '#FFFBEB' },
   EAP_TAREFA_GRANDE:        { label: 'Tarefa Muito Grande',    color: '#D97706', bg: '#FFFBEB' },
   SEM_TEMPO_ESTIMADO:       { label: 'Sem Tempo Estimado',     color: '#64748B', bg: '#F1F5F9' },
+  VINCULO_OPP_INCOMPLETO:   { label: 'Sem Vínculo OPP',        color: '#0E7490', bg: '#ECFEFF' },
 }
 
 const FILTROS = ['Todos', 'Crítico', 'Atenção', 'Info']

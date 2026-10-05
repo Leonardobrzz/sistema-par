@@ -164,54 +164,58 @@ async function criarOS(dadosOS) {
 }
 
 /**
- * Reconcilia os dados do OPP com a tabela de Medições.
- * Se encontrar uma receita no OPP com o mesmo Nr_NF da medição, atualiza o status.
+ * Reconcilia a tabela de Medições com o OPP — grava de volta nas linhas
+ * REAIS da tabela os campos que hoje só são calculados AO VIVO pela tela
+ * de Medições e pelo Dashboard Financeiro (Nr_NF, Data_Vencimento,
+ * Status_Financeiro, ID_Conta_Receber_OPP), pra quem lê a tabela direto
+ * (relatórios, auditoria, exportações) ver a mesma verdade das duas telas.
+ *
+ * ANTES: só casava medições que JÁ tinham Nr_NF preenchido manualmente na
+ * própria linha, comparando por texto contra a aba separada
+ * Financeiro_OPP, e gravava com `db.updateRowById('Medicoes', 'ID', ...)` —
+ * 'ID' nem existe como coluna na tabela (o campo real é 'ID_Medicao'), e
+ * Nr_NF quase nunca é preenchido manualmente, então isso cobria
+ * praticamente nada na prática.
+ * AGORA: usa o mesmo motor de O.S./NF (medicoesService.js,
+ * calcularMedicoesComOPP) que a tela de Medições e o Dashboard Financeiro
+ * já usam pra calcular o Recebido — muito mais abrangente, e com uma única
+ * fonte de verdade reaproveitada em todo lugar.
  */
 async function reconcileMedicoes(db) {
   console.log('[OPP Reconcile] Iniciando reconciliação financeira...');
 
-  const [medicoes, financeiroOPP] = await Promise.all([
+  const { calcularMedicoesComOPP } = require('./medicoesService');
+  const [medicoesCrua, medicoesComOPP] = await Promise.all([
     db.readSheet('Medicoes'),
-    db.readSheet('Financeiro_OPP')
+    calcularMedicoesComOPP(db, {}),
   ]);
 
-  const updates = [];
+  const cruaPorId = {};
+  for (const m of medicoesCrua) cruaPorId[m.ID_Medicao] = m;
+
+  // Só os campos calculados que fazem sentido persistir — e só nas linhas
+  // REAIS (prefixo nem "os_" nem "plan_", que são sintéticas: O.S. real sem
+  // linha própria ainda, ou prévia do cronograma planejado — escrever essas
+  // na tabela criaria registros de medição que não existem de verdade).
+  const CAMPOS = ['Nr_NF', 'Data_Vencimento', 'Status_Financeiro', 'ID_Conta_Receber_OPP'];
   let count = 0;
+  for (const m of medicoesComOPP) {
+    if (!m.ID_Medicao) continue;
+    if (String(m.ID_Medicao).startsWith('os_') || String(m.ID_Medicao).startsWith('plan_')) continue;
+    const atual = cruaPorId[m.ID_Medicao];
+    if (!atual) continue;
 
-  for (const m of medicoes) {
-    if (!m.Nr_NF || m.Status_Financeiro === 'Recebido') continue;
-
-    // Busca no financeiro sincronizado do OPP
-    const match = financeiroOPP.find(f =>
-      f.Tipo === 'Receita' &&
-      (f.ID_OPP === m.Nr_NF || f.Descricao.includes(m.Nr_NF))
-    );
-
-    if (match) {
-      let novoStatus = m.Status_Financeiro;
-      if (match.Situacao === 'Liquidado') {
-        novoStatus = 'Recebido';
-      } else if (match.Situacao === 'Aberto') {
-        novoStatus = 'NF Emitida';
-      }
-
-      if (novoStatus !== m.Status_Financeiro) {
-        updates.push({
-          id: m.ID,
-          data: {
-            Status_Financeiro: novoStatus,
-            Data_Pagamento_Real: match.Data_Vencimento || '', // ou data de liquidação se disponível
-            Atualizado_Via: 'OPP Sync'
-          }
-        });
-        count++;
-      }
+    const mudancas = {};
+    for (const campo of CAMPOS) {
+      const novo = m[campo] || '';
+      const velho = atual[campo] || '';
+      if (novo && novo !== velho) mudancas[campo] = novo;
     }
-  }
+    if (Object.keys(mudancas).length === 0) continue;
 
-  // Executa os updates em lote
-  for (const u of updates) {
-    await db.updateRowById('Medicoes', 'ID', u.id, u.data);
+    mudancas.Atualizado_Via = 'OPP Sync';
+    await db.updateRowById('Medicoes', 'ID_Medicao', m.ID_Medicao, mudancas);
+    count++;
   }
 
   console.log(`[OPP Reconcile] Concluído. ${count} medições atualizadas.`);

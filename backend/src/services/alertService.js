@@ -1,6 +1,7 @@
 const db = process.env.USE_POSTGRES === 'true' ? require('./postgresService') : require('./googleSheetsService');
 const { broadcast } = require('./websocketService');
 const { v4: uuidv4 } = require('uuid');
+const { calcularMedicoesComOPP } = require('./medicoesService');
 
 // ── Constantes PAR (espelha planejamento.js) ──────────────────────────────────
 const TETO_AVISO        = parseFloat(process.env.TETO_TERCEIROS_AVISO    || '20');
@@ -220,27 +221,44 @@ async function checkAllAlerts() {
 
     // ─────────────────────────────────────────
     // 2d. FATURA_VENCIDA
+    //
+    // Antes isso lia só a tabela Medicoes crua (m.Nr_NF/m.Data_Vencimento/
+    // m.Status_Financeiro) — só que esses campos quase nunca são gravados
+    // de volta na linha: são calculados AO VIVO pela tela de Medições e
+    // pelo Dashboard Financeiro (via medicoesService.js) a cada carregamento,
+    // nunca persistidos na tabela. Resultado: esse alerta ficava cego pra
+    // praticamente todo mundo. Agora usa a mesma fonte de verdade das duas
+    // telas — calcularMedicoesComOPP — que também cobre O.S. reais do OPP
+    // que ainda nem têm linha na tabela Medicoes (ver medicoesService.js).
     // ─────────────────────────────────────────
-    const nfMap = {};
-    for (const m of medicoes) { if (m.Nr_NF) nfMap[m.Nr_NF] = m; }
+    let medicoesComOPP = [];
+    try {
+      medicoesComOPP = await calcularMedicoesComOPP(db, {});
+    } catch (e) {
+      console.error('[Alertas] Erro ao calcular medições com OPP (FATURA_VENCIDA pulado):', e.message);
+    }
+
+    const vencidasPorNF = new Map(); // Nr_NF -> linha (só as vencidas e ainda não recebidas)
+    for (const m of medicoesComOPP) {
+      if (!m.Nr_NF || !m.Data_Vencimento) continue;
+      if (m.Status_Financeiro === 'Recebido') continue;
+      if (new Date(m.Data_Vencimento) >= now) continue;
+      if (!vencidasPorNF.has(m.Nr_NF)) vencidasPorNF.set(m.Nr_NF, m);
+    }
 
     for (const a of activeAlerts) {
       if (a.Tipo_Alerta !== 'FATURA_VENCIDA') continue;
       const nfMatch = a.Mensagem.match(/NF\s+(\S+)/);
-      if (!nfMatch) continue;
-      const m = nfMap[nfMatch[1]];
-      if (!m || m.Status_Financeiro === 'Recebido') toResolveIds.add(a.ID);
+      if (!nfMatch || !vencidasPorNF.has(nfMatch[1])) toResolveIds.add(a.ID);
     }
-    for (const m of medicoes) {
-      if (m.Status_Financeiro === 'Recebido' || !m.Data_Vencimento || !m.Nr_NF) continue;
-      if (new Date(m.Data_Vencimento) >= now) continue;
+    for (const [nf, m] of vencidasPorNF) {
       const project = projectMap[m.ID_Projeto];
-      if (!project) continue;
-      const existing = activeAlerts.find(a => a.Tipo_Alerta === 'FATURA_VENCIDA' && a.ID_Projeto === m.ID_Projeto && a.Mensagem.includes(m.Nr_NF));
+      const nomeProjeto = project?.Nome || m.nomeProjeto || m.ID_Projeto;
+      const existing = activeAlerts.find(a => a.Tipo_Alerta === 'FATURA_VENCIDA' && a.ID_Projeto === m.ID_Projeto && a.Mensagem.includes(nf));
       if (!existing) {
         toCreate.push({
           tipo: 'FATURA_VENCIDA', idProjeto: m.ID_Projeto,
-          mensagem: `NF ${m.Nr_NF} do projeto "${project.Nome}" venceu em ${m.Data_Vencimento} sem recebimento registrado.`,
+          mensagem: `NF ${nf} do projeto "${nomeProjeto}" venceu em ${m.Data_Vencimento} sem recebimento registrado.`,
           nivel: 'error', setorDestino: ['Financeiro'],
         });
       }
@@ -418,6 +436,41 @@ async function checkAllAlerts() {
           linkClickUp,
         });
       }
+    }
+
+    // ─────────────────────────────────────────
+    // 2j. VINCULO_OPP_INCOMPLETO
+    //
+    // Projeto Aprovado sem NENHUM vínculo com o OPP (nem ID_OPP_Cliente em
+    // Projetos_Contratos, nem ID_Centro_Custo_OPP no Planejamento) nunca vai
+    // mostrar Recebido no Dashboard Financeiro/Medições, mesmo que já tenha
+    // sido pago no OPP de verdade — o motor de casamento (medicoesService.js)
+    // não tem nenhuma via pra achar esse pagamento. Levou um levantamento
+    // manual pra achar os 28 projetos (de 61 Aprovados) nessa situação em
+    // outubro/2026 — esse alerta pega isso sozinho a partir de agora, logo
+    // quando o planejamento é aprovado sem o vínculo.
+    // ─────────────────────────────────────────
+    for (const a of activeAlerts) {
+      if (a.Tipo_Alerta !== 'VINCULO_OPP_INCOMPLETO') continue;
+      const pl = planMap[a.ID_Projeto];
+      if (!pl || pl.Status !== 'Aprovado') { toResolveIds.add(a.ID); continue; }
+      const proj = projectMap[a.ID_Projeto];
+      const temCliente = !!(proj?.ID_OPP_Cliente && String(proj.ID_OPP_Cliente).trim());
+      const temCC = !!(pl.ID_Centro_Custo_OPP && String(pl.ID_Centro_Custo_OPP).trim());
+      if (temCliente || temCC) toResolveIds.add(a.ID);
+    }
+    for (const pl of planejamentos) {
+      if (pl.Status !== 'Aprovado' || !pl.ID_Projeto) continue;
+      if (activeIndex[`VINCULO_OPP_INCOMPLETO|${pl.ID_Projeto}`]) continue;
+      const proj = projectMap[pl.ID_Projeto];
+      const temCliente = !!(proj?.ID_OPP_Cliente && String(proj.ID_OPP_Cliente).trim());
+      const temCC = !!(pl.ID_Centro_Custo_OPP && String(pl.ID_Centro_Custo_OPP).trim());
+      if (temCliente || temCC) continue;
+      toCreate.push({
+        tipo: 'VINCULO_OPP_INCOMPLETO', idProjeto: pl.ID_Projeto,
+        mensagem: `Projeto "${proj?.Nome || pl.Nome_Projeto}" está Aprovado mas sem nenhum vínculo com o OPP (nem cliente, nem centro de custo) — Recebido nunca vai aparecer aqui até alguém preencher um dos dois.`,
+        nivel: 'warning', setorDestino: ['Financeiro', 'PO'],
+      });
     }
 
     // ─────────────────────────────────────────

@@ -66,7 +66,26 @@ router.get('/', async (req, res, next) => {
       // Verifica horas sem profissional definido
       const horasSemProfissional = logHoras.filter(l => l.ID_Projeto === p.ID_Projeto && (!l.Colaborador || String(l.Colaborador).trim() === '')).length;
 
-      const totalProblemas = camposFaltando.length + problemasPlanejamento.length + (medsSemOC > 0 ? 1 : 0) + (horasSemProfissional > 0 ? 1 : 0);
+      // Vínculo com o OPP (cliente/centro de custo) — só importa pra quem já
+      // tem o planejamento financeiro Aprovado, porque é esse vínculo que o
+      // motor de O.S./NF (medicoesService.js) usa pra achar o Recebido real
+      // de cada projeto no Dashboard Financeiro e nas Medições. Descoberto
+      // na prática: 28 dos 61 projetos aprovados estavam sem ID_OPP_Cliente,
+      // e 1 (sem cliente E sem centro de custo) nunca ia mostrar Recebido
+      // nenhum, mesmo que já tivesse sido pago no OPP — só achamos isso
+      // rodando script manual. Esse checklist agora pega isso sozinho.
+      const problemasVinculoOPP = [];
+      if (plan && plan.Status === 'Aprovado') {
+        const temClienteOPP = !!(p.ID_OPP_Cliente && String(p.ID_OPP_Cliente).trim());
+        const temCentroCusto = !!(plan.ID_Centro_Custo_OPP && String(plan.ID_Centro_Custo_OPP).trim());
+        if (!temClienteOPP && !temCentroCusto) {
+          problemasVinculoOPP.push('Aprovado sem NENHUM vínculo com o OPP (nem cliente, nem centro de custo) — Recebido nunca vai aparecer aqui, mesmo se já tiver sido pago no OPP');
+        } else if (!temClienteOPP) {
+          problemasVinculoOPP.push('Aprovado sem ID_OPP_Cliente (só tem centro de custo) — motor de O.S./NF não tem uma 2ª via de casamento pra esse projeto');
+        }
+      }
+
+      const totalProblemas = camposFaltando.length + problemasPlanejamento.length + (medsSemOC > 0 ? 1 : 0) + (horasSemProfissional > 0 ? 1 : 0) + problemasVinculoOPP.length;
 
       if (totalProblemas === 0) continue;
 
@@ -81,6 +100,7 @@ router.get('/', async (req, res, next) => {
         problemasPlanejamento,
         medsSemOC,
         horasSemProfissional,
+        problemasVinculoOPP,
         totalProblemas,
         statusPlanejamento: plan?.Status || null,
         linkClickUp: p.ID_ClickUp
@@ -98,6 +118,7 @@ router.get('/', async (req, res, next) => {
       semPlanejamento: result.filter(r => r.problemasPlanejamento.some(p => p.includes('Sem planejamento'))).length,
       medsSemOC: result.filter(r => r.medsSemOC > 0).length,
       semDataEntrega: result.filter(r => r.camposFaltando.includes('Data de Entrega')).length,
+      semVinculoOPP: result.filter(r => r.problemasVinculoOPP.length > 0).length,
     };
 
     res.json({ projetos: result, stats });

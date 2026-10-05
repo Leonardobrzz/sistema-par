@@ -283,6 +283,135 @@ router.post('/aplicar-mapeamentos', authMiddleware, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── GET /api/opp/clientes-para-vincular — projetos sem ID_OPP_Cliente + clientes do OPP ──
+//
+// Companheiro do /os-para-vincular, mas pro vínculo de CLIENTE (não O.S.).
+// Descoberto na prática em outubro/2026: 28 dos 61 projetos Aprovados
+// estavam sem ID_OPP_Cliente em Projetos_Contratos — sem ele, o motor de
+// O.S./NF (medicoesService.js) só consegue casar pagamento por centro de
+// custo, perdendo a via mais abrangente. Até então, preencher isso exigia
+// rodar script manual; essa tela deixa isso visual e auto-sugerido.
+router.get('/clientes-para-vincular', authMiddleware, async (req, res, next) => {
+  try {
+    const db = process.env.USE_POSTGRES === 'true'
+      ? require('../services/postgresService')
+      : require('../services/googleSheetsService');
+
+    const [planejamentos, projetos, clientesOPP] = await Promise.all([
+      db.readSheet('Planejamentos'),
+      db.readSheet('Projetos_Contratos'),
+      opp.listarClientes(),
+    ]);
+
+    const projMap = {};
+    for (const p of projetos) projMap[p.ID_Projeto] = p;
+
+    // Mesma lógica de sugestão por nome usada na investigação manual
+    // (localizar-id-opp-cliente.js) — sobreposição de palavras
+    // significativas, sem acento.
+    const STOPWORDS = new Set(['DE', 'DA', 'DO', 'DOS', 'DAS', 'E', 'A', 'O', 'SE', 'PA', 'PE', 'RO', 'CONTRATO']);
+    const normalizar = (s) => String(s || '')
+      .toUpperCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^A-Z0-9]+/g, ' ')
+      .trim();
+    const palavras = (s) => normalizar(s).split(' ').filter((w) => w && !STOPWORDS.has(w) && !/^\d{4}$/.test(w));
+    function score(nomeAlvo, candidato) {
+      const alvo = new Set(palavras(nomeAlvo));
+      const cand = new Set(palavras(candidato));
+      if (alvo.size === 0 || cand.size === 0) return 0;
+      let comuns = 0;
+      for (const w of alvo) if (cand.has(w)) comuns++;
+      return comuns / alvo.size;
+    }
+    function sugerirCliente(nomeClientePAR) {
+      if (!nomeClientePAR) return null;
+      let melhor = null, melhorScore = 0;
+      for (const c of clientesOPP) {
+        const nomeCompleto = `${c.razao_cliente || ''} ${c.fantasia_cliente || ''}`;
+        const s = score(nomeClientePAR, nomeCompleto);
+        if (s > melhorScore) { melhorScore = s; melhor = c; }
+      }
+      if (!melhor || melhorScore < 0.5) return null;
+      return { idCliente: String(melhor.id_cliente || ''), nome: melhor.razao_cliente || melhor.fantasia_cliente || '', score: melhorScore };
+    }
+
+    const aprovados = planejamentos
+      .filter((pl) => pl.Status === 'Aprovado' && pl.ID_Projeto)
+      .map((pl) => {
+        const proj = projMap[pl.ID_Projeto] || {};
+        const nomeClientePAR = proj.Cliente || proj.Nome_Cliente || '';
+        return {
+          idProjeto: pl.ID_Projeto,
+          nome: proj.Nome || pl.Nome_Projeto || '',
+          cliente: nomeClientePAR,
+          setor: proj.Setor || pl.Setor || '',
+          idOppCliente: proj.ID_OPP_Cliente || '',
+          idCentroCusto: pl.ID_Centro_Custo_OPP || '',
+          sugestao: proj.ID_OPP_Cliente ? null : sugerirCliente(nomeClientePAR),
+        };
+      });
+
+    const clientesLista = clientesOPP
+      .map((c) => ({
+        idCliente: String(c.id_cliente || ''),
+        nome: c.razao_cliente || c.fantasia_cliente || '(sem nome)',
+        fantasia: c.fantasia_cliente || '',
+        cidade: c.cidade_cliente || '',
+        uf: c.uf_cliente || '',
+        situacao: c.situacao_cliente || '',
+      }))
+      .sort((a, b) => a.nome.localeCompare(b.nome));
+
+    res.json({ projetos: aprovados, clientes: clientesLista });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/opp/vincular-cliente — salva ID_OPP_Cliente em Projetos_Contratos ──
+router.post('/vincular-cliente', authMiddleware, async (req, res, next) => {
+  try {
+    const db = process.env.USE_POSTGRES === 'true'
+      ? require('../services/postgresService')
+      : require('../services/googleSheetsService');
+    const { idProjeto, idOppCliente } = req.body;
+    if (!idProjeto) return res.status(400).json({ error: 'idProjeto obrigatório' });
+
+    const rows = await db.readSheet('Projetos_Contratos');
+    const proj = rows.find((p) => p.ID_Projeto === idProjeto);
+    if (!proj) return res.status(404).json({ error: 'Projeto não encontrado' });
+
+    await db.updateRowById('Projetos_Contratos', 'ID_Projeto', idProjeto, { ID_OPP_Cliente: String(idOppCliente || '') });
+    res.json({ ok: true, idProjeto, idOppCliente: String(idOppCliente || '') });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/opp/auto-vincular-cliente — aplica sugestões de cliente em lote ──
+router.post('/auto-vincular-cliente', authMiddleware, async (req, res, next) => {
+  try {
+    const db = process.env.USE_POSTGRES === 'true'
+      ? require('../services/postgresService')
+      : require('../services/googleSheetsService');
+
+    // vinculos: [{ idProjeto, idOppCliente }]
+    const { vinculos } = req.body;
+    if (!Array.isArray(vinculos) || vinculos.length === 0) {
+      return res.status(400).json({ error: 'vinculos[] obrigatório' });
+    }
+
+    const rows = await db.readSheet('Projetos_Contratos');
+    const mapa = Object.fromEntries(rows.map((p) => [p.ID_Projeto, p]));
+
+    const resultados = [];
+    for (const { idProjeto, idOppCliente } of vinculos) {
+      const proj = mapa[idProjeto];
+      if (!proj) { resultados.push({ idProjeto, ok: false, erro: 'Não encontrado' }); continue; }
+      await db.updateRowById('Projetos_Contratos', 'ID_Projeto', idProjeto, { ID_OPP_Cliente: String(idOppCliente || '') });
+      resultados.push({ idProjeto, idOppCliente, ok: true });
+    }
+    res.json({ ok: true, total: resultados.length, resultados });
+  } catch (err) { next(err); }
+});
+
 router.use(authMiddleware);
 
 // ── GET /api/opp/status — testa conexão com o OPP ───────────────────────────

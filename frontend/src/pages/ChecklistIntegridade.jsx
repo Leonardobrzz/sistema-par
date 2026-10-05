@@ -19,6 +19,7 @@ const PROBLEMA_COLOR = {
   planejamento:{ bg: "#FEF2F2", color: "#991B1B", border: "#FECACA" },
   medicao:     { bg: "#EFF6FF", color: "#1E40AF", border: "#BFDBFE" },
   horas:       { bg: "#F0FDF4", color: "#166534", border: "#86EFAC" },
+  vinculoOpp:  { bg: "#ECFEFF", color: "#0E7490", border: "#A5F3FC" },
 }
 
 function Badge({ label, type = "campo" }) {
@@ -39,7 +40,7 @@ function KpiCard({ label, value, color = "#DC2626", bg = "#FEF2F2", border = "#F
   )
 }
 
-const FILTROS_TIPO = ["Todos", "Campo Vazio", "Sem Planejamento", "Medição sem O.C.", "Sem Data Entrega"]
+const FILTROS_TIPO = ["Todos", "Campo Vazio", "Sem Planejamento", "Medição sem O.C.", "Sem Data Entrega", "Sem Vínculo OPP"]
 
 function ErroModal({ projeto, onClose }) {
   if (!projeto) return null
@@ -175,6 +176,7 @@ export default function ChecklistIntegridade() {
       if (filtro === "Sem Planejamento" && !p.problemasPlanejamento.some(x => x.includes("Sem planejamento"))) return false
       if (filtro === "Medição sem O.C." && p.medsSemOC === 0) return false
       if (filtro === "Sem Data Entrega" && !p.camposFaltando.includes("Data de Entrega")) return false
+      if (filtro === "Sem Vínculo OPP" && (p.problemasVinculoOPP || []).length === 0) return false
       return true
     })
   }, [data, filtro, busca])
@@ -395,6 +397,7 @@ export default function ChecklistIntegridade() {
             <KpiCard label="Sem Planejamento" value={data.stats.semPlanejamento} color="#DC2626" bg="#FEF2F2" border="#FECACA" />
             <KpiCard label="Medição sem O.C." value={data.stats.medsSemOC} color="#2563EB" bg="#EFF6FF" border="#BFDBFE" />
             <KpiCard label="Sem Data Entrega" value={data.stats.semDataEntrega} color="#7E22CE" bg="#FDF4FF" border="#E9D5FF" />
+            <KpiCard label="Sem Vínculo OPP" value={data.stats.semVinculoOPP} color="#0E7490" bg="#ECFEFF" border="#A5F3FC" />
           </div>
 
           {data.stats.total === 0 ? (
@@ -482,6 +485,7 @@ export default function ChecklistIntegridade() {
                                 {p.problemasPlanejamento.map(c => <Badge key={c} label={c} type="planejamento" />)}
                                 {p.medsSemOC > 0 && <Badge label={`${p.medsSemOC} medição(ões) sem O.C.`} type="medicao" />}
                                 {p.horasSemProfissional > 0 && <Badge label={`${p.horasSemProfissional} hora(s) sem profissional`} type="horas" />}
+                                {(p.problemasVinculoOPP || []).map(c => <Badge key={c} label={c} type="vinculoOpp" />)}
                               </div>
                             </td>}
                             {col("acoes")     && <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
@@ -509,7 +513,7 @@ export default function ChecklistIntegridade() {
               {/* Legenda */}
               <div style={{ marginTop: 16, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
                 <span style={{ fontSize: 11, color: "#94A3B8", fontWeight: 700 }}>LEGENDA:</span>
-                {[["campo", "Campo Vazio"], ["planejamento", "Problema de Planejamento"], ["medicao", "Medição sem O.C."], ["horas", "Hora sem Profissional"]].map(([type, label]) => {
+                {[["campo", "Campo Vazio"], ["planejamento", "Problema de Planejamento"], ["medicao", "Medição sem O.C."], ["horas", "Hora sem Profissional"], ["vinculoOpp", "Sem Vínculo OPP"]].map(([type, label]) => {
                   const c = PROBLEMA_COLOR[type]
                   return <span key={type} style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>{label}</span>
                 })}
