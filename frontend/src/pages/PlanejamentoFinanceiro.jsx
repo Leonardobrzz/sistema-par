@@ -118,7 +118,7 @@ function BurnBar({ label, planejado, real }) {
 }
 
 // ── Main component ───────────────────────────────────────────────────────────
-function DespesasOPPCard({ despesasOPP, previsto, fmt }) {
+function DespesasOPPCard({ despesasOPP, fmt }) {
   const { isDark } = useTheme()
   const Td = {
     card: isDark ? '#1E293B' : '#ffffff',
@@ -139,7 +139,7 @@ function DespesasOPPCard({ despesasOPP, previsto, fmt }) {
         <div style={{ display: "flex", gap: 20 }}>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 10, color: Td.text3, fontWeight: 600, textTransform: "uppercase" }}>Total Previsto</div>
-            <div style={{ fontSize: 14, fontWeight: 800, color: "#7C3AED" }}>{fmt(previsto || despesasOPP.totalGasto)}</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#7C3AED" }}>{fmt(despesasOPP.totalGasto)}</div>
           </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 10, color: Td.text3, fontWeight: 600, textTransform: "uppercase" }}>Total Pago</div>
@@ -401,13 +401,6 @@ export default function PlanejamentoFinanceiro() {
     return projetos.filter(p => {
       if (seen.has(p.ID_Projeto)) return false
       seen.add(p.ID_Projeto)
-      // Pedido do chefe: por padrão a lista só mostra projetos ativos.
-      // "Concluído" e "Arquivado" continuam existindo como filtro, mas só
-      // aparecem quando a pessoa clica exatamente nesse botão — nunca juntos
-      // com a visão padrão nem com outro filtro de status.
-      if (filtroStatus !== 'Concluído' && filtroStatus !== 'Arquivado') {
-        if (p.Status === 'Concluído' || p.Status === 'Arquivado') return false
-      }
       if (filtroSetor) {
         const prefix = SETOR_PREFIX[filtroSetor]
         if (prefix) {
@@ -434,24 +427,6 @@ export default function PlanejamentoFinanceiro() {
       return true
     })
   }, [projetos, filtroSetor, filtroCliente, filtroStatus, filtroBusca, filtroPlan])
-
-  const verConcluidosOuArquivados = filtroStatus === 'Concluído' || filtroStatus === 'Arquivado'
-  // Total de projetos ativos (sem concluídos/arquivados, sem duplicata) — usado
-  // só pro contador "X de Y" na visão padrão, pra não confundir com o total
-  // bruto (que inclui concluídos/arquivados, carregados de qualquer forma pro
-  // filtro de Planej. e pra busca funcionarem mesmo quando a pessoa já clicou
-  // em "Concluído"/"Arquivado" antes).
-  const totalProjetosAtivos = useMemo(() => {
-    const seen = new Set()
-    let n = 0
-    for (const p of projetos) {
-      if (seen.has(p.ID_Projeto)) continue
-      seen.add(p.ID_Projeto)
-      if (p.Status === 'Concluído' || p.Status === 'Arquivado') continue
-      n++
-    }
-    return n
-  }, [projetos])
 
   function validarCampos() {
     const v = form
@@ -1158,13 +1133,10 @@ export default function PlanejamentoFinanceiro() {
               { label: "Em Andamento",           color: "#D97706", bg: "#FEF3C7" },
               { label: "Em Análise",             color: "#0891B2", bg: "#CFFAFE" },
               { label: "Paralisado",             color: "#DC2626", bg: "#FEE2E2" },
-              { label: "Aguardando Faturamento", color: "#1D4ED8", bg: "#DBEAFE" },
-              { label: "Pendência",              color: "#BE185D", bg: "#FCE7F3" },
-              // Concluído/Arquivado ficam por último de propósito: por padrão
-              // esses projetos nem aparecem na lista (ver projetosFiltrados) —
-              // só entram quando a pessoa clica num desses dois.
               { label: "Concluído",              color: "#16A34A", bg: "#DCFCE7" },
               { label: "Arquivado",              color: "#475569", bg: "#E2E8F0" },
+              { label: "Aguardando Faturamento", color: "#1D4ED8", bg: "#DBEAFE" },
+              { label: "Pendência",              color: "#BE185D", bg: "#FCE7F3" },
             ].map(({ label, color, bg }) => {
               const active = filtroStatus === label
               return (
@@ -1198,9 +1170,7 @@ export default function PlanejamentoFinanceiro() {
               </button>
             )}
             <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 600, color: "#94A3B8" }}>
-              {loadingProjetos ? "..." : verConcluidosOuArquivados
-                ? `${projetosFiltrados.length} de ${projetos.length} projeto${projetos.length !== 1 ? "s" : ""}`
-                : `${projetosFiltrados.length} de ${totalProjetosAtivos} projeto${totalProjetosAtivos !== 1 ? "s" : ""} ativo${totalProjetosAtivos !== 1 ? "s" : ""}`}
+              {loadingProjetos ? "..." : `${projetosFiltrados.length} de ${projetos.length} projeto${projetos.length !== 1 ? "s" : ""}`}
             </span>
           </div>
 
@@ -1992,7 +1962,7 @@ export default function PlanejamentoFinanceiro() {
 
               {/* ── DESPESAS OPP ── */}
               {comparativo.despesasOPP?.temDados ? (
-                <DespesasOPPCard despesasOPP={comparativo.despesasOPP} previsto={comparativo.terceirizadosPlanejados?.total || 0} fmt={fmt} />
+                <DespesasOPPCard despesasOPP={comparativo.despesasOPP} fmt={fmt} />
               ) : (
                 <div style={{ background: T.cardAlt, borderRadius: 14, border: `1.5px solid ${T.border}`, padding: "24px", color: T.text3, fontSize: 13, textAlign: "center" }}>
                   Nenhum lançamento OPP encontrado — preencha o campo "Nome do Centro de Custo" na aba Planejamento.

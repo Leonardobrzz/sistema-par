@@ -183,36 +183,10 @@ router.get('/', async (req, res, next) => {
       const valorGlobal = parseBR(proj.Valor_Global || 0);
       const valorOC = valorOCPorProjeto[p.ID_Projeto] || 0;
       // Prioridade: planejamento > Projetos_Contratos > soma das OCs no OPP
-      //
-      // BUG CORRIGIDO (inflava a Carteira Aprovada do Dashboard normal em até
-      // 100x): quando valorContrato > 0 (o caso normal — o planejamento já
-      // tem um valor próprio), o código devolvia `String(valorFinal)`, ou
-      // seja, pegava o NÚMERO já convertido (parseBR já tirou o separador de
-      // milhar) e virava texto nativo do JS (ex.: 81486.55 → "81486.55",
-      // formato americano, ponto = decimal de verdade). O problema é que todo
-      // outro lugar do Par (Dashboard.jsx, dashboard-financeiro.js etc.) usa
-      // um parseBR() que assume formato BR (ponto = separador de milhar,
-      // vírgula = decimal) — ao reprocessar "81486.55" com essa regra, o
-      // ponto some e sobra "8148655", ou seja, o valor original × 100. Isso
-      // só afetava planejamentos com centavos (ex.: "81.486,55"); valores
-      // redondos como "4737088" não tinham ponto nenhum e passavam ilesos —
-      // por isso só 39 dos 61 projetos aprovados ficavam inflados, nunca
-      // todos. Confirmado com diagnosticar-carteira-inflada.js: Carteira
-      // Aprovada saltava de R$ 12.446.842 (certo) pra R$ 608.204.224 (errado,
-      // fator 48,86x) só por causa disso.
-      //
-      // Fix: quando o planejamento já tem Valor_Contrato próprio, devolve o
-      // texto ORIGINAL sem reprocessar (evita qualquer corrupção de ida e
-      // volta). Só quando precisa usar um valor de RESERVA (Valor_Global do
-      // projeto ou soma das O.C.) é que formata o número em BR de verdade
-      // (vírgula decimal, ponto de milhar), pro resto do sistema continuar
-      // lendo certo.
-      if (valorContrato > 0) return { ...p };
-      const valorFinal = valorGlobal > 0 ? valorGlobal : valorOC;
-      const valorFinalFormatadoBR = valorFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const valorFinal = valorContrato > 0 ? valorContrato : valorGlobal > 0 ? valorGlobal : valorOC;
       return {
         ...p,
-        Valor_Contrato: valorFinalFormatadoBR,
+        Valor_Contrato: String(valorFinal),
       };
     });
     res.json(enriched);
@@ -981,10 +955,24 @@ router.get('/:id/comparativo', async (req, res, next) => {
         const totalHorasRastreadasProj = parseFloat(totalHorasRastreadas.toFixed(2));
         const totalHorasPlan = equipe.reduce((s, e) => s + parseFloat(e.horasEstimadas || e.horas_estimadas || e.horas || 0), 0);
 
+        // Casa por nome normalizado (minúsculo + sem espaço nas pontas) —
+        // mesma normalização usada no bloco "horas" acima. Sem isso, uma
+        // diferença de maiúscula/espaço entre o nome digitado no
+        // planejamento e o nome vindo do log de horas faz essa pessoa
+        // "sumir" do match: as horas dela viram "não matchadas" e são
+        // redistribuídas proporcionalmente pro resto da equipe — com o
+        // valor/hora de outra pessoa, distorcendo o custo Real total.
+        const normNome = (s) => String(s || '').toLowerCase().trim();
+        const horasReaisPorColabNorm = {};
+        for (const [colab, h] of Object.entries(horasReaisPorColab)) {
+          const k = normNome(colab);
+          horasReaisPorColabNorm[k] = (horasReaisPorColabNorm[k] || 0) + h;
+        }
+
         // Tenta casar pelo nome; se não achar, distribui proporcionalmente pelas horas rastreadas totais
         const horasMatchadas = equipe.reduce((s, e) => {
           const nome = e.colaborador || e.nome || e.membro || '';
-          return s + (horasReaisPorColab[nome] || 0);
+          return s + (horasReaisPorColabNorm[normNome(nome)] || 0);
         }, 0);
         const horasNaoMatchadas = Math.max(0, totalHorasRastreadasProj - horasMatchadas);
 
@@ -994,7 +982,7 @@ router.get('/:id/comparativo', async (req, res, next) => {
           const valorHora = parseFloat(e.mediaHora || e.valor_hora || CUSTO_HORA_INTERNA);
           const custoPlan = horasPlan * valorHora;
           // Horas reais = match direto + proporção das não-matchadas
-          const horasMatch = horasReaisPorColab[nome] || 0;
+          const horasMatch = horasReaisPorColabNorm[normNome(nome)] || 0;
           const proporcao = totalHorasPlan > 0 ? horasPlan / totalHorasPlan : 0;
           const horasReal = parseFloat((horasMatch + horasNaoMatchadas * proporcao).toFixed(2));
           const custoReal = parseFloat((horasReal * valorHora).toFixed(2));
@@ -1023,7 +1011,11 @@ router.get('/:id/comparativo', async (req, res, next) => {
           if (!grupos[cat]) grupos[cat] = { categoria: cat, lancamentos: [], total: 0, totalPago: 0 };
           grupos[cat].lancamentos.push(l);
           grupos[cat].total += l.valor;
-          grupos[cat].totalPago += l.valorPago;
+          // Só soma no "Pago" da categoria quando o lançamento está de fato
+          // liquidado — senão o total por categoria não bate com o total
+          // geral (que já filtra por liquidado), igual ao bug da aba
+          // "Despesas Reais — OPP" no Previsto.
+          if (l.liquidado) grupos[cat].totalPago += l.valorPago;
         }
         return {
           temDados: true,
