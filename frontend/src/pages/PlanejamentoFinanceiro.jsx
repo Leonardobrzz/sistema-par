@@ -1972,7 +1972,11 @@ export default function PlanejamentoFinanceiro() {
               {/* ── TERCEIRIZADOS — Previsto vs Gasto ── */}
               {(() => {
                 const previsto = comparativo.terceirizadosPlanejados?.total || 0
-                const gasto = comparativo.despesasOPP?.totalGasto || 0
+                // Só o gasto real nas categorias de terceiro/subcontratado da OPP (2.1.x +
+                // qualquer categoria "Terceirizado"/"Subcontratado"), não o gasto total do
+                // centro de custo — senão compara orçamento de terceiros com material,
+                // folha, viagem etc. misturados junto.
+                const gasto = comparativo.despesasOPP?.totalGastoTerceirizados ?? comparativo.despesasOPP?.totalGasto ?? 0
                 const saldo = previsto - gasto
                 const itens = comparativo.terceirizadosPlanejados?.itens || []
                 return (previsto > 0 || gasto > 0) ? (
@@ -1985,7 +1989,7 @@ export default function PlanejamentoFinanceiro() {
                           <div style={{ fontSize: 14, fontWeight: 800, color: "#7C3AED" }}>{fmt(previsto)}</div>
                         </div>
                         <div style={{ textAlign: "right" }}>
-                          <div style={{ fontSize: 10, color: T.text3, fontWeight: 600, textTransform: "uppercase" }}>Gasto (OPP)</div>
+                          <div style={{ fontSize: 10, color: T.text3, fontWeight: 600, textTransform: "uppercase" }}>Gasto (OPP — Terceiros)</div>
                           <div style={{ fontSize: 14, fontWeight: 800, color: gasto > previsto ? "#DC2626" : T.text1 }}>{fmt(gasto)}</div>
                         </div>
                         <div style={{ textAlign: "right" }}>

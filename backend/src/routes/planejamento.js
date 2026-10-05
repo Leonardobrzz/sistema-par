@@ -22,6 +22,25 @@ const audit = auditMiddleware('Planejamentos');
 // Aceita vírgula ou ponto como separador decimal (formato BR ou EN)
 const parseBR = (v) => parseFloat(String(v || 0).replace(/\./g, '').replace(',', '.')) || 0;
 
+// Categorias de contas a pagar da OPP que representam serviço de
+// terceiro/subcontratado para um projeto — usado pra comparar "Terceirizados
+// Previsto" (aba Plan vs Real) contra o gasto real na mesma unidade, em vez
+// de contra TODAS as categorias do centro de custo (que incluem material,
+// folha, viagem, imposto etc.). Baseado no plano de contas da OPP: o bloco
+// "2.1." é "Serviços Diretos de Projeto" (sempre executado por especialista
+// contratado de fora — Engenharia Especializada, Geologia e Topografia
+// Subcontratados, Outros Serviços Técnicos Diretos de Projeto); "2.2." é
+// material, não entra. Qualquer categoria de qualquer bloco que já diz no
+// nome "terceirizado"/"subcontratado" também conta (ex: "3.2.8. Serviços
+// Terceirizados Gerais", que é uma categoria administrativa geral mas que
+// pode ser lançada no centro de custo de um projeto específico).
+function ehCategoriaTerceirizada(categoria) {
+  const cat = String(categoria || '').trim();
+  if (/^2\.1\./.test(cat)) return true;
+  const norm = cat.toLowerCase();
+  return norm.includes('terceiriz') || norm.includes('subcontrat');
+}
+
 function calcularTotais(dados) {
   const V = parseBR(dados.valorContrato);
 
@@ -1004,7 +1023,7 @@ router.get('/:id/comparativo', async (req, res, next) => {
 
       // Despesas reais do OPP agrupadas por categoria
       despesasOPP: (() => {
-        if (!lancamentosOPP.length) return { temDados: false, lancamentos: [], porCategoria: [], totalGasto: 0, totalPago: 0 };
+        if (!lancamentosOPP.length) return { temDados: false, lancamentos: [], porCategoria: [], totalGasto: 0, totalPago: 0, totalGastoTerceirizados: 0 };
         const grupos = {};
         for (const l of lancamentosOPP) {
           const cat = l.categoria || 'Sem categoria';
@@ -1023,6 +1042,9 @@ router.get('/:id/comparativo', async (req, res, next) => {
           porCategoria: Object.values(grupos).sort((a, b) => a.categoria.localeCompare(b.categoria)),
           totalGasto: lancamentosOPP.reduce((s, l) => s + l.valor, 0),
           totalPago: lancamentosOPP.filter(l => l.liquidado).reduce((s, l) => s + l.valorPago, 0),
+          // Só as categorias de terceiro/subcontratado, pro card "Terceirizados"
+          // comparar previsto vs gasto na mesma unidade (ver ehCategoriaTerceirizada).
+          totalGastoTerceirizados: lancamentosOPP.filter(l => ehCategoriaTerceirizada(l.categoria)).reduce((s, l) => s + l.valor, 0),
         };
       })(),
     };
