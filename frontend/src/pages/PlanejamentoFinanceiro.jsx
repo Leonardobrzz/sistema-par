@@ -138,7 +138,7 @@ function DespesasOPPCard({ despesasOPP, fmt }) {
         <span style={{ fontSize: 11, fontWeight: 800, color: Td.text3, textTransform: "uppercase", letterSpacing: "0.07em" }}>💰 Despesas Reais — OPP</span>
         <div style={{ display: "flex", gap: 20 }}>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 10, color: Td.text3, fontWeight: 600, textTransform: "uppercase" }}>Total Previsto</div>
+            <div style={{ fontSize: 10, color: Td.text3, fontWeight: 600, textTransform: "uppercase" }}>Total Contratado</div>
             <div style={{ fontSize: 14, fontWeight: 800, color: "#7C3AED" }}>{fmt(despesasOPP.totalGasto)}</div>
           </div>
           <div style={{ textAlign: "right" }}>
@@ -159,7 +159,7 @@ function DespesasOPPCard({ despesasOPP, fmt }) {
                   <span style={{ fontSize: 11, color: Td.text3 }}>({grupo.lancamentos.length})</span>
                 </div>
                 <div style={{ display: "flex", gap: 16 }}>
-                  <span style={{ fontSize: 11, color: Td.text2 }}>Previsto: <strong style={{ color: Td.text1 }}>{fmt(grupo.total)}</strong></span>
+                  <span style={{ fontSize: 11, color: Td.text2 }}>Contratado: <strong style={{ color: Td.text1 }}>{fmt(grupo.total)}</strong></span>
                   <span style={{ fontSize: 11, color: Td.text2 }}>Pago: <strong style={{ color: "#15803D" }}>{fmt(grupo.totalPago)}</strong></span>
                 </div>
               </button>
@@ -1857,11 +1857,13 @@ export default function PlanejamentoFinanceiro() {
                       { label: "Estimadas", val: fmtH(comparativo.horas?.totalPlanejado), sub: "no baseline", color: "#7C3AED", bg: "#F5F3FF" },
                       { label: "Rastreadas", val: fmtH(comparativo.horas?.totalRastreado), sub: "logado no ClickUp", color: Math.abs(comparativo.horas?.desvioPerc || 0) < 15 ? "#15803D" : "#DC2626", bg: Math.abs(comparativo.horas?.desvioPerc || 0) < 15 ? "#F0FDF4" : "#FEF2F2" },
                       {
-                        label: "Desvio",
-                        val: (() => { const d = comparativo.horas?.desvioAbsoluto || 0; return (d > 0 ? "+" : d < 0 ? "-" : "") + fmtH(Math.abs(d)) })(),
-                        sub: comparativo.horas?.desvioAbsoluto < 0 ? "abaixo do estimado" : "acima do estimado",
-                        color: (comparativo.horas?.desvioAbsoluto || 0) < 0 ? "#DC2626" : "#15803D",
-                        bg: (comparativo.horas?.desvioAbsoluto || 0) < 0 ? "#FEF2F2" : "#F0FDF4",
+                        // Desvio tratado como Saldo: Estimado - Rastreado. Positivo = ainda
+                        // dentro do estimado (sobrou horas); negativo = estourou o estimado.
+                        label: "Desvio (Saldo)",
+                        val: (() => { const s = (comparativo.horas?.totalPlanejado || 0) - (comparativo.horas?.totalRastreado || 0); return (s > 0 ? "+" : s < 0 ? "-" : "") + fmtH(Math.abs(s)) })(),
+                        sub: ((comparativo.horas?.totalPlanejado || 0) - (comparativo.horas?.totalRastreado || 0)) < 0 ? "Acima do Estimado" : "Dentro do Estimado",
+                        color: ((comparativo.horas?.totalPlanejado || 0) - (comparativo.horas?.totalRastreado || 0)) < 0 ? "#DC2626" : "#15803D",
+                        bg: ((comparativo.horas?.totalPlanejado || 0) - (comparativo.horas?.totalRastreado || 0)) < 0 ? "#FEF2F2" : "#F0FDF4",
                       },
                     ].map(k => (
                       <div key={k.label} style={{ background: k.bg, borderRadius: 10, padding: "14px 16px" }}>
@@ -2052,7 +2054,9 @@ export default function PlanejamentoFinanceiro() {
               {comparativo.equipePlanejada?.length > 0 && (() => {
                 const totalPlan = comparativo.equipePlanejada.reduce((s, e) => s + e.custoPlan, 0)
                 const totalReal = comparativo.equipePlanejada.reduce((s, e) => s + e.custoReal, 0)
-                const desvio = totalReal - totalPlan
+                // Desvio tratado como Saldo: Planejado - Real. Positivo = ainda dentro do
+                // estimado (sobrou orçamento); negativo = estourou o estimado.
+                const saldo = totalPlan - totalReal
                 return (
                   <div style={{ background: T.card, borderRadius: 14, border: `1.5px solid ${T.border}`, overflow: "hidden" }}>
                     <div style={{ padding: "14px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -2064,11 +2068,12 @@ export default function PlanejamentoFinanceiro() {
                         </div>
                         <div style={{ textAlign: "right" }}>
                           <div style={{ fontSize: 10, color: T.text3, fontWeight: 600, textTransform: "uppercase" }}>Real</div>
-                          <div style={{ fontSize: 13, fontWeight: 800, color: desvio > 0 ? "#DC2626" : "#15803D" }}>{fmt(totalReal)}</div>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: saldo < 0 ? "#DC2626" : "#15803D" }}>{fmt(totalReal)}</div>
                         </div>
                         <div style={{ textAlign: "right" }}>
-                          <div style={{ fontSize: 10, color: T.text3, fontWeight: 600, textTransform: "uppercase" }}>Desvio</div>
-                          <div style={{ fontSize: 13, fontWeight: 800, color: desvio > 0 ? "#DC2626" : desvio < 0 ? "#15803D" : T.text2 }}>{desvio >= 0 ? "+" : ""}{fmt(desvio)}</div>
+                          <div style={{ fontSize: 10, color: T.text3, fontWeight: 600, textTransform: "uppercase" }}>Desvio (Saldo)</div>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: saldo < 0 ? "#DC2626" : saldo > 0 ? "#15803D" : T.text2 }}>{saldo >= 0 ? "+" : ""}{fmt(saldo)}</div>
+                          <div style={{ fontSize: 10, color: T.text3, marginTop: 1 }}>{saldo < 0 ? "Acima do Estimado" : "Dentro do Estimado"}</div>
                         </div>
                       </div>
                     </div>
