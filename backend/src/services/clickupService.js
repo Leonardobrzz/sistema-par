@@ -1631,6 +1631,103 @@ async function criarComentarioTask(taskId, texto) {
   return res.data;
 }
 
+// ── Membros do time (pra casar e-mail do usuário PAR com a conta ClickUp
+// dele e poder @mencionar) — cacheado 10min pra não bater na API toda hora.
+let _teamMembersCache = null;
+let _teamMembersCacheAt = 0;
+const TEAM_CACHE_TTL_MS = 10 * 60 * 1000;
+
+async function getTeamMembers() {
+  const teamId = process.env.CLICKUP_TEAM_ID;
+  if (!teamId) return [];
+  const agora = Date.now();
+  if (_teamMembersCache && (agora - _teamMembersCacheAt) < TEAM_CACHE_TTL_MS) return _teamMembersCache;
+  try {
+    const res = await axios.get(`${BASE_URL}/team/${teamId}`, { headers: getHeaders() });
+    const membros = (res.data?.team?.members || [])
+      .map(m => ({ id: m.user?.id, username: m.user?.username, email: m.user?.email }))
+      .filter(m => m.id);
+    _teamMembersCache = membros;
+    _teamMembersCacheAt = agora;
+    return membros;
+  } catch (err) {
+    console.error('[ClickUp] Erro ao buscar membros do time:', err.message);
+    return _teamMembersCache || [];
+  }
+}
+
+// Remove acentos e baixa a caixa, pra comparar nomes sem depender de
+// digitação idêntica ("Cássio" === "cassio").
+function normalizarNome(s) {
+  return String(s || '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().trim();
+}
+
+// Acha o ID ClickUp de uma pessoa pelo nome (ou pedaço do nome) — casa contra
+// o username da conta ClickUp. Tenta: username igual ao nome inteiro; senão,
+// o primeiro nome dado está contido no username (ex: "Cassio Dultra" casa
+// com username "Cassio Dultra" ou só "Cassio"). Retorna null se não achar —
+// quem chama decide o que fazer (hoje: só não menciona essa pessoa).
+async function encontrarClickUpIdPorNome(nome) {
+  const alvo = normalizarNome(nome);
+  if (!alvo) return null;
+  const primeiroNome = alvo.split(' ')[0];
+  const membros = await getTeamMembers();
+  const exato = membros.find(m => normalizarNome(m.username) === alvo);
+  if (exato) return exato.id;
+  const parcial = membros.find(m => {
+    const un = normalizarNome(m.username);
+    return un.includes(alvo) || un.includes(primeiroNome);
+  });
+  return parcial ? parcial.id : null;
+}
+
+// Posta um comentário tentando @mencionar (notificação direta e garantida,
+// não depende da pessoa já estar seguindo a tarefa) quem for encontrado na
+// ClickUp — por e-mail (`emails`, casamento com o e-mail de login do PAR) ou
+// por nome (`nomes`, casamento com o username da conta ClickUp). Quem não
+// for encontrado por nenhum dos dois simplesmente não é mencionado — o
+// comentário sai do mesmo jeito (com notify_all), então ninguém deixa de
+// ver, só não recebe o ping direto.
+async function criarComentarioComMencoes(taskId, texto, { emails = [], nomes = [] } = {}) {
+  if (!taskId) return null;
+  const emailsLimpos = [...new Set((emails || []).filter(Boolean).map(e => String(e).toLowerCase().trim()))];
+  const idsEncontrados = new Set();
+  const naoEncontrados = [];
+
+  if (emailsLimpos.length > 0) {
+    const membros = await getTeamMembers();
+    for (const email of emailsLimpos) {
+      const m = membros.find(mm => mm.email && String(mm.email).toLowerCase().trim() === email);
+      if (m) idsEncontrados.add(m.id); else naoEncontrados.push(email);
+    }
+  }
+  for (const nome of (nomes || []).filter(Boolean)) {
+    const id = await encontrarClickUpIdPorNome(nome);
+    if (id) idsEncontrados.add(id); else naoEncontrados.push(nome);
+  }
+
+  const partes = [{ text: texto }];
+  if (idsEncontrados.size > 0) {
+    partes.push({ text: '\n\n' });
+    for (const id of idsEncontrados) {
+      partes.push({ type: 'tag', user: { id } });
+      partes.push({ text: ' ' });
+    }
+  }
+  if (naoEncontrados.length > 0) {
+    console.log(`[ClickUp] Não achei conta ClickUp pra: ${naoEncontrados.join(', ')} — comentário postado sem mencionar essa(s) pessoa(s).`);
+  }
+
+  const res = await axios.post(
+    `${BASE_URL}/task/${taskId}/comment`,
+    { comment: partes, notify_all: true },
+    { headers: getHeaders() }
+  );
+  return res.data;
+}
+
 module.exports = {
   syncClickUp,
   syncTerceirizadosClickUp,
@@ -1650,5 +1747,8 @@ module.exports = {
   getProjectProgressFromClickUp,
   getListInfo,
   criarComentarioTask,
+  criarComentarioComMencoes,
+  encontrarClickUpIdPorNome,
+  getTeamMembers,
   extrairTaskId,
 };

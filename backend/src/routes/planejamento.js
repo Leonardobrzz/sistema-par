@@ -14,6 +14,33 @@ const PRAZO_MAX_PLANEJAMENTO  = 7;     // dias — máximo para sair do status "
 
 const { createAlert } = require('../services/alertService');
 
+// Pessoas por Setor — pra @mencionar no ClickUp quando um planejamento é
+// encaminhado/aprovado/rejeitado. Combinado com o nome aqui, o casamento com
+// a conta ClickUp é feito por NOME (clickupService.encontrarClickUpIdPorNome),
+// não por e-mail — é mais simples e mais confiável do que depender do e-mail
+// de login do PAR ser igual ao da ClickUp. Lista dada pelo chef em 07/10/2026.
+// Setores Administrativo não têm um "P.O." equivalente definido ainda — só
+// o Diretor é mencionado nesse caso.
+const SETOR_PESSOAS = {
+  'Infraestrutura': { diretor: 'Claudio', po: 'Artur Othon', teclider: 'Celmo' },
+  'Saneamento':      { diretor: 'Claudio', po: 'Eduardo', teclider: 'Levy Sarmento' },
+  'Arquitetura':     { diretor: 'Roberto', po: 'Cassio Dultra', teclider: 'Rayane' },
+  'Administrativo':  { diretor: 'Paulo', financeiro: 'Roberta', comercial: 'Ricardo', dp: 'Carol' },
+};
+
+// Tarefa-âncora no ClickUp pra postar/mencionar sobre um planejamento: prefere
+// a tarefa de Medição do projeto (mais confiável — praticamente todo contrato
+// tem uma, segundo o chef) e só cai pro campo "Link ClickUp" do planejamento
+// se não achar nenhuma Medição vinculada.
+async function encontrarTaskIdAncora(plan) {
+  try {
+    const medicoes = await db.findRows('Medicoes', (m) => m.ID_Projeto === plan.ID_Projeto && !!m.ID_Tarefa_ClickUp);
+    if (medicoes.length > 0) return medicoes[0].ID_Tarefa_ClickUp;
+  } catch (e) { console.error('[Planejamento] Falha ao buscar tarefa de Medição (não bloqueante):', e.message); }
+  const clickup = require('../services/clickupService');
+  return clickup.extrairTaskId(plan.Link_ClickUp);
+}
+
 const router = express.Router();
 router.use(authMiddleware);
 const audit = auditMiddleware('Planejamentos');
@@ -370,17 +397,21 @@ router.post('/', audit, async (req, res, next) => {
         });
       } catch (e) { console.error('[Planejamento] Falha ao criar alerta de encaminhamento:', e.message); }
 
-      if (planData.Link_ClickUp) {
-        try {
-          const clickup = require('../services/clickupService');
-          const taskId = clickup.extrairTaskId(planData.Link_ClickUp);
-          if (taskId) {
-            const msg = `⏳ Planejamento Financeiro encaminhado para aprovação no Sistema PAR\n\nProjeto: ${planData.Nome_Projeto}\nEncaminhado por: ${req.user.nome}\nData: ${new Date().toLocaleDateString('pt-BR')}`;
-            await clickup.criarComentarioTask(taskId, msg);
-            console.log(`[Planejamento] Comentário ClickUp (encaminhado) criado na tarefa ${taskId}`);
-          }
-        } catch (errCU) { console.error('[Planejamento] Falha ao comentar no ClickUp (não bloqueante):', errCU.message); }
-      }
+      try {
+        const clickup = require('../services/clickupService');
+        const taskId = await encontrarTaskIdAncora(planData);
+        if (taskId) {
+          const msg = `⏳ Planejamento Financeiro encaminhado para aprovação no Sistema PAR\n\nProjeto: ${planData.Nome_Projeto}\nEncaminhado por: ${req.user.nome}\nData: ${new Date().toLocaleDateString('pt-BR')}`;
+          // Menciona o Diretor e o P.O. do setor do projeto (lista fixa em
+          // SETOR_PESSOAS) — mais simples e confiável do que casar por e-mail.
+          const pessoas = SETOR_PESSOAS[planData.Setor] || {};
+          const nomes = [pessoas.diretor, pessoas.po].filter(Boolean);
+          await clickup.criarComentarioComMencoes(taskId, msg, { nomes });
+          console.log(`[Planejamento] Comentário ClickUp (encaminhado) criado na tarefa ${taskId}`);
+        } else {
+          console.log(`[Planejamento] "${planData.Nome_Projeto}" encaminhado, mas sem tarefa de Medição ou Link ClickUp — não comentei nada.`);
+        }
+      } catch (errCU) { console.error('[Planejamento] Falha ao comentar no ClickUp (não bloqueante):', errCU.message); }
     }
 
     res.status(existing ? 200 : 201).json({ ...planData, totais });
@@ -602,33 +633,36 @@ async function handleAprovar(req, res, next, acaoForced) {
       }
     }
 
-    // ── Notifica no ClickUp (comentário na tarefa linkada) — aprovado e
-    // rejeitado, pra quem está acompanhando a tarefa (PO, coordenador) saber
-    // sem precisar entrar no PAR ──────────────────────────────────────────
-    if (plan.Link_ClickUp) {
-      try {
-        const clickup = require('../services/clickupService');
-        const taskId = clickup.extrairTaskId(plan.Link_ClickUp);
-        if (taskId) {
-          let msg;
-          if (acao === 'aprovar') {
-            const valor = (() => {
-              try {
-                const d = JSON.parse(plan.Dados_JSON || '{}');
-                const v = d._baseline?.valorContrato || d.valorContrato || 0;
-                return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-              } catch { return ''; }
-            })();
-            msg = `✅ Planejamento Financeiro aprovado no Sistema PAR\n\nProjeto: ${plan.Nome_Projeto}${valor ? `\nValor: ${valor}` : ''}\nAprovado por: ${req.user.nome}\nData: ${new Date().toLocaleDateString('pt-BR')}`;
-          } else {
-            msg = `❌ Planejamento Financeiro rejeitado no Sistema PAR\n\nProjeto: ${plan.Nome_Projeto}\nRejeitado por: ${req.user.nome}${comentario ? `\nMotivo: ${comentario}` : ''}\nData: ${new Date().toLocaleDateString('pt-BR')}`;
-          }
-          await clickup.criarComentarioTask(taskId, msg);
-          console.log(`[Aprovação] Comentário ClickUp (${novoStatus}) criado na tarefa ${taskId}`);
+    // ── Notifica no ClickUp (comentário na tarefa de Medição do projeto) —
+    // aprovado e rejeitado, pro P.O. do setor saber sem precisar entrar no
+    // PAR ─────────────────────────────────────────────────────────────────
+    try {
+      const clickup = require('../services/clickupService');
+      const taskId = await encontrarTaskIdAncora(plan);
+      if (taskId) {
+        let msg;
+        if (acao === 'aprovar') {
+          const valor = (() => {
+            try {
+              const d = JSON.parse(plan.Dados_JSON || '{}');
+              const v = d._baseline?.valorContrato || d.valorContrato || 0;
+              return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            } catch { return ''; }
+          })();
+          msg = `✅ Planejamento Financeiro aprovado no Sistema PAR\n\nProjeto: ${plan.Nome_Projeto}${valor ? `\nValor: ${valor}` : ''}\nAprovado por: ${req.user.nome}\nData: ${new Date().toLocaleDateString('pt-BR')}`;
+        } else {
+          msg = `❌ Planejamento Financeiro rejeitado no Sistema PAR\n\nProjeto: ${plan.Nome_Projeto}\nRejeitado por: ${req.user.nome}${comentario ? `\nMotivo: ${comentario}` : ''}\nData: ${new Date().toLocaleDateString('pt-BR')}`;
         }
-      } catch (errCU) {
-        console.error('[Aprovação] Falha ao comentar no ClickUp (não bloqueante):', errCU.message);
+        // Menciona o P.O. do setor do projeto (lista fixa em SETOR_PESSOAS).
+        const pessoas = SETOR_PESSOAS[plan.Setor] || {};
+        const nomes = [pessoas.po].filter(Boolean);
+        await clickup.criarComentarioComMencoes(taskId, msg, { nomes });
+        console.log(`[Aprovação] Comentário ClickUp (${novoStatus}) criado na tarefa ${taskId}`);
+      } else {
+        console.log(`[Aprovação] "${plan.Nome_Projeto}" ${novoStatus}, mas sem tarefa de Medição ou Link ClickUp — não comentei nada.`);
       }
+    } catch (errCU) {
+      console.error('[Aprovação] Falha ao comentar no ClickUp (não bloqueante):', errCU.message);
     }
 
     // ── Avisa o PO que a decisão saiu (aprovado ou rejeitado) ───────────────
