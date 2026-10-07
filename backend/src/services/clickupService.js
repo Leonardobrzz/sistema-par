@@ -1696,8 +1696,9 @@ async function encontrarClickUpIdPorNome(nome) {
 // for encontrado por nenhum dos dois simplesmente não é mencionado — o
 // comentário sai do mesmo jeito (com notify_all), então ninguém deixa de
 // ver, só não recebe o ping direto.
-async function criarComentarioComMencoes(taskId, texto, { emails = [], nomes = [] } = {}) {
-  if (!taskId) return null;
+// Resolve nomes/e-mails em IDs de conta ClickUp — pedaço comum reaproveitado
+// tanto pro comentário em tarefa quanto em lista (ver abaixo).
+async function resolverIdsMencao({ emails = [], nomes = [] } = {}) {
   const emailsLimpos = [...new Set((emails || []).filter(Boolean).map(e => String(e).toLowerCase().trim()))];
   const idsEncontrados = new Set();
   const naoEncontrados = [];
@@ -1713,7 +1714,13 @@ async function criarComentarioComMencoes(taskId, texto, { emails = [], nomes = [
     const id = await encontrarClickUpIdPorNome(nome);
     if (id) idsEncontrados.add(id); else naoEncontrados.push(nome);
   }
+  if (naoEncontrados.length > 0) {
+    console.log(`[ClickUp] Não achei conta ClickUp pra: ${naoEncontrados.join(', ')} — comentário postado sem mencionar essa(s) pessoa(s).`);
+  }
+  return idsEncontrados;
+}
 
+function montarPartesComentario(texto, idsEncontrados) {
   const partes = [{ text: texto }];
   if (idsEncontrados.size > 0) {
     partes.push({ text: '\n\n' });
@@ -1722,16 +1729,47 @@ async function criarComentarioComMencoes(taskId, texto, { emails = [], nomes = [
       partes.push({ text: ' ' });
     }
   }
-  if (naoEncontrados.length > 0) {
-    console.log(`[ClickUp] Não achei conta ClickUp pra: ${naoEncontrados.join(', ')} — comentário postado sem mencionar essa(s) pessoa(s).`);
-  }
+  return partes;
+}
 
+async function criarComentarioComMencoes(taskId, texto, opts = {}) {
+  if (!taskId) return null;
+  const ids = await resolverIdsMencao(opts);
+  const partes = montarPartesComentario(texto, ids);
   const res = await axios.post(
     `${BASE_URL}/task/${taskId}/comment`,
     { comment: partes, notify_all: true },
     { headers: getHeaders() }
   );
   return res.data;
+}
+
+// Mesma ideia do comentário com @menção acima, só que postando na LISTA do
+// ClickUp inteira (o projeto) em vez de numa tarefa específica. Usado nas
+// notificações de planejamento — em vez de depender de achar "a" tarefa
+// certa dentro do projeto (nem sempre tem uma só, ou nenhuma com o nome
+// esperado), comenta direto no lugar mais geral que sempre existe: a lista
+// que representa o projeto no ClickUp (Projetos_Contratos.ID_ClickUp).
+async function criarComentarioListaComMencoes(listId, texto, opts = {}) {
+  if (!listId) return null;
+  const ids = await resolverIdsMencao(opts);
+  const partes = montarPartesComentario(texto, ids);
+  const res = await axios.post(
+    `${BASE_URL}/list/${listId}/comment`,
+    { comment: partes, notify_all: true },
+    { headers: getHeaders() }
+  );
+  return res.data;
+}
+
+// Extrai o ID da lista de uma URL do ClickUp (https://app.clickup.com/TEAMID/v/li/LISTID)
+// — serve de último recurso quando o projeto ainda não tem o vínculo
+// automático com a lista (ID_ClickUp), por exemplo um projeto criado na mão
+// direto no PAR em vez de importado do ClickUp.
+function extrairListaId(url) {
+  if (!url) return null;
+  const m = url.match(/\/li\/(\d+)/i);
+  return m ? m[1] : null;
 }
 
 module.exports = {
@@ -1754,6 +1792,8 @@ module.exports = {
   getListInfo,
   criarComentarioTask,
   criarComentarioComMencoes,
+  criarComentarioListaComMencoes,
+  extrairListaId,
   encontrarClickUpIdPorNome,
   getTeamMembers,
   extrairTaskId,
