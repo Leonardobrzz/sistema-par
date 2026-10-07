@@ -142,6 +142,11 @@ async function ensureSheetsExist() {
     // ficava sempre falhando silenciosamente (erro engolido pelo catch do cron)
     // na hora de gravar, deixando a tabela sempre vazia.
     `ALTER TABLE "OrdensCompra_OPP" ADD COLUMN IF NOT EXISTS "Valor_Liquidado" TEXT`,
+    // Tarefa fixa criada automaticamente em cada projeto (lista do ClickUp) na
+    // 1ª vez que o sistema precisa comentar/mencionar sobre um planejamento —
+    // reaproveitada sempre depois, em vez de criar uma tarefa nova toda hora.
+    // Substitui a tentativa de achar/depender de uma tarefa de Medição.
+    `ALTER TABLE "Projetos_Contratos" ADD COLUMN IF NOT EXISTS "ID_Tarefa_Notificacoes_PAR" TEXT`,
     `CREATE TABLE IF NOT EXISTS "Auditoria" (
       "ID_Auditoria" TEXT PRIMARY KEY,
       "Tabela" TEXT NOT NULL,

@@ -101,6 +101,22 @@ async function getListInfo(listId) {
   return res.data || null;
 }
 
+// Cria uma tarefa numa lista do ClickUp — usado pra criar a tarefa fixa de
+// notificações do PAR em cada projeto (ver criarOuAcharTarefaNotificacao em
+// planejamento.js). Não define status na criação de propósito — cada lista
+// tem seus próprios nomes de status configurados (ex: "BACKLOG"), e mandar
+// um nome que não existe nela faz a API rejeitar a criação inteira. Fica no
+// status padrão da lista; não é uma tarefa de trabalho de verdade, só serve
+// de âncora pros comentários, então o status dela não importa muito.
+async function criarTarefa(listId, nome, descricao) {
+  const res = await axios.post(
+    `${BASE_URL}/list/${listId}/task`,
+    { name: nome, description: descricao || '' },
+    { headers: getHeaders() }
+  );
+  return res.data;
+}
+
 async function getTimeEntries(teamId, startDate, endDate) {
   // A API ClickUp limita time_entries a 100 por request e não tem paginação real.
   // Solução: dividir em chunks de 30 dias e acumular, deduplicando por entry.id
@@ -1790,6 +1806,7 @@ module.exports = {
   processWebhookEvent,
   getProjectProgressFromClickUp,
   getListInfo,
+  criarTarefa,
   criarComentarioTask,
   criarComentarioComMencoes,
   criarComentarioListaComMencoes,

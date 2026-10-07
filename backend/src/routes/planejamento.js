@@ -28,24 +28,43 @@ const SETOR_PESSOAS = {
   'Administrativo':  { diretor: 'Paulo', financeiro: 'Roberta', comercial: 'Ricardo', dp: 'Carol' },
 };
 
-// Lista do ClickUp (= o projeto) onde postar/mencionar sobre um
-// planejamento. Comenta no nível da LISTA em vez de procurar uma tarefa
-// específica (tipo Medição) — nem todo projeto tem uma, alguns têm várias, e
-// isso tornava a notificação instável. A lista é o único lugar que sempre
-// existe e representa o projeto inteiro:
-//   1. Projetos_Contratos.ID_ClickUp — vínculo automático que já existe
-//      desde que o projeto é importado do ClickUp pro PAR (o caso comum).
-//   2. Último recurso: extrai o ID da lista do campo "Link ClickUp" do
-//      planejamento, pro caso raro de um projeto criado na mão no PAR (sem
-//      vínculo automático) que tenha o link da lista colado manualmente.
-async function encontrarListaIdProjeto(plan) {
-  try {
-    const projeto = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === plan.ID_Projeto);
-    if (projeto?.ID_ClickUp) return projeto.ID_ClickUp;
-  } catch (e) { console.error('[Planejamento] Falha ao buscar projeto pra achar a lista do ClickUp (não bloqueante):', e.message); }
+// Tarefa fixa de notificações do PAR, uma por projeto — onde postar/mencionar
+// sobre um planejamento. Testamos comentar direto na LISTA do ClickUp (sem
+// depender de nenhuma tarefa específica), mas confirmamos que @menção em
+// comentário de lista NÃO gera notificação de verdade pro ClickUp (não some
+// na caixa de entrada nem em lugar nenhum, só fica meio perdida — problema
+// conhecido, outros usuários do ClickUp relatam a mesma coisa). Comentário em
+// TAREFA, por outro lado, testamos e confirmamos que funciona (menção vira
+// link clicável de verdade). Por isso: em vez de procurar uma tarefa que já
+// exista (tipo Medição — nem todo projeto tem uma, alguns têm várias), o
+// sistema cria UMA tarefa fixa própria pra isso na 1ª vez que precisa, e
+// guarda o ID dela em Projetos_Contratos.ID_Tarefa_Notificacoes_PAR pra
+// reaproveitar sempre depois (nunca cria uma segunda).
+async function criarOuAcharTarefaNotificacao(plan) {
+  const projeto = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === plan.ID_Projeto);
+  if (!projeto) return null;
+  if (projeto.ID_Tarefa_Notificacoes_PAR) return projeto.ID_Tarefa_Notificacoes_PAR;
+
+  // Projeto sem vínculo de lista no ClickUp (ex: criado na mão no PAR, sem
+  // ter vindo da importação automática) — não tem onde criar a tarefa.
+  // Último recurso: campo "Link ClickUp" do planejamento, caso alguém tenha
+  // colado manualmente o link de uma tarefa específica (com /t/).
+  if (!projeto.ID_ClickUp) {
+    const clickup = require('../services/clickupService');
+    return clickup.extrairTaskId(plan.Link_ClickUp);
+  }
 
   const clickup = require('../services/clickupService');
-  return clickup.extrairListaId(plan.Link_ClickUp);
+  const tarefa = await clickup.criarTarefa(
+    projeto.ID_ClickUp,
+    '📌 Notificações PAR',
+    'Tarefa criada automaticamente pelo Sistema PAR — não precisa mexer aqui. Usada só pra postar avisos de planejamento financeiro (encaminhado, aprovado, rejeitado) e mencionar o Diretor/P.O. do setor.'
+  );
+  await db.updateRowById('Projetos_Contratos', 'ID_Projeto', projeto.ID_Projeto, {
+    ...projeto,
+    ID_Tarefa_Notificacoes_PAR: tarefa.id,
+  });
+  return tarefa.id;
 }
 
 const router = express.Router();
@@ -406,17 +425,17 @@ router.post('/', audit, async (req, res, next) => {
 
       try {
         const clickup = require('../services/clickupService');
-        const listaId = await encontrarListaIdProjeto(planData);
-        if (listaId) {
+        const taskId = await criarOuAcharTarefaNotificacao(planData);
+        if (taskId) {
           const msg = `⏳ Planejamento Financeiro encaminhado para aprovação no Sistema PAR\n\nProjeto: ${planData.Nome_Projeto}\nEncaminhado por: ${req.user.nome}\nData: ${new Date().toLocaleDateString('pt-BR')}`;
           // Menciona o Diretor e o P.O. do setor do projeto (lista fixa em
           // SETOR_PESSOAS) — mais simples e confiável do que casar por e-mail.
           const pessoas = SETOR_PESSOAS[planData.Setor] || {};
           const nomes = [pessoas.diretor, pessoas.po].filter(Boolean);
-          await clickup.criarComentarioListaComMencoes(listaId, msg, { nomes });
-          console.log(`[Planejamento] Comentário ClickUp (encaminhado) criado na lista ${listaId}`);
+          await clickup.criarComentarioComMencoes(taskId, msg, { nomes });
+          console.log(`[Planejamento] Comentário ClickUp (encaminhado) criado na tarefa ${taskId}`);
         } else {
-          console.log(`[Planejamento] "${planData.Nome_Projeto}" encaminhado, mas sem vínculo com lista do ClickUp — não comentei nada.`);
+          console.log(`[Planejamento] "${planData.Nome_Projeto}" encaminhado, mas sem vínculo com o ClickUp — não comentei nada.`);
         }
       } catch (errCU) { console.error('[Planejamento] Falha ao comentar no ClickUp (não bloqueante):', errCU.message); }
     }
@@ -640,12 +659,13 @@ async function handleAprovar(req, res, next, acaoForced) {
       }
     }
 
-    // ── Notifica no ClickUp (comentário na lista do projeto) — aprovado e
-    // rejeitado, pro P.O. do setor saber sem precisar entrar no PAR ────────
+    // ── Notifica no ClickUp (comentário na tarefa fixa de notificações do
+    // projeto) — aprovado e rejeitado, pro P.O. do setor saber sem precisar
+    // entrar no PAR ──────────────────────────────────────────────────────
     try {
       const clickup = require('../services/clickupService');
-      const listaId = await encontrarListaIdProjeto(plan);
-      if (listaId) {
+      const taskId = await criarOuAcharTarefaNotificacao(plan);
+      if (taskId) {
         let msg;
         if (acao === 'aprovar') {
           const valor = (() => {
@@ -662,10 +682,10 @@ async function handleAprovar(req, res, next, acaoForced) {
         // Menciona o P.O. do setor do projeto (lista fixa em SETOR_PESSOAS).
         const pessoas = SETOR_PESSOAS[plan.Setor] || {};
         const nomes = [pessoas.po].filter(Boolean);
-        await clickup.criarComentarioListaComMencoes(listaId, msg, { nomes });
-        console.log(`[Aprovação] Comentário ClickUp (${novoStatus}) criado na lista ${listaId}`);
+        await clickup.criarComentarioComMencoes(taskId, msg, { nomes });
+        console.log(`[Aprovação] Comentário ClickUp (${novoStatus}) criado na tarefa ${taskId}`);
       } else {
-        console.log(`[Aprovação] "${plan.Nome_Projeto}" ${novoStatus}, mas sem vínculo com lista do ClickUp — não comentei nada.`);
+        console.log(`[Aprovação] "${plan.Nome_Projeto}" ${novoStatus}, mas sem vínculo com o ClickUp — não comentei nada.`);
       }
     } catch (errCU) {
       console.error('[Aprovação] Falha ao comentar no ClickUp (não bloqueante):', errCU.message);
