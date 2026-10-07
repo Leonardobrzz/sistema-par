@@ -28,15 +28,38 @@ const SETOR_PESSOAS = {
   'Administrativo':  { diretor: 'Paulo', financeiro: 'Roberta', comercial: 'Ricardo', dp: 'Carol' },
 };
 
-// Tarefa-âncora no ClickUp pra postar/mencionar sobre um planejamento: prefere
-// a tarefa de Medição do projeto (mais confiável — praticamente todo contrato
-// tem uma, segundo o chef) e só cai pro campo "Link ClickUp" do planejamento
-// se não achar nenhuma Medição vinculada.
+// Tarefa-âncora no ClickUp pra postar/mencionar sobre um planejamento.
+// Importante: o "Link ClickUp" do projeto/planejamento normalmente vem
+// pré-preenchido automaticamente com o link da LISTA do ClickUp (o projeto
+// inteiro), não de uma tarefa específica — então ele nunca serve como âncora
+// sozinho, e não dá pra depender de alguém trocar isso na mão toda vez.
+// Por isso a ordem de busca é:
+//   1. Medição já sincronizada no PAR com uma tarefa real do ClickUp
+//      (ID_Tarefa_ClickUp) — mais rápido, não bate na API do ClickUp.
+//   2. Busca AO VIVO na lista do ClickUp do projeto por uma tarefa de
+//      Medição/Protocolo (mesmo padrão de nome já usado em outros lugares do
+//      sistema) — funciona automaticamente desde o 1º planejamento do
+//      projeto, sem precisar de nenhuma sincronização prévia nem de ninguém
+//      colar um link manualmente. É o caminho esperado pra maioria dos casos,
+//      já que praticamente todo contrato tem uma tarefa de Medição.
+//   3. Último recurso: o campo "Link ClickUp" do planejamento, só serve se
+//      alguém colou manualmente o link de uma TAREFA específica (com /t/).
 async function encontrarTaskIdAncora(plan) {
   try {
     const medicoes = await db.findRows('Medicoes', (m) => m.ID_Projeto === plan.ID_Projeto && !!m.ID_Tarefa_ClickUp);
     if (medicoes.length > 0) return medicoes[0].ID_Tarefa_ClickUp;
   } catch (e) { console.error('[Planejamento] Falha ao buscar tarefa de Medição (não bloqueante):', e.message); }
+
+  try {
+    const projeto = await db.findOne('Projetos_Contratos', (p) => p.ID_Projeto === plan.ID_Projeto);
+    if (projeto?.ID_ClickUp) {
+      const clickup = require('../services/clickupService');
+      const tasks = await clickup.getTasks(projeto.ID_ClickUp);
+      const medTask = tasks.find((t) => /medi[çc]|protocolo/i.test(t.name || ''));
+      if (medTask) return medTask.id;
+    }
+  } catch (e) { console.error('[Planejamento] Falha ao buscar tarefa de Medição ao vivo no ClickUp (não bloqueante):', e.message); }
+
   const clickup = require('../services/clickupService');
   return clickup.extrairTaskId(plan.Link_ClickUp);
 }
