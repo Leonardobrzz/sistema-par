@@ -356,6 +356,33 @@ router.post('/', audit, async (req, res, next) => {
       }
     }
 
+    // ── Avisa coordenação/diretoria que o planejamento foi encaminhado ──────
+    // Dispara só numa transição real pra "Pendente Aprovação" — evita
+    // duplicar alerta a cada autosave de rascunho com o mesmo status.
+    if (status === 'Pendente Aprovação' && existing?.Status !== 'Pendente Aprovação') {
+      try {
+        await createAlert({
+          tipo: 'PLANEJAMENTO_PENDENTE_APROVACAO',
+          idProjeto: planData.ID_Projeto,
+          mensagem: `"${planData.Nome_Projeto}" foi encaminhado por ${req.user.nome} e está aguardando aprovação.`,
+          nivel: 'warning',
+          setorDestino: ['Coordenador', 'Diretoria', 'Admin'],
+        });
+      } catch (e) { console.error('[Planejamento] Falha ao criar alerta de encaminhamento:', e.message); }
+
+      if (planData.Link_ClickUp) {
+        try {
+          const clickup = require('../services/clickupService');
+          const taskId = clickup.extrairTaskId(planData.Link_ClickUp);
+          if (taskId) {
+            const msg = `⏳ Planejamento Financeiro encaminhado para aprovação no Sistema PAR\n\nProjeto: ${planData.Nome_Projeto}\nEncaminhado por: ${req.user.nome}\nData: ${new Date().toLocaleDateString('pt-BR')}`;
+            await clickup.criarComentarioTask(taskId, msg);
+            console.log(`[Planejamento] Comentário ClickUp (encaminhado) criado na tarefa ${taskId}`);
+          }
+        } catch (errCU) { console.error('[Planejamento] Falha ao comentar no ClickUp (não bloqueante):', errCU.message); }
+      }
+    }
+
     res.status(existing ? 200 : 201).json({ ...planData, totais });
   } catch (err) {
     next(err);
@@ -370,35 +397,43 @@ async function handleAprovar(req, res, next, acaoForced) {
     const acao = acaoForced || req.body.acao || 'aprovar';
     const comentario = req.body.comentario || req.body.justificativa || '';
 
-    // PO solicita replanejamento: qualquer cargo pode fazer
+    // PO inicia replanejamento: qualquer cargo pode fazer. Libera a edição na
+    // hora — não passa mais por um gate de pré-aprovação da diretoria. O chef
+    // só entra no fim, quando o PO encaminhar o replanejamento editado pra
+    // aprovação (mesmo fluxo de "Encaminhar para Aprovação" normal).
     if (acao === 'replanejamento') {
       if (plan.Status !== 'Aprovado') {
-        return res.status(409).json({ error: 'Somente planejamentos "Aprovados" podem solicitar replanejamento.' });
+        return res.status(409).json({ error: 'Somente planejamentos "Aprovados" podem ser replanejados.' });
       }
-      // Guarda snapshot para possível rollback caso rejeitado
+      // Guarda snapshot do estado aprovado, pra referência/auditoria (não é
+      // mais usado pra rollback automático, já que não há mais rejeição do
+      // pedido de replanejamento em si).
       const snapshot = plan.Snapshot_Anterior || plan.Dados_JSON || '';
       const updated = {
         ...plan,
-        Status: 'Pendente Replanejamento',
+        Status: 'Em Elaboração',
         Comentario_Aprovacao: comentario,
         Justificativa_Replanejamento: comentario,
         Snapshot_Anterior: snapshot,
       };
       await db.updateRowById('Planejamentos', 'ID', plan.ID, updated);
-      // Notifica diretoria
+      // Avisa a diretoria que o replanejamento começou (ciência, não é mais
+      // uma aprovação pendente).
       try {
         await createAlert({
           tipo: 'REPLANEJAMENTO_SOLICITADO',
           idProjeto: plan.ID_Projeto,
-          mensagem: `Solicitação de replanejamento para "${plan.Nome_Projeto}". Justificativa: ${comentario || '(sem justificativa)'}`,
-          nivel: 'warning',
+          mensagem: `Replanejamento iniciado para "${plan.Nome_Projeto}" por ${req.user.nome}. Justificativa: ${comentario || '(sem justificativa)'}`,
+          nivel: 'info',
           setorDestino: ['Diretoria', 'Admin'],
         });
       } catch (e) { console.error('[Replanejamento] Falha ao criar alerta:', e.message); }
-      return res.json({ ok: true, message: 'Solicitação de replanejamento enviada para a diretoria.' });
+      return res.json({ ok: true, message: 'Replanejamento iniciado. Planejamento liberado para edição.' });
     }
 
-    // Diretoria aprova solicitação de replanejamento: libera para edição
+    // Legado: aprova um pedido de replanejamento que ficou pendente antes
+    // dessa mudança de fluxo (novos pedidos já liberam a edição na hora, ver
+    // acao==='replanejamento' acima).
     if (acao === 'aprovar_replanejamento') {
       if (!['Admin', 'Diretoria'].includes(req.user.perfil)) {
         return res.status(403).json({ error: 'Somente Diretoria pode aprovar o replanejamento.' });
@@ -426,7 +461,8 @@ async function handleAprovar(req, res, next, acaoForced) {
       return res.json({ ok: true, message: 'Replanejamento aprovado. Planejamento liberado para edição.' });
     }
 
-    // Diretoria rejeita solicitação de replanejamento: restaura estado anterior
+    // Legado: rejeita um pedido de replanejamento que ficou pendente antes
+    // dessa mudança de fluxo (restaura o estado aprovado anterior)
     if (acao === 'rejeitar_replanejamento') {
       if (!['Admin', 'Diretoria'].includes(req.user.perfil)) {
         return res.status(403).json({ error: 'Somente Diretoria pode rejeitar o replanejamento.' });
@@ -456,15 +492,19 @@ async function handleAprovar(req, res, next, acaoForced) {
       return res.json({ ok: true, message: 'Replanejamento rejeitado. Planejamento restaurado ao estado aprovado anterior.' });
     }
 
-    // Se o plano está Aprovado, trata como solicitação de replanejamento
+    // Se o plano está Aprovado, trata como início de replanejamento (libera
+    // edição direto, sem gate de pré-aprovação — mesmo comportamento do
+    // acao==='replanejamento' acima).
     if (plan.Status === 'Aprovado') {
       const snapshot = plan.Snapshot_Anterior || plan.Dados_JSON || '';
-      const updated = { ...plan, Status: 'Pendente Replanejamento', Comentario_Aprovacao: comentario, Justificativa_Replanejamento: comentario, Snapshot_Anterior: snapshot };
+      const updated = { ...plan, Status: 'Em Elaboração', Comentario_Aprovacao: comentario, Justificativa_Replanejamento: comentario, Snapshot_Anterior: snapshot };
       await db.updateRowById('Planejamentos', 'ID', plan.ID, updated);
-      return res.json({ ok: true, message: 'Solicitação de replanejamento enviada para a diretoria.' });
+      return res.json({ ok: true, message: 'Replanejamento iniciado. Planejamento liberado para edição.' });
     }
 
-    // Se o plano está Pendente Replanejamento e quem aprova é Diretoria, libera edição
+    // Legado: planejamentos que ficaram em "Pendente Replanejamento" de antes
+    // dessa mudança — mantém a liberação via aprovação da diretoria pra não
+    // travar quem já estava nesse status.
     if (plan.Status === 'Pendente Replanejamento') {
       if (!['Admin', 'Diretoria'].includes(req.user.perfil)) {
         return res.status(403).json({ error: 'Somente Diretoria pode aprovar o replanejamento.' });
@@ -562,27 +602,47 @@ async function handleAprovar(req, res, next, acaoForced) {
       }
     }
 
-    // ── Notifica no ClickUp (comentário na tarefa linkada) ──────────────────
-    if (acao === 'aprovar' && plan.Link_ClickUp) {
+    // ── Notifica no ClickUp (comentário na tarefa linkada) — aprovado e
+    // rejeitado, pra quem está acompanhando a tarefa (PO, coordenador) saber
+    // sem precisar entrar no PAR ──────────────────────────────────────────
+    if (plan.Link_ClickUp) {
       try {
         const clickup = require('../services/clickupService');
         const taskId = clickup.extrairTaskId(plan.Link_ClickUp);
         if (taskId) {
-          const valor = (() => {
-            try {
-              const d = JSON.parse(plan.Dados_JSON || '{}');
-              const v = d._baseline?.valorContrato || d.valorContrato || 0;
-              return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            } catch { return ''; }
-          })();
-          const msg = `✅ Planejamento Financeiro aprovado no Sistema PAR\n\nProjeto: ${plan.Nome_Projeto}${valor ? `\nValor: ${valor}` : ''}\nAprovado por: ${req.user.nome}\nData: ${new Date().toLocaleDateString('pt-BR')}`;
+          let msg;
+          if (acao === 'aprovar') {
+            const valor = (() => {
+              try {
+                const d = JSON.parse(plan.Dados_JSON || '{}');
+                const v = d._baseline?.valorContrato || d.valorContrato || 0;
+                return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+              } catch { return ''; }
+            })();
+            msg = `✅ Planejamento Financeiro aprovado no Sistema PAR\n\nProjeto: ${plan.Nome_Projeto}${valor ? `\nValor: ${valor}` : ''}\nAprovado por: ${req.user.nome}\nData: ${new Date().toLocaleDateString('pt-BR')}`;
+          } else {
+            msg = `❌ Planejamento Financeiro rejeitado no Sistema PAR\n\nProjeto: ${plan.Nome_Projeto}\nRejeitado por: ${req.user.nome}${comentario ? `\nMotivo: ${comentario}` : ''}\nData: ${new Date().toLocaleDateString('pt-BR')}`;
+          }
           await clickup.criarComentarioTask(taskId, msg);
-          console.log(`[Aprovação] Comentário ClickUp criado na tarefa ${taskId}`);
+          console.log(`[Aprovação] Comentário ClickUp (${novoStatus}) criado na tarefa ${taskId}`);
         }
       } catch (errCU) {
         console.error('[Aprovação] Falha ao comentar no ClickUp (não bloqueante):', errCU.message);
       }
     }
+
+    // ── Avisa o PO que a decisão saiu (aprovado ou rejeitado) ───────────────
+    try {
+      await createAlert({
+        tipo: acao === 'aprovar' ? 'PLANEJAMENTO_APROVADO' : 'PLANEJAMENTO_REJEITADO',
+        idProjeto: plan.ID_Projeto,
+        mensagem: acao === 'aprovar'
+          ? `"${plan.Nome_Projeto}" foi aprovado por ${req.user.nome}.`
+          : `"${plan.Nome_Projeto}" foi rejeitado por ${req.user.nome}.${comentario ? ' Motivo: ' + comentario : ''}`,
+        nivel: acao === 'aprovar' ? 'info' : 'error',
+        setorDestino: ['PO', 'Coordenador'],
+      });
+    } catch (e) { console.error('[Aprovação] Falha ao criar alerta de decisão:', e.message); }
 
     console.log(`[Aprovação] Planejamento ${plan.ID} ${novoStatus} por ${req.user.nome}`);
     registrarAuditoria({
