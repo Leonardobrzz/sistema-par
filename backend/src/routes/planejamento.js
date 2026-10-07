@@ -55,10 +55,28 @@ async function criarOuAcharTarefaNotificacao(plan) {
   }
 
   const clickup = require('../services/clickupService');
+
+  // Responsável: o P.O. do setor do projeto (lista fixa em SETOR_PESSOAS) —
+  // pedido do chef pra tarefa não ficar "órfã" sem ninguém dono dela.
+  const pessoas = SETOR_PESSOAS[plan.Setor] || {};
+  const assignees = [];
+  if (pessoas.po) {
+    try {
+      const idPo = await clickup.encontrarClickUpIdPorNome(pessoas.po);
+      if (idPo) assignees.push(idPo);
+    } catch (e) { console.error('[Planejamento] Falha ao achar ID ClickUp do P.O. pra Responsável (não bloqueante):', e.message); }
+  }
+
+  // Vencimento: usa a data de entrega do contrato do projeto, se tiver —
+  // é a única data que já existe e faz sentido associar a essa tarefa (não é
+  // um prazo de trabalho de verdade, só preenche o campo pra não ficar vazio).
+  const dueDate = projeto.Data_Entrega_Contrato ? new Date(projeto.Data_Entrega_Contrato) : null;
+
   const tarefa = await clickup.criarTarefa(
     projeto.ID_ClickUp,
     '📌 Notificações PAR',
-    'Tarefa criada automaticamente pelo Sistema PAR — não precisa mexer aqui. Usada só pra postar avisos de planejamento financeiro (encaminhado, aprovado, rejeitado) e mencionar o Diretor/P.O. do setor.'
+    'Tarefa criada automaticamente pelo Sistema PAR — não precisa mexer aqui. Usada só pra postar avisos de planejamento financeiro (encaminhado, aprovado, rejeitado) e mencionar o Diretor/P.O. do setor.',
+    { assignees, dueDate: dueDate && !Number.isNaN(dueDate.getTime()) ? dueDate : null }
   );
   await db.updateRowById('Projetos_Contratos', 'ID_Projeto', projeto.ID_Projeto, {
     ...projeto,

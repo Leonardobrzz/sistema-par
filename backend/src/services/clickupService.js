@@ -108,10 +108,18 @@ async function getListInfo(listId) {
 // um nome que não existe nela faz a API rejeitar a criação inteira. Fica no
 // status padrão da lista; não é uma tarefa de trabalho de verdade, só serve
 // de âncora pros comentários, então o status dela não importa muito.
-async function criarTarefa(listId, nome, descricao) {
+// opts.assignees: array de IDs ClickUp (números) pra preencher "Responsável".
+// opts.dueDate: timestamp em milissegundos (ou Date) pra preencher "Vencimento".
+async function criarTarefa(listId, nome, descricao, opts = {}) {
+  const payload = { name: nome, description: descricao || '' };
+  if (opts.assignees?.length) payload.assignees = opts.assignees;
+  if (opts.dueDate) {
+    const ms = opts.dueDate instanceof Date ? opts.dueDate.getTime() : Number(opts.dueDate);
+    if (!Number.isNaN(ms)) { payload.due_date = ms; payload.due_date_time = false; }
+  }
   const res = await axios.post(
     `${BASE_URL}/list/${listId}/task`,
-    { name: nome, description: descricao || '' },
+    payload,
     { headers: getHeaders() }
   );
   return res.data;
