@@ -1613,11 +1613,17 @@ async function getProjectProgressFromClickUp(clickupId) {
   }
 }
 
-// Extrai o ID da tarefa de uma URL do ClickUp (https://app.clickup.com/t/TASKID)
+// Extrai o ID da tarefa de uma URL do ClickUp. Aceita tanto o formato curto
+// (https://app.clickup.com/t/TASKID) quanto o formato com o ID do time na
+// frente (https://app.clickup.com/t/TEAMID/TASKID, que é o que o "Copy link"
+// gera nesse workspace) — nesse segundo caso o ID da tarefa é sempre o
+// ÚLTIMO pedaço depois de "/t/", nunca o primeiro.
 function extrairTaskId(url) {
   if (!url) return null;
-  const m = url.match(/\/t\/([a-z0-9]+)/i);
-  return m ? m[1] : null;
+  const m = url.match(/\/t\/([a-z0-9-]+(?:\/[a-z0-9-]+)?)/i);
+  if (!m) return null;
+  const partes = m[1].split('/').filter(Boolean);
+  return partes[partes.length - 1] || null;
 }
 
 // Posta um comentário em uma tarefa do ClickUp
