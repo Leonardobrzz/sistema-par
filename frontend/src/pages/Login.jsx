@@ -11,12 +11,11 @@ const FEATURES = [
   'Controle de medições e faturamento',
 ]
 
-// Paleta exclusiva desta tela — verde-petróleo + dourado, pra dar o tom
-// editorial/elegante pedido, sem mexer nas cores padrão (--cyan etc.) usadas
-// no resto do sistema.
-const GOLD = '#C9A062'
-const TEAL = '#1F4D45'
-const TEAL_DARK = '#17382F'
+// Paleta desta tela — mesmo azul/ciano usado no resto do sistema
+// (--cyan / --navy do index.css), só com o layout editorial/elegante.
+const CYAN = '#00B5CC'
+const CYAN_DARK = '#009CB0'
+const CYAN_TEXT = '#007A8C' // tom mais escuro do ciano, p/ texto sobre fundo claro
 
 export default function Login() {
   const { login } = useAuth()
@@ -95,13 +94,13 @@ export default function Login() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 44 }}>
             <div style={{
               width: 38, height: 38, borderRadius: 9,
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.14)',
+              background: 'rgba(0,181,204,0.10)',
+              border: '1px solid rgba(0,181,204,0.25)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2 L22 21 H2 Z" stroke={GOLD} strokeWidth="2" strokeLinejoin="round" fill="none" />
+                <path d="M12 2 L22 21 H2 Z" stroke={CYAN} strokeWidth="2" strokeLinejoin="round" fill="none" />
               </svg>
             </div>
             <div>
@@ -114,8 +113,8 @@ export default function Login() {
 
           {/* Divider + eyebrow */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 }}>
-            <div style={{ width: 22, height: 1, background: GOLD, opacity: 0.6 }} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+            <div style={{ width: 22, height: 1, background: CYAN, opacity: 0.7 }} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: CYAN, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
               Sistema de Gestão de Projetos
             </span>
           </div>
@@ -132,7 +131,7 @@ export default function Login() {
             letterSpacing: '-0.01em',
           }}>
             Cada projeto, do planejamento à{' '}
-            <em style={{ color: GOLD, fontStyle: 'italic', fontWeight: 600 }}>medição final</em>.
+            <em style={{ color: CYAN, fontStyle: 'italic', fontWeight: 600 }}>medição final</em>.
           </h2>
 
           {/* Features numeradas */}
@@ -143,7 +142,7 @@ export default function Login() {
                 padding: '13px 0',
                 borderTop: i > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none',
               }}>
-                <span style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 13, fontWeight: 600, color: GOLD, flexShrink: 0 }}>
+                <span style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 13, fontWeight: 600, color: CYAN, flexShrink: 0 }}>
                   {String(i + 1).padStart(2, '0')}
                 </span>
                 <span style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.72)', fontWeight: 500 }}>{f}</span>
@@ -166,7 +165,7 @@ export default function Login() {
       {/* ── Right panel ── */}
       <div style={{
         flex: 1,
-        background: '#F6F2E9',
+        background: '#EEF3F8',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -177,13 +176,13 @@ export default function Login() {
 
           {/* Eyebrow + título */}
           <div style={{ marginBottom: 32 }}>
-            <p style={{ fontSize: 11, fontWeight: 800, color: TEAL, letterSpacing: '0.14em', textTransform: 'uppercase', margin: '0 0 10px' }}>
+            <p style={{ fontSize: 11, fontWeight: 800, color: CYAN_TEXT, letterSpacing: '0.14em', textTransform: 'uppercase', margin: '0 0 10px' }}>
               Acesso restrito
             </p>
-            <h1 style={{ fontSize: 27, fontWeight: 800, color: '#1A1A14', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
+            <h1 style={{ fontSize: 27, fontWeight: 800, color: '#0D1B2A', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
               Bem-vindo de volta
             </h1>
-            <p style={{ fontSize: 14, color: '#8C8372', margin: 0, fontWeight: 500 }}>
+            <p style={{ fontSize: 14, color: '#5E7899', margin: 0, fontWeight: 500 }}>
               Entre com suas credenciais para acessar o sistema PAR.
             </p>
           </div>
@@ -193,7 +192,7 @@ export default function Login() {
 
             {/* Usuário / Email */}
             <div>
-              <label style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: '#564F40', marginBottom: 7 }}>
+              <label style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: '#5E7899', marginBottom: 7 }}>
                 Usuário ou e-mail
               </label>
               <input
@@ -203,19 +202,19 @@ export default function Login() {
                 style={{
                   width: '100%',
                   background: '#FFFFFF',
-                  border: errors.email ? '1.5px solid #DC2626' : '1.5px solid #E3DCC9',
+                  border: errors.email ? '1.5px solid #DC2626' : '1.5px solid #D8E4EE',
                   borderRadius: 9,
                   padding: '12px 16px',
                   fontSize: 14,
-                  color: '#2B2820',
+                  color: '#0D1B2A',
                   fontFamily: 'inherit',
                   outline: 'none',
                   boxSizing: 'border-box',
                   transition: 'border-color 0.2s',
                   boxShadow: errors.email ? '0 0 0 3px rgba(220,38,38,0.08)' : 'none',
                 }}
-                onFocus={e => { if (!errors.email) { e.target.style.borderColor = TEAL; e.target.style.boxShadow = `0 0 0 3px rgba(31,77,69,0.12)` } }}
-                onBlur={e => { if (!errors.email) { e.target.style.borderColor = '#E3DCC9'; e.target.style.boxShadow = 'none' } }}
+                onFocus={e => { if (!errors.email) { e.target.style.borderColor = CYAN; e.target.style.boxShadow = `0 0 0 3px rgba(0,181,204,0.15)` } }}
+                onBlur={e => { if (!errors.email) { e.target.style.borderColor = '#D8E4EE'; e.target.style.boxShadow = 'none' } }}
                 {...register('email', { required: 'Campo obrigatório' })}
               />
               {errors.email && (
@@ -226,12 +225,12 @@ export default function Login() {
             {/* Senha */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 }}>
-                <label style={{ fontSize: 12.5, fontWeight: 700, color: '#564F40' }}>
+                <label style={{ fontSize: 12.5, fontWeight: 700, color: '#5E7899' }}>
                   Senha
                 </label>
                 <button
                   type="button"
-                  style={{ fontSize: 12, color: TEAL, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600, padding: 0 }}
+                  style={{ fontSize: 12, color: CYAN_TEXT, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600, padding: 0 }}
                 >
                   Esqueci a senha
                 </button>
@@ -244,19 +243,19 @@ export default function Login() {
                   style={{
                     width: '100%',
                     background: '#FFFFFF',
-                    border: errors.senha ? '1.5px solid #DC2626' : '1.5px solid #E3DCC9',
+                    border: errors.senha ? '1.5px solid #DC2626' : '1.5px solid #D8E4EE',
                     borderRadius: 9,
                     padding: '12px 48px 12px 16px',
                     fontSize: 14,
-                    color: '#2B2820',
+                    color: '#0D1B2A',
                     fontFamily: 'inherit',
                     outline: 'none',
                     boxSizing: 'border-box',
                     transition: 'border-color 0.2s',
                     boxShadow: errors.senha ? '0 0 0 3px rgba(220,38,38,0.08)' : 'none',
                   }}
-                  onFocus={e => { if (!errors.senha) { e.target.style.borderColor = TEAL; e.target.style.boxShadow = `0 0 0 3px rgba(31,77,69,0.12)` } }}
-                  onBlur={e => { if (!errors.senha) { e.target.style.borderColor = '#E3DCC9'; e.target.style.boxShadow = 'none' } }}
+                  onFocus={e => { if (!errors.senha) { e.target.style.borderColor = CYAN; e.target.style.boxShadow = `0 0 0 3px rgba(0,181,204,0.15)` } }}
+                  onBlur={e => { if (!errors.senha) { e.target.style.borderColor = '#D8E4EE'; e.target.style.boxShadow = 'none' } }}
                   {...register('senha', { required: 'Campo obrigatório' })}
                 />
                 <button
@@ -265,7 +264,7 @@ export default function Login() {
                   onClick={() => setShowPassword(p => !p)}
                   style={{
                     position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)',
-                    background: 'none', border: 'none', cursor: 'pointer', color: '#A69C87', padding: 0,
+                    background: 'none', border: 'none', cursor: 'pointer', color: '#94AABE', padding: 0,
                     display: 'flex', alignItems: 'center',
                   }}
                 >
@@ -286,9 +285,9 @@ export default function Login() {
                 type="checkbox"
                 checked={lembrar}
                 onChange={e => setLembrar(e.target.checked)}
-                style={{ width: 16, height: 16, accentColor: TEAL, cursor: 'pointer' }}
+                style={{ width: 16, height: 16, accentColor: CYAN, cursor: 'pointer' }}
               />
-              <span style={{ fontSize: 13, color: '#71685A', fontWeight: 500 }}>Manter conectado neste dispositivo</span>
+              <span style={{ fontSize: 13, color: '#5E7899', fontWeight: 500 }}>Manter conectado neste dispositivo</span>
             </label>
 
             {/* Botão login */}
@@ -297,7 +296,7 @@ export default function Login() {
               disabled={loading}
               style={{
                 width: '100%',
-                background: loading ? TEAL_DARK : TEAL,
+                background: loading ? CYAN_DARK : CYAN,
                 color: '#fff',
                 fontWeight: 700,
                 fontSize: 15,
@@ -310,9 +309,10 @@ export default function Login() {
                 marginTop: 6,
                 opacity: loading ? 0.85 : 1,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                boxShadow: '0 2px 10px rgba(0,181,204,0.25)',
               }}
-              onMouseEnter={e => { if (!loading) e.currentTarget.style.background = TEAL_DARK }}
-              onMouseLeave={e => { if (!loading) e.currentTarget.style.background = TEAL }}
+              onMouseEnter={e => { if (!loading) e.currentTarget.style.background = CYAN_DARK }}
+              onMouseLeave={e => { if (!loading) e.currentTarget.style.background = CYAN }}
             >
               {loading ? (
                 <>
@@ -330,9 +330,9 @@ export default function Login() {
 
           {/* Divisor "Ainda não tem acesso?" */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '26px 0' }}>
-            <div style={{ flex: 1, height: 1, background: '#E3DCC9' }} />
-            <span style={{ fontSize: 12, color: '#A69C87', fontWeight: 600, whiteSpace: 'nowrap' }}>Ainda não tem acesso?</span>
-            <div style={{ flex: 1, height: 1, background: '#E3DCC9' }} />
+            <div style={{ flex: 1, height: 1, background: '#D8E4EE' }} />
+            <span style={{ fontSize: 12, color: '#94AABE', fontWeight: 600, whiteSpace: 'nowrap' }}>Ainda não tem acesso?</span>
+            <div style={{ flex: 1, height: 1, background: '#D8E4EE' }} />
           </div>
 
           {/* Registrar conta */}
@@ -340,8 +340,8 @@ export default function Login() {
             style={{
               width: '100%',
               background: 'transparent',
-              border: `1.5px solid ${TEAL}`,
-              color: TEAL,
+              border: `1.5px solid ${CYAN}`,
+              color: CYAN_TEXT,
               fontWeight: 700,
               fontSize: 14,
               padding: '12px',
@@ -350,14 +350,14 @@ export default function Login() {
               fontFamily: 'inherit',
               transition: 'all 0.2s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(31,77,69,0.06)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,181,204,0.06)' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
           >
             Registrar conta
           </button>
 
           {/* Bottom caption */}
-          <p style={{ textAlign: 'center', fontSize: 12, color: '#B9B09D', marginTop: 36, fontWeight: 500 }}>
+          <p style={{ textAlign: 'center', fontSize: 12, color: '#94AABE', marginTop: 36, fontWeight: 500 }}>
             PAR © {new Date().getFullYear()} · Sistema de Gestão de Projetos
           </p>
         </div>
