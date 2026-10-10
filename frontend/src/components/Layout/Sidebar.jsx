@@ -85,12 +85,12 @@ export default function Sidebar() {
       <style>{`
         @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.85)} }
         .par-link { text-decoration:none; display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:10px; position:relative; transition:background .16s,transform .16s; cursor:pointer; }
-        .par-link:not([aria-current="page"]):hover { background:rgba(255,255,255,.07) !important; transform:translateX(2px); }
+        .par-link:not([aria-current="page"]):hover { background:rgba(14,39,72,.05) !important; transform:translateX(2px); }
         .par-nav::-webkit-scrollbar { width:4px; }
         .par-nav::-webkit-scrollbar-track { background:transparent; }
-        .par-nav::-webkit-scrollbar-thumb { background:rgba(255,255,255,.12); border-radius:4px; }
-        .par-nav::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,.22); }
-        .par-user-card:hover { background:rgba(255,255,255,.07) !important; border-color:rgba(255,255,255,.12) !important; }
+        .par-nav::-webkit-scrollbar-thumb { background:#D8E4EE; border-radius:4px; }
+        .par-nav::-webkit-scrollbar-thumb:hover { background:#B7C9DC; }
+        .par-user-card:hover { background:rgba(14,39,72,.055) !important; border-color:rgba(14,39,72,.12) !important; }
       `}</style>
 
       {expanded && <div onClick={() => setExpanded(false)} style={{ position:'fixed', inset:0, zIndex:9 }} />}
@@ -102,21 +102,21 @@ export default function Sidebar() {
           width: expanded ? W_EXPANDED : W_COLLAPSED,
           display: 'flex', flexDirection: 'column',
           height: '100vh',
-          background: 'linear-gradient(180deg, #13233C 0%, #0F1B2D 52%, #0A1420 100%)',
+          background: '#ffffff',
           position: 'fixed', top: 0, left: 0, zIndex: 20,
-          boxShadow: expanded ? '10px 0 44px rgba(0,0,0,.45)' : '4px 0 16px rgba(0,0,0,.22)',
+          boxShadow: expanded ? '10px 0 30px rgba(14,39,72,.12)' : '2px 0 10px rgba(14,39,72,.05)',
           transition: 'width .26s cubic-bezier(.4,0,.2,1), box-shadow .26s ease',
           overflow: 'hidden',
-          borderRight: '1px solid rgba(255,255,255,.07)',
+          borderRight: '1px solid #E8EFF5',
         }}
       >
         {/* Logo area */}
         <div style={{ padding: '20px 0 16px', display:'flex', flexDirection:'column', alignItems:'center', gap:9, flexShrink:0 }}>
           <div style={{
             width:42, height:42, borderRadius:12, flexShrink:0,
-            background:'linear-gradient(135deg, rgba(56,189,248,.14), rgba(56,189,248,.02))',
-            border:'1px solid rgba(56,189,248,.22)',
-            boxShadow:'0 4px 16px rgba(56,189,248,.14), inset 0 1px 0 rgba(255,255,255,.06)',
+            background:'linear-gradient(135deg, rgba(0,181,204,.10), rgba(0,181,204,.02))',
+            border:'1px solid rgba(0,181,204,.22)',
+            boxShadow:'0 4px 14px rgba(0,181,204,.10), inset 0 1px 0 rgba(255,255,255,.6)',
             display:'flex', alignItems:'center', justifyContent:'center',
           }}>
             <img src="/image.png" alt="Logo" style={{ width:26, height:26, objectFit:'contain' }} />
@@ -125,13 +125,13 @@ export default function Sidebar() {
             opacity: expanded ? 1 : 0, transform: expanded ? 'translateX(0)' : 'translateX(-6px)',
             transition: 'opacity .2s, transform .2s', whiteSpace:'nowrap', textAlign:'center',
           }}>
-            <div style={{ fontSize:13.5, fontWeight:900, color:'#fff', letterSpacing:'.14em', textShadow:'0 1px 3px rgba(0,0,0,.35)' }}>PAR</div>
-            <div style={{ fontSize:8.5, color:'rgba(255,255,255,.4)', letterSpacing:'.12em', textTransform:'uppercase', fontWeight:700, marginTop:2 }}>Jota Barros</div>
+            <div style={{ fontSize:13.5, fontWeight:900, color:'#0E2748', letterSpacing:'.14em' }}>PAR</div>
+            <div style={{ fontSize:8.5, color:'#94AABE', letterSpacing:'.12em', textTransform:'uppercase', fontWeight:700, marginTop:2 }}>Jota Barros</div>
           </div>
         </div>
 
         {/* Divider */}
-        <div style={{ height:1, background:'linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent)', margin:'0 14px 10px', flexShrink:0 }} />
+        <div style={{ height:1, background:'linear-gradient(90deg,transparent,#E2E9F2,transparent)', margin:'0 14px 10px', flexShrink:0 }} />
 
         {/* Nav groups */}
         <nav className="par-nav" style={{ flex:1, overflowY:'auto', overflowX:'hidden', padding:'0 8px', display:'flex', flexDirection:'column', gap:4 }}>
@@ -139,7 +139,7 @@ export default function Sidebar() {
             <div key={gi} style={{ marginBottom:4 }}>
               {/* Group label */}
               <div style={{
-                fontSize:9, fontWeight:800, color:'rgba(255,255,255,.28)', textTransform:'uppercase',
+                fontSize:9, fontWeight:800, color:'#94AABE', textTransform:'uppercase',
                 letterSpacing:'.13em', padding: gi === 0 ? '2px 10px 6px' : '10px 10px 6px',
                 opacity: expanded ? 1 : 0, transition:'opacity .18s',
                 whiteSpace:'nowrap', pointerEvents:'none',
@@ -154,10 +154,10 @@ export default function Sidebar() {
                   className="par-link"
                   style={({ isActive }) => ({
                     background: isActive
-                      ? 'linear-gradient(90deg, rgba(56,189,248,.16), rgba(56,189,248,.03) 85%)'
+                      ? 'linear-gradient(90deg, rgba(0,181,204,.12), rgba(0,181,204,.02) 85%)'
                       : 'transparent',
-                    boxShadow: isActive ? 'inset 0 0 0 1px rgba(56,189,248,.14)' : 'none',
-                    color: isActive ? '#38BDF8' : 'rgba(255,255,255,.55)',
+                    boxShadow: isActive ? 'inset 0 0 0 1px rgba(0,181,204,.16)' : 'none',
+                    color: isActive ? '#00879A' : '#5E7899',
                   })}
                 >
                   {({ isActive }) => (
@@ -166,25 +166,24 @@ export default function Sidebar() {
                         <span style={{
                           position:'absolute', left:-2, top:'50%', transform:'translateY(-50%)',
                           width:3, height:20, borderRadius:'0 3px 3px 0',
-                          background:'#38BDF8', boxShadow:'0 0 9px rgba(56,189,248,.75)',
+                          background:'#00B5CC', boxShadow:'0 0 8px rgba(0,181,204,.5)',
                         }} />
                       )}
                       <div style={{
                         width:28, height:28, borderRadius:8, flexShrink:0,
                         display:'flex', alignItems:'center', justifyContent:'center',
-                        background: isActive ? 'rgba(56,189,248,.14)' : 'transparent',
+                        background: isActive ? 'rgba(0,181,204,.12)' : 'transparent',
                         transition:'background .16s',
                       }}>
                         <item.icon style={{
                           width:17, height:17,
-                          color: isActive ? '#38BDF8' : 'rgba(255,255,255,.5)',
-                          filter: isActive ? 'drop-shadow(0 0 6px rgba(56,189,248,.55))' : 'none',
-                          transition:'color .15s,filter .15s',
+                          color: isActive ? '#00879A' : '#8FA3BD',
+                          transition:'color .15s',
                         }} />
                       </div>
                       <span style={{
                         fontSize:12.5, fontWeight: isActive ? 700 : 500,
-                        color: isActive ? '#fff' : 'rgba(255,255,255,.72)',
+                        color: isActive ? '#0E2748' : '#5E7899',
                         whiteSpace:'nowrap', opacity: expanded ? 1 : 0,
                         transform: expanded ? 'translateX(0)' : 'translateX(-6px)',
                         transition:`opacity .2s ease ${expanded ? idx*18 : 0}ms, transform .2s ease ${expanded ? idx*18 : 0}ms`,
@@ -195,8 +194,8 @@ export default function Sidebar() {
                         <span style={{
                           position:'absolute', top:8, left:22,
                           width:6.5, height:6.5, borderRadius:'50%',
-                          background:'#EF4444', border:'1.5px solid #0F1B2D',
-                          boxShadow:'0 0 6px rgba(239,68,68,.7)',
+                          background:'#EF4444', border:'1.5px solid #ffffff',
+                          boxShadow:'0 0 6px rgba(239,68,68,.6)',
                           animation:'pulse-dot 2s ease-in-out infinite',
                         }} />
                       )}
@@ -216,7 +215,7 @@ export default function Sidebar() {
         </nav>
 
         {/* Bottom divider */}
-        <div style={{ height:1, background:'linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent)', margin:'0 14px 10px', flexShrink:0 }} />
+        <div style={{ height:1, background:'linear-gradient(90deg,transparent,#E2E9F2,transparent)', margin:'0 14px 10px', flexShrink:0 }} />
 
         {/* User */}
         <div style={{ padding:'0 8px 16px', flexShrink:0 }}>
@@ -226,15 +225,15 @@ export default function Sidebar() {
             style={{
               display:'flex', alignItems:'center', gap:10, padding:'8px',
               borderRadius:12, cursor:'pointer', transition:'background .16s, border-color .16s',
-              background:'rgba(255,255,255,.035)', border:'1px solid rgba(255,255,255,.07)',
+              background:'rgba(14,39,72,.025)', border:'1px solid rgba(14,39,72,.07)',
             }}
           >
             <div style={{
               width:34, height:34, borderRadius:10, flexShrink:0,
-              background:'linear-gradient(135deg,#38BDF8,#0284C7)',
+              background:'linear-gradient(135deg,#00C2D9,#0088A3)',
               display:'flex', alignItems:'center', justifyContent:'center',
               color:'#fff', fontWeight:900, fontSize:14,
-              boxShadow:'0 0 0 2px rgba(15,27,45,1), 0 0 0 3.5px rgba(56,189,248,.3), 0 3px 12px rgba(56,189,248,.35)',
+              boxShadow:'0 0 0 2px #ffffff, 0 0 0 3.5px rgba(0,181,204,.22), 0 3px 10px rgba(0,181,204,.28)',
             }}>
               {(user?.nome || 'U')[0].toUpperCase()}
             </div>
@@ -245,10 +244,10 @@ export default function Sidebar() {
               transition:'opacity .2s ease 60ms,transform .2s ease 60ms',
               pointerEvents: expanded ? 'auto' : 'none',
             }}>
-              <div style={{ fontSize:12, fontWeight:700, color:'#fff', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:140 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:'#0E2748', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:140 }}>
                 {user?.nome}
               </div>
-              <div style={{ fontSize:10, color:'rgba(255,255,255,.4)', display:'flex', alignItems:'center', gap:3, marginTop:1 }}>
+              <div style={{ fontSize:10, color:'#8FA3BD', display:'flex', alignItems:'center', gap:3, marginTop:1 }}>
                 <KeyIcon style={{ width:9, height:9 }} /> {user?.perfil} · alterar senha
               </div>
             </div>
