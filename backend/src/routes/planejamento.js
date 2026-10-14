@@ -956,22 +956,52 @@ router.get('/:id/comparativo', async (req, res, next) => {
             if (lista.length < 250) break;
             offset += 250;
           }
-          return todos.filter(d => !d.lixeira?.includes('Sim') && !String(d.situacao || '').toLowerCase().includes('estornada') && String(d.id_centro_custos || '') === ccId)
-            .map(d => ({
+          const validos = todos.filter(d => !d.lixeira?.includes('Sim') && !String(d.situacao || '').toLowerCase().includes('estornada'));
+          const lancamentosCC = [];
+          for (const d of validos) {
+            // Despesa rateada por centro de custo (ex.: comissões): id_centro_custos do
+            // cabeçalho vem vazio/0, a fatia de cada projeto fica no array centro_custo.
+            // Mesmo bug do GET /despesas-opp logo abaixo — sem isso, toda despesa
+            // rateada sumia do comparativo plan x real de todos os projetos.
+            if (Array.isArray(d.centro_custo) && d.centro_custo.length > 0) {
+              for (const linha of d.centro_custo) {
+                if (String(linha.id_centro_custos || '') !== ccId) continue;
+                const valorPag = parseFloat(d.valor_pag || 0);
+                const valorLinha = parseFloat(linha.valor || 0);
+                const proporcao = linha.percentual
+                  ? parseFloat(linha.percentual) / 100
+                  : (valorPag > 0 ? valorLinha / valorPag : 0);
+                lancamentosCC.push({
+                  descricao: d.nome_conta || '',
+                  fornecedor: d.nome_fornecedor || '',
+                  categoria: d.categoria || d.nome_categoria || d.categoria_pag || '',
+                  // parseBR é pra número DIGITADO em formato BR ("5.000,00") — a OPP
+                  // devolve o valor em formato decimal comum ("1750.00"), e o parseBR
+                  // tratava o "." como separador de milhar, inflando tudo em 100x
+                  // (ex: "1750.00" virava 175000). O resto do sistema (medicoesService,
+                  // oppService) já usa parseFloat puro pra ler valor da OPP — só esse
+                  // trecho e o de baixo (GET /despesas-opp) estavam errados.
+                  valor: valorLinha,
+                  valorPago: parseFloat(d.valor_pago || 0) * proporcao,
+                  liquidado: d.liquidado_pag === 'Sim',
+                  data: d.vencimento_pag || d.data_emissao || '',
+                  rateado: true,
+                });
+              }
+              continue;
+            }
+            if (String(d.id_centro_custos || '') !== ccId) continue;
+            lancamentosCC.push({
               descricao: d.nome_conta || '',
               fornecedor: d.nome_fornecedor || '',
               categoria: d.categoria || d.nome_categoria || d.categoria_pag || '',
-              // parseBR é pra número DIGITADO em formato BR ("5.000,00") — a OPP
-              // devolve o valor em formato decimal comum ("1750.00"), e o parseBR
-              // tratava o "." como separador de milhar, inflando tudo em 100x
-              // (ex: "1750.00" virava 175000). O resto do sistema (medicoesService,
-              // oppService) já usa parseFloat puro pra ler valor da OPP — só esse
-              // trecho e o de baixo (GET /despesas-opp) estavam errados.
               valor: parseFloat(d.valor_pag || 0),
               valorPago: parseFloat(d.valor_pago || 0),
               liquidado: d.liquidado_pag === 'Sim',
               data: d.vencimento_pag || d.data_emissao || '',
-            }));
+            });
+          }
+          return lancamentosCC;
         } catch { return []; }
       })(),
     ]);
@@ -1250,13 +1280,48 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
     }
     const ccId = String(cc.id_centro_custos);
     console.log(`[OPP] Total buscado: ${todos.length}, filtrando por CC ID=${ccId}`);
-    const lancamentos = todos
-      .filter(d => {
-        if (d.lixeira === 'Sim') return false;
-        if ((d.situacao || '').toLowerCase().includes('estornada')) return false;
-        return String(d.id_centro_custos || '') === ccId;
-      })
-      .map(d => ({
+    // Uma despesa RATEADA por centro de custo no OPP (ex.: comissões "COMISSÕES NFS"
+    // divididas entre vários projetos) vem com o id_centro_custos do CABEÇALHO vazio/0 —
+    // a fatia de cada projeto fica no array `centro_custo`, cada linha com seu próprio
+    // id_centro_custos (numérico, comparável direto com ccId) e valor. Comparando só o
+    // id_centro_custos do cabeçalho, toda despesa rateada sumia do extrato de TODOS os
+    // projetos — bug relatado pelo Beto/chefe em 14/10, confirmado com a ordem 637
+    // (id_conta_pag 57742461, R$650,64 rateados entre 3 projetos). O valor pago de cada
+    // fatia é estimado proporcionalmente ao percentual da linha, já que o OPP não devolve
+    // um "valor pago" por linha de rateio.
+    const lancamentos = [];
+    for (const d of todos) {
+      if (d.lixeira === 'Sim') continue;
+      if ((d.situacao || '').toLowerCase().includes('estornada')) continue;
+
+      if (Array.isArray(d.centro_custo) && d.centro_custo.length > 0) {
+        for (const linha of d.centro_custo) {
+          if (String(linha.id_centro_custos || '') !== ccId) continue;
+          const valorPag = parseFloat(d.valor_pag || 0);
+          const valorLinha = parseFloat(linha.valor || 0);
+          const proporcao = linha.percentual
+            ? parseFloat(linha.percentual) / 100
+            : (valorPag > 0 ? valorLinha / valorPag : 0);
+          lancamentos.push({
+            id: `${d.id_conta_pag}-rateio-${linha.id_conta_pag_centro || linha.id_centro_custos}`,
+            descricao: d.nome_conta || '',
+            fornecedor: d.nome_fornecedor || '',
+            categoria: d.categoria || d.nome_categoria || d.categoria_pag || '',
+            valor: valorLinha,
+            valorPago: parseFloat(d.valor_pago || 0) * proporcao,
+            situacao: d.situacao || '',
+            liquidado: d.liquidado_pag === 'Sim',
+            data: d.vencimento_pag || d.data_emissao || '',
+            oc: d.id_registro || '',
+            nrDocumento: d.n_documento_pag || '',
+            rateado: true,
+          });
+        }
+        continue;
+      }
+
+      if (String(d.id_centro_custos || '') !== ccId) continue;
+      lancamentos.push({
         id: d.id_conta_pag,
         descricao: d.nome_conta || '',
         fornecedor: d.nome_fornecedor || '',
@@ -1269,7 +1334,8 @@ router.get('/:id/despesas-opp', async (req, res, next) => {
         data: d.vencimento_pag || d.data_emissao || '',
         oc: d.id_registro || '',
         nrDocumento: d.n_documento_pag || '',
-      }));
+      });
+    }
 
     const total = lancamentos.reduce((s, l) => s + l.valor, 0);
     const totalPago = lancamentos.filter(l => l.liquidado).reduce((s, l) => s + l.valorPago, 0);
