@@ -612,12 +612,6 @@ router.get('/extrato/:idProjeto', async (req, res, next) => {
     const clienteNome = (projeto.Cliente || '').trim().toLowerCase();
     const centroCusto = (projeto.Centro_Custo_OPP || '').trim().toLowerCase();
 
-    const extractCC = (val) => {
-      if (!val) return '';
-      if (Array.isArray(val)) return val.map(v => v?.nome || String(v)).filter(Boolean).join(', ');
-      return String(val);
-    };
-
     const listaR = (Array.isArray(receitasOPP) ? receitasOPP : (receitasOPP?.data || [])).filter(r => r.lixeira !== 'Sim');
     const listaD = (Array.isArray(despesasOPP) ? despesasOPP : (despesasOPP?.data || [])).filter(d => d.lixeira !== 'Sim');
 
@@ -634,10 +628,49 @@ router.get('/extrato/:idProjeto', async (req, res, next) => {
       return false;
     };
 
-    const receitas = listaR.filter(r => match(extractCC(r.centro_custo) || r.centro_custos_rec, r.nome_cliente))
-      .map(r => ({ id: r.id_conta_rec, descricao: r.nome_conta || r.observacoes_rec, valor: parseFloat(r.valor_rec || 0), vencimento: r.vencimento_rec, cliente: r.nome_cliente, situacao: r.liquidado_rec === 'Sim' ? 'Liquidado' : 'Aberto' }));
-    const despesas = listaD.filter(d => match(extractCC(d.centro_custo) || d.centro_custos_pag, d.nome_fornecedor))
-      .map(d => ({ id: d.id_conta_pag, descricao: d.nome_conta || d.observacoes_pag, valor: parseFloat(d.valor_pag || 0), vencimento: d.vencimento_pag, cliente: d.nome_fornecedor, situacao: d.liquidado_pag === 'Sim' ? 'Liquidado' : 'Aberto' }));
+    // Um lançamento (receita ou despesa) RATEADO por centro de custo no OPP
+    // (ex.: comissões "COMISSÕES NFS" divididas entre vários projetos) vem com
+    // o campo de centro de custo do CABEÇALHO vazio (id_centro_custos=0,
+    // centro_custos_pag/rec="") — o valor de verdade está dividido no array
+    // `centro_custo`, uma linha por projeto, com `desc_centro_custos` (nome) e
+    // `valor` (a fatia). Sem ler essas linhas, o lançamento inteiro não batia
+    // com NENHUM projeto e sumia do extrato de todos — bug relatado pelo Beto/
+    // chefe em 14/10 (confirmado com a conta 57742461 do OPP). Pra cada
+    // lançamento, gera uma "linha" por fatia do rateio (ou uma única linha com
+    // o cabeçalho, quando não é rateado).
+    const linhasCentroCusto = (lancamento, textoHeaderFallback) => {
+      if (Array.isArray(lancamento.centro_custo) && lancamento.centro_custo.length > 0) {
+        return lancamento.centro_custo.map(l => ({ texto: l.desc_centro_custos || '', valor: parseFloat(l.valor || 0), rateado: true }));
+      }
+      return [{ texto: textoHeaderFallback || '', valor: null, rateado: false }];
+    };
+
+    const receitas = [];
+    for (const r of listaR) {
+      for (const linha of linhasCentroCusto(r, r.centro_custos_rec)) {
+        if (!match(linha.texto, r.nome_cliente)) continue;
+        receitas.push({
+          id: r.id_conta_rec, descricao: r.nome_conta || r.observacoes_rec,
+          valor: linha.rateado ? linha.valor : parseFloat(r.valor_rec || 0),
+          vencimento: r.vencimento_rec, cliente: r.nome_cliente,
+          situacao: r.liquidado_rec === 'Sim' ? 'Liquidado' : 'Aberto',
+          ...(linha.rateado ? { rateado: true } : {}),
+        });
+      }
+    }
+    const despesas = [];
+    for (const d of listaD) {
+      for (const linha of linhasCentroCusto(d, d.centro_custos_pag)) {
+        if (!match(linha.texto, d.nome_fornecedor)) continue;
+        despesas.push({
+          id: d.id_conta_pag, descricao: d.nome_conta || d.observacoes_pag,
+          valor: linha.rateado ? linha.valor : parseFloat(d.valor_pag || 0),
+          vencimento: d.vencimento_pag, cliente: d.nome_fornecedor,
+          situacao: d.liquidado_pag === 'Sim' ? 'Liquidado' : 'Aberto',
+          ...(linha.rateado ? { rateado: true } : {}),
+        });
+      }
+    }
 
     const totalReceitas = receitas.reduce((s, r) => s + r.valor, 0);
     const totalDespesas = despesas.reduce((s, r) => s + r.valor, 0);
@@ -751,21 +784,41 @@ router.get('/extrato-por-projeto', async (req, res, next) => {
     // o ID certo isso não acontece mais: projeto sem Centro de Custo
     // confirmado no Planejamento fica honestamente "sem dados" em vez de
     // herdar lançamentos de outro projeto por aproximação de texto.
-    const normReceita = (r) => ({
-      tipo: 'Receita',
-      id: String(r.id_conta_rec || ''),
-      descricao: r.nome_conta || r.observacoes_rec || '',
-      valor: parseFloat(r.valor_rec || 0),
-      vencimento: r.vencimento_rec || '',
-      competencia: r.data_emissao || '',
-      situacao: r.liquidado_rec === 'Sim' ? 'Liquidado' : (r.situacao || 'Aberto'),
-      cliente: r.nome_cliente || '',
-      nrDocumento: r.n_documento_rec || '',
-      nrOS: extractOSFromObs(r.observacoes_rec),
-      idCentroCusto: String(r.id_centro_custos || ''),
-      categoria: String(r.categoria_rec || '1.0 Receitas'),
-      _raw: r,
-    });
+    // Um lançamento RATEADO por centro de custo no OPP (ex.: comissões
+    // "COMISSÕES NFS" divididas entre vários projetos) vem com o
+    // id_centro_custos do CABEÇALHO zerado — o vínculo de verdade está
+    // dividido no array `centro_custo`, uma linha por projeto, cada uma com
+    // `id_centro_custos` (numérico) e `valor` (a fatia). Sem isso, normReceita/
+    // normDespesa geravam uma única linha com idCentroCusto="" que não batia
+    // com NENHUM projeto, e o lançamento inteiro sumia do extrato de todos —
+    // bug relatado pelo Beto/chefe em 14/10 (confirmado com a conta 57742461
+    // do OPP). Por isso as duas funções agora devolvem uma LISTA (uma entrada
+    // por fatia do rateio, ou uma única entrada com o cabeçalho quando não é
+    // rateado) — usadas com flatMap logo abaixo.
+    const normReceita = (r) => {
+      const base = {
+        tipo: 'Receita',
+        descricao: r.nome_conta || r.observacoes_rec || '',
+        vencimento: r.vencimento_rec || '',
+        competencia: r.data_emissao || '',
+        situacao: r.liquidado_rec === 'Sim' ? 'Liquidado' : (r.situacao || 'Aberto'),
+        cliente: r.nome_cliente || '',
+        nrDocumento: r.n_documento_rec || '',
+        nrOS: extractOSFromObs(r.observacoes_rec),
+        categoria: String(r.categoria_rec || '1.0 Receitas'),
+        _raw: r,
+      };
+      if (Array.isArray(r.centro_custo) && r.centro_custo.length > 0) {
+        return r.centro_custo.map((linha, i) => ({
+          ...base,
+          id: `${String(r.id_conta_rec || '')}-rateio-${i}`,
+          valor: parseFloat(linha.valor || 0),
+          idCentroCusto: String(linha.id_centro_custos || ''),
+          rateado: true,
+        }));
+      }
+      return [{ ...base, id: String(r.id_conta_rec || ''), valor: parseFloat(r.valor_rec || 0), idCentroCusto: String(r.id_centro_custos || '') }];
+    };
 
     const normDespesa = (d) => {
       const catRaw = String(d.categoria_pag || '');
@@ -775,26 +828,33 @@ router.get('/extrato-por-projeto', async (req, res, next) => {
         if (desc.includes('subcontrat') || desc.includes('material') || desc.includes('terceiro') || desc.includes('topografia')) return '2.0 Custos Diretos de Projetos';
         return '3.0 Despesas Operacionais';
       })();
-      return {
+      const base = {
         tipo: 'Despesa',
-        id: String(d.id_conta_pag || ''),
         descricao: d.nome_conta || d.observacoes_pag || '',
-        valor: parseFloat(d.valor_pag || 0),
         vencimento: d.vencimento_pag || '',
         competencia: d.data_emissao || '',
         situacao: d.liquidado_pag === 'Sim' ? 'Liquidado' : (d.situacao || 'Aberto'),
         cliente: d.nome_fornecedor || '',
         nrDocumento: d.n_documento_pag || '',
         nrOS: extractOSFromObs(d.observacoes_pag),
-        idCentroCusto: String(d.id_centro_custos || ''),
         categoria: cat,
         _raw: d,
       };
+      if (Array.isArray(d.centro_custo) && d.centro_custo.length > 0) {
+        return d.centro_custo.map((linha, i) => ({
+          ...base,
+          id: `${String(d.id_conta_pag || '')}-rateio-${i}`,
+          valor: parseFloat(linha.valor || 0),
+          idCentroCusto: String(linha.id_centro_custos || ''),
+          rateado: true,
+        }));
+      }
+      return [{ ...base, id: String(d.id_conta_pag || ''), valor: parseFloat(d.valor_pag || 0), idCentroCusto: String(d.id_centro_custos || '') }];
     };
 
     const todasTxs = [
-      ...listaReceitas.map(normReceita),
-      ...listaDespesas.map(normDespesa),
+      ...listaReceitas.flatMap(normReceita),
+      ...listaDespesas.flatMap(normDespesa),
     ];
 
     // Índice de planejamentos (aprovados ou em aprovação) por projeto — é
