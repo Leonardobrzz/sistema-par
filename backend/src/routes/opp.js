@@ -169,6 +169,96 @@ router.get('/debug-rateio-projetos/:idContaPag', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET /api/opp/debug-pf-pb-comissoes — DIAGNÓSTICO TEMPORÁRIO (mesma pendência acima).
+// A despesa 57742461 (ordem 637) não inclui a PF/PB no rateio — só Chorozinho/Mulungu/
+// Caridade, e esses três nem têm centro de custo vinculado no Par ainda. Mas o projeto da
+// PF/PB (ARQ-2025-1-DELEGACIA DE POLÍCIA FEDERAL DE CAMPINA GRANDE/PB) TEM planejamento
+// travado, então dá pra usar o casamento de verdade (mesma lógica de /extrato/:idProjeto)
+// pra varrer todas as despesas rateadas desde jan/2026 e achar automaticamente quais
+// comissões (ou outras despesas rateadas) batem com esse projeto — resolve ao mesmo tempo
+// a prova de que o fix funciona (quando há vínculo) e o pedido do chefe de identificar as
+// ordens de comissão da PF/PB pro comentário do ClickUp. Sem authMiddleware de propósito,
+// igual as rotas acima. Remover depois de usar.
+router.get('/debug-pf-pb-comissoes', async (req, res, next) => {
+  try {
+    const db = process.env.USE_POSTGRES === 'true' ? require('../services/postgresService') : require('../services/googleSheetsService');
+    const [projetos, planejamentos] = await Promise.all([
+      db.findRows('Projetos_Contratos', () => true),
+      db.findRows('Planejamentos', () => true),
+    ]);
+    const planejamentoPorProjeto = {};
+    for (const p of planejamentos) planejamentoPorProjeto[p.ID_Projeto] = p;
+
+    const candidatos = projetos.filter(p => {
+      const nome = (p.Nome || '').toUpperCase();
+      const id = (p.ID_Projeto || '').toUpperCase();
+      const texto = nome + ' ' + id;
+      const temCampina = texto.includes('CAMPINA GRANDE');
+      const temPF = texto.includes('POLICIA FEDERAL') || texto.includes('POLÍCIA FEDERAL') || texto.includes('DELEGACIA');
+      return temCampina && temPF;
+    });
+    if (candidatos.length === 0) {
+      return res.status(404).json({ error: 'Nenhum projeto de Campina Grande / Polícia Federal encontrado em Projetos_Contratos.', totalProjetos: projetos.length });
+    }
+
+    const match = (prof, centroCustoTravado, centroCusto) => {
+      const p = (prof || '').trim().toLowerCase();
+      if (centroCustoTravado && p.includes(centroCustoTravado)) return true;
+      if (!centroCustoTravado && centroCusto && p.includes(centroCusto)) return true;
+      if (!centroCustoTravado && centroCusto && centroCusto.includes(p) && p.length > 4) return true;
+      return false;
+    };
+
+    const agora = new Date();
+    const inicio = new Date('2026-01-01');
+    const fmt = (d) => d.toISOString().split('T')[0];
+    const lista = await opp.listarDespesas({ data_inicio: fmt(inicio), data_fim: fmt(agora) });
+    const arr = Array.isArray(lista) ? lista : (lista?.data || []);
+
+    let totalComRateio = 0, totalLinhasDeRateio = 0;
+    const projetosInfo = candidatos.map(candidato => {
+      const planej = planejamentoPorProjeto[candidato.ID_Projeto];
+      const centroCustoTravado = (planej?.Travado && planej?.Nr_Contrato_OS) ? planej.Nr_Contrato_OS.trim().toLowerCase() : '';
+      const centroCusto = (candidato.Centro_Custo_OPP || '').trim().toLowerCase();
+      return {
+        id: candidato.ID_Projeto, nome: candidato.Nome, cliente: candidato.Cliente,
+        temVinculo: !!(centroCustoTravado || centroCusto),
+        centroCustoTravado: planej?.Nr_Contrato_OS || null, centroCustoOPP: candidato.Centro_Custo_OPP || null,
+        _centroCustoTravado: centroCustoTravado, _centroCusto: centroCusto,
+      };
+    });
+
+    const comissoesEncontradas = [];
+    for (const d of arr) {
+      if (!Array.isArray(d.centro_custo) || d.centro_custo.length === 0) continue;
+      totalComRateio++;
+      for (const l of d.centro_custo) {
+        totalLinhasDeRateio++;
+        for (const pi of projetosInfo) {
+          if (!pi.temVinculo) continue;
+          if (match(l.desc_centro_custos, pi._centroCustoTravado, pi._centroCusto)) {
+            comissoesEncontradas.push({
+              projeto: pi.id,
+              id_conta_pag: d.id_conta_pag,
+              descricao: d.nome_conta || d.observacoes_pag,
+              fornecedor: d.nome_fornecedor,
+              vencimento: d.vencimento_pag,
+              textoCentroCustoNoOPP: l.desc_centro_custos,
+              valorDaFatia: parseFloat(l.valor || 0),
+            });
+          }
+        }
+      }
+    }
+
+    res.json({
+      projetosPFPBEncontradosNoPar: projetosInfo.map(({ _centroCustoTravado, _centroCusto, ...resto }) => resto),
+      resumoGeralDesdeJan2026: { totalDespesasComRateio: totalComRateio, totalLinhasDeRateio },
+      comissoesOuDespesasRateadasQueBateramComAlgumProjetoPFPB: comissoesEncontradas,
+    });
+  } catch (err) { next(err); }
+});
+
 // ── GET /api/opp/os-para-vincular — projetos PAR + OS do OPP para tela de vínculo ──
 router.get('/os-para-vincular', authMiddleware, async (req, res, next) => {
   try {
