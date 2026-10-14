@@ -60,6 +60,40 @@ router.get('/diagnostico-receitas', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET /api/opp/debug-conta-pagar/:id — DIAGNÓSTICO TEMPORÁRIO (pendência do chefe/Beto:
+// comissões rateadas por centro de custo não aparecem no extrato financeiro do Par).
+// Sem authMiddleware de propósito — igual diagnostico-cc/diagnostico-receitas acima,
+// pra dar pra abrir direto pelo navegador sem precisar logar. Busca uma conta a pagar
+// específica pelo id_conta_pag (ex: 57742461, a "COMISSÕES NFS" paga ao Cássio em
+// 03/06/2026, ordem 637) e devolve TODOS os campos que a API do OPP retorna pra ela —
+// pra confirmar se as linhas do rateio por centro de custo (as que aparecem na tela
+// "Centro de custo e rateio" do OPP) vêm nessa resposta ou não. Remover depois de usar.
+router.get('/debug-conta-pagar/:id', async (req, res, next) => {
+  try {
+    const alvo = String(req.params.id);
+    const agora = new Date();
+    const inicio = new Date(agora); inicio.setFullYear(inicio.getFullYear() - 2);
+    const fmt = (d) => d.toISOString().split('T')[0];
+    const lista = await opp.listarDespesas({ data_inicio: fmt(inicio), data_fim: fmt(agora) });
+    const arr = Array.isArray(lista) ? lista : (lista?.data || []);
+    const achado = arr.find(d => String(d.id_conta_pag) === alvo);
+    if (!achado) {
+      return res.status(404).json({
+        error: 'Não encontrado na listagem de contas a pagar dos últimos 2 anos.',
+        totalChecados: arr.length,
+        dica: 'Confere se o id_conta_pag está certo (abre a conta no OPP e olha a URL) ou se está fora da janela de 2 anos.',
+      });
+    }
+    const camposSuspeitos = Object.keys(achado).filter(k => /rate|divis|split|percent|centro/i.test(k));
+    res.json({
+      idProcurado: alvo,
+      camposDisponiveis: Object.keys(achado),
+      camposQuePodemTerORateio: camposSuspeitos,
+      dadosCompletos: achado,
+    });
+  } catch (err) { next(err); }
+});
+
 // ── GET /api/opp/os-para-vincular — projetos PAR + OS do OPP para tela de vínculo ──
 router.get('/os-para-vincular', authMiddleware, async (req, res, next) => {
   try {
@@ -640,39 +674,6 @@ router.get('/campos-disponiveis', async (req, res, next) => {
       amostraReceita: r || null,
       camposDespesa: d ? Object.keys(d) : [],
       amostraDespesa: d || null,
-    });
-  } catch (err) { next(err); }
-});
-
-// GET /api/opp/debug-conta-pagar/:id — DIAGNÓSTICO TEMPORÁRIO (pendência do chefe/Beto:
-// comissões rateadas por centro de custo não aparecem no extrato financeiro do Par).
-// Busca uma conta a pagar específica pelo id_conta_pag (ex: 57742461, a "COMISSÕES NFS"
-// paga ao Cássio em 03/06/2026, ordem 637) e devolve TODOS os campos que a API do OPP
-// retorna pra ela — pra confirmar se as linhas do rateio por centro de custo (as que
-// aparecem na tela "Centro de custo e rateio" do OPP) vêm nessa resposta ou não.
-// Remover depois de confirmado.
-router.get('/debug-conta-pagar/:id', async (req, res, next) => {
-  try {
-    const alvo = String(req.params.id);
-    const agora = new Date();
-    const inicio = new Date(agora); inicio.setFullYear(inicio.getFullYear() - 2);
-    const fmt = (d) => d.toISOString().split('T')[0];
-    const lista = await opp.listarDespesas({ data_inicio: fmt(inicio), data_fim: fmt(agora) });
-    const arr = Array.isArray(lista) ? lista : (lista?.data || []);
-    const achado = arr.find(d => String(d.id_conta_pag) === alvo);
-    if (!achado) {
-      return res.status(404).json({
-        error: 'Não encontrado na listagem de contas a pagar dos últimos 2 anos.',
-        totalChecados: arr.length,
-        dica: 'Confere se o id_conta_pag está certo (abre a conta no OPP e olha a URL) ou se está fora da janela de 2 anos.',
-      });
-    }
-    const camposSuspeitos = Object.keys(achado).filter(k => /rate|divis|split|percent|centro/i.test(k));
-    res.json({
-      idProcurado: alvo,
-      camposDisponiveis: Object.keys(achado),
-      camposQuePodemTerORateio: camposSuspeitos,
-      dadosCompletos: achado,
     });
   } catch (err) { next(err); }
 });
