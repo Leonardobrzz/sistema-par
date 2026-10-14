@@ -94,6 +94,81 @@ router.get('/debug-conta-pagar/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET /api/opp/debug-rateio-projetos/:idContaPag — DIAGNÓSTICO TEMPORÁRIO (mesma pendência
+// acima). Alguns projetos (ex.: os de Chorozinho ligados à ordem 637) ainda não têm
+// Planejamento Financeiro preenchido no Par, então não dá pra conferir pelo extrato da
+// tela normal. Esta rota simula, fora da tela, o mesmo casamento texto-a-texto que
+// /extrato/:idProjeto e /extrato-por-projeto fazem (centro de custo travado no
+// planejamento, senão o campo Centro_Custo_OPP do projeto) para CADA linha do rateio da
+// despesa informada, e devolve quais projetos do Par casariam com cada fatia — mesmo que
+// o projeto não tenha planejamento algum, desde que tenha o Centro_Custo_OPP preenchido.
+// Sem authMiddleware de propósito, igual a rota acima. Remover depois de usar.
+router.get('/debug-rateio-projetos/:idContaPag', async (req, res, next) => {
+  try {
+    const db = process.env.USE_POSTGRES === 'true' ? require('../services/postgresService') : require('../services/googleSheetsService');
+    const alvo = String(req.params.idContaPag);
+    const agora = new Date();
+    const inicio = new Date(agora); inicio.setFullYear(inicio.getFullYear() - 2);
+    const fmt = (d) => d.toISOString().split('T')[0];
+
+    const [lista, projetos, planejamentos] = await Promise.all([
+      opp.listarDespesas({ data_inicio: fmt(inicio), data_fim: fmt(agora) }),
+      db.findRows('Projetos_Contratos', () => true),
+      db.findRows('Planejamentos', () => true),
+    ]);
+    const arr = Array.isArray(lista) ? lista : (lista?.data || []);
+    const despesa = arr.find(d => String(d.id_conta_pag) === alvo);
+    if (!despesa) {
+      return res.status(404).json({
+        error: 'Não encontrado na listagem de contas a pagar dos últimos 2 anos.',
+        idProcurado: alvo,
+      });
+    }
+
+    const linhas = (Array.isArray(despesa.centro_custo) && despesa.centro_custo.length > 0)
+      ? despesa.centro_custo.map(l => ({ texto: l.desc_centro_custos || '', valor: parseFloat(l.valor || 0) }))
+      : [{ texto: despesa.centro_custos_pag || '', valor: parseFloat(despesa.valor_pag || 0) }];
+
+    const planejamentoPorProjeto = {};
+    for (const p of planejamentos) planejamentoPorProjeto[p.ID_Projeto] = p;
+
+    const match = (prof, centroCustoTravado, centroCusto) => {
+      const p = (prof || '').trim().toLowerCase();
+      if (centroCustoTravado && p.includes(centroCustoTravado)) return true;
+      if (!centroCustoTravado && centroCusto && p.includes(centroCusto)) return true;
+      if (!centroCustoTravado && centroCusto && centroCusto.includes(p) && p.length > 4) return true;
+      return false;
+    };
+
+    const linhasDoRateio = linhas.map(linha => {
+      const projetosQueCasaram = [];
+      for (const proj of projetos) {
+        const planej = planejamentoPorProjeto[proj.ID_Projeto];
+        const centroCustoTravado = (planej?.Travado && planej?.Nr_Contrato_OS)
+          ? planej.Nr_Contrato_OS.trim().toLowerCase() : '';
+        const centroCusto = (proj.Centro_Custo_OPP || '').trim().toLowerCase();
+        if (match(linha.texto, centroCustoTravado, centroCusto)) {
+          projetosQueCasaram.push({
+            idProjeto: proj.ID_Projeto,
+            nome: proj.Nome,
+            cliente: proj.Cliente || null,
+            via: centroCustoTravado ? 'planejamento travado' : 'Centro_Custo_OPP do projeto',
+            temPlanejamento: !!planej,
+          });
+        }
+      }
+      return { textoNoOPP: linha.texto, valor: linha.valor, projetosQueCasaram };
+    });
+
+    res.json({
+      idContaPag: alvo,
+      descricao: despesa.nome_conta || despesa.observacoes_pag,
+      totalProjetosNoPar: projetos.length,
+      linhasDoRateio,
+    });
+  } catch (err) { next(err); }
+});
+
 // ── GET /api/opp/os-para-vincular — projetos PAR + OS do OPP para tela de vínculo ──
 router.get('/os-para-vincular', authMiddleware, async (req, res, next) => {
   try {
