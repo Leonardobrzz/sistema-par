@@ -85,6 +85,30 @@ async function calcularMedicoesComOPP(db, filtros = {}) {
   const nfPorCC = {};
   for (const r of receitasOPP) {
     if (r.liquidado_rec !== 'Sim') continue;
+
+    // Receita rateada por centro de custo (mesmo formato das despesas, ex.:
+    // comissões divididas por projeto): r.centro_custos_rec vem vazio e
+    // r.centro_custo vem como ARRAY, uma linha por projeto. Sem tratar esse
+    // caso antes, o "|| r.centro_custo" abaixo pegava o array e o .toLowerCase()
+    // quebrava com TypeError — derrubando (500) Medições, Dashboard Financeiro
+    // e o cron de alertas, que usam essa mesma função. Agora soma cada fatia
+    // no centro de custo dela, igual já fazemos pras despesas rateadas.
+    if (Array.isArray(r.centro_custo) && r.centro_custo.length > 0) {
+      for (const linha of r.centro_custo) {
+        const vLinha = parseFloat(linha.valor || 0);
+        const ccIdLinha = String(linha.id_centro_custos || '');
+        if (ccIdLinha && ccIdLinha !== '0') {
+          recebidoPorCCId[ccIdLinha] = (recebidoPorCCId[ccIdLinha] || 0) + vLinha;
+          if (!nfPorCCId[ccIdLinha] && r.n_documento_rec) nfPorCCId[ccIdLinha] = r.n_documento_rec;
+        }
+        const ccLinha = (linha.desc_centro_custos || '').toLowerCase().trim();
+        if (!ccLinha) continue;
+        recebidoPorCC[ccLinha] = (recebidoPorCC[ccLinha] || 0) + vLinha;
+        if (!nfPorCC[ccLinha] && r.n_documento_rec) nfPorCC[ccLinha] = r.n_documento_rec;
+      }
+      continue;
+    }
+
     const v = parseFloat(r.valor_rec || 0);
 
     const ccIdNum = String(r.id_centro_custos || '');

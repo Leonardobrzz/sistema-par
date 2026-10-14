@@ -259,6 +259,108 @@ router.get('/debug-pf-pb-comissoes', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET /api/opp/debug-comissoes-projeto?busca=texto[&idProjeto=...][&desde=AAAA-MM-DD] —
+// DIAGNÓSTICO TEMPORÁRIO (mesma pendência acima). Versão genérica da rota
+// debug-pf-pb-comissoes de cima, pra qualquer projeto em vez de só a PF/PB: acha o(s)
+// projeto(s) do Par cujo Nome/ID_Projeto batem com ?busca (ou um ?idProjeto exato),
+// confere se têm vínculo de centro de custo (planejamento travado ou Centro_Custo_OPP),
+// e varre as despesas rateadas do OPP desde ?desde (padrão 01/01/2026) procurando quais
+// batem com esse(s) projeto(s). Sem authMiddleware de propósito, igual as rotas acima.
+// Remover depois de usar.
+router.get('/debug-comissoes-projeto', async (req, res, next) => {
+  try {
+    const busca = (req.query.busca || '').trim().toUpperCase();
+    const idProjetoExato = (req.query.idProjeto || '').trim();
+    if (!busca && !idProjetoExato) {
+      return res.status(400).json({ error: 'Informe ?busca=texto (nome ou parte do ID do projeto) ou ?idProjeto=ID_Projeto exato.' });
+    }
+
+    const db = process.env.USE_POSTGRES === 'true' ? require('../services/postgresService') : require('../services/googleSheetsService');
+    const [projetos, planejamentos] = await Promise.all([
+      db.findRows('Projetos_Contratos', () => true),
+      db.findRows('Planejamentos', () => true),
+    ]);
+    const planejamentoPorProjeto = {};
+    for (const p of planejamentos) planejamentoPorProjeto[p.ID_Projeto] = p;
+
+    const candidatos = projetos.filter(p => {
+      if (idProjetoExato) return p.ID_Projeto === idProjetoExato;
+      const texto = ((p.Nome || '') + ' ' + (p.ID_Projeto || '')).toUpperCase();
+      return texto.includes(busca);
+    });
+    if (candidatos.length === 0) {
+      return res.status(404).json({
+        error: 'Nenhum projeto encontrado com esse critério.',
+        buscaUsada: busca || idProjetoExato,
+        totalProjetosNoPar: projetos.length,
+      });
+    }
+    if (candidatos.length > 15) {
+      return res.status(400).json({
+        error: `${candidatos.length} projetos bateram com essa busca — refina o texto (ou use ?idProjeto=) pra não varrer despesas demais de uma vez.`,
+        amostra: candidatos.slice(0, 15).map(p => ({ id: p.ID_Projeto, nome: p.Nome })),
+      });
+    }
+
+    const match = (prof, centroCustoTravado, centroCusto) => {
+      const p = (prof || '').trim().toLowerCase();
+      if (centroCustoTravado && p.includes(centroCustoTravado)) return true;
+      if (!centroCustoTravado && centroCusto && p.includes(centroCusto)) return true;
+      if (!centroCustoTravado && centroCusto && centroCusto.includes(p) && p.length > 4) return true;
+      return false;
+    };
+
+    const agora = new Date();
+    const inicio = req.query.desde ? new Date(req.query.desde) : new Date('2026-01-01');
+    const fmt = (d) => d.toISOString().split('T')[0];
+    const lista = await opp.listarDespesas({ data_inicio: fmt(inicio), data_fim: fmt(agora) });
+    const arr = Array.isArray(lista) ? lista : (lista?.data || []);
+
+    let totalComRateio = 0, totalLinhasDeRateio = 0;
+    const projetosInfo = candidatos.map(candidato => {
+      const planej = planejamentoPorProjeto[candidato.ID_Projeto];
+      const centroCustoTravado = (planej?.Travado && planej?.Nr_Contrato_OS) ? planej.Nr_Contrato_OS.trim().toLowerCase() : '';
+      const centroCusto = (candidato.Centro_Custo_OPP || '').trim().toLowerCase();
+      return {
+        id: candidato.ID_Projeto, nome: candidato.Nome, cliente: candidato.Cliente,
+        temVinculo: !!(centroCustoTravado || centroCusto),
+        centroCustoTravado: planej?.Nr_Contrato_OS || null, centroCustoOPP: candidato.Centro_Custo_OPP || null,
+        _centroCustoTravado: centroCustoTravado, _centroCusto: centroCusto,
+      };
+    });
+
+    const despesasEncontradas = [];
+    for (const d of arr) {
+      if (!Array.isArray(d.centro_custo) || d.centro_custo.length === 0) continue;
+      totalComRateio++;
+      for (const l of d.centro_custo) {
+        totalLinhasDeRateio++;
+        for (const pi of projetosInfo) {
+          if (!pi.temVinculo) continue;
+          if (match(l.desc_centro_custos, pi._centroCustoTravado, pi._centroCusto)) {
+            despesasEncontradas.push({
+              projeto: pi.id,
+              id_conta_pag: d.id_conta_pag,
+              descricao: d.nome_conta || d.observacoes_pag,
+              fornecedor: d.nome_fornecedor,
+              vencimento: d.vencimento_pag,
+              textoCentroCustoNoOPP: l.desc_centro_custos,
+              valorDaFatia: parseFloat(l.valor || 0),
+            });
+          }
+        }
+      }
+    }
+
+    res.json({
+      periodoVarrido: { desde: fmt(inicio), ate: fmt(agora) },
+      projetosEncontradosNoPar: projetosInfo.map(({ _centroCustoTravado, _centroCusto, ...resto }) => resto),
+      resumoGeral: { totalDespesasComRateioNoPeriodo: totalComRateio, totalLinhasDeRateio },
+      despesasRateadasQueBateramComAlgumProjeto: despesasEncontradas,
+    });
+  } catch (err) { next(err); }
+});
+
 // ── GET /api/opp/os-para-vincular — projetos PAR + OS do OPP para tela de vínculo ──
 router.get('/os-para-vincular', authMiddleware, async (req, res, next) => {
   try {

@@ -154,6 +154,15 @@ router.get('/', async (req, res, next) => {
       const ccIdNum = String(rec.id_centro_custos || '');
       if (ccIdNum && ccIdNum !== '0' && infoPorCCId[ccIdNum]) return infoPorCCId[ccIdNum];
 
+      // Receita rateada por centro de custo (ex.: comissões divididas entre
+      // projetos): o cabeçalho vem sem id/texto de centro de custo, e o
+      // vínculo real está no array rec.centro_custo (uma linha por projeto).
+      // Essa função só sabe devolver UM projeto, então quem chama trata o
+      // caso rateado antes (ver recebidoOPPPorProjeto abaixo) — aqui só
+      // evitamos quebrar com TypeError (.toLowerCase de um array) caso essa
+      // função seja chamada direto com uma receita rateada.
+      if (Array.isArray(rec.centro_custo) && rec.centro_custo.length > 0) return null;
+
       const cc = (rec.centro_custos_rec || rec.centro_custo || '').toLowerCase().trim();
       if (!cc) return null;
       if (infoPorCC[cc]) return infoPorCC[cc];
@@ -168,6 +177,21 @@ router.get('/', async (req, res, next) => {
     oppReceitas
       .filter(r => r.liquidado_rec === 'Sim')
       .forEach(r => {
+        // Receita rateada: soma cada fatia no projeto dela, igual já fazemos
+        // pras despesas rateadas (opp.js / planejamento.js) — bug relatado
+        // pelo Beto/chefe em 14/10 (confirmado com a ordem 637 do OPP). Usa
+        // só o vínculo confiável por id (infoPorCCId), já que o nome de cada
+        // linha costuma ser o texto completo do centro de custo, não o nome
+        // "solto" do projeto.
+        if (Array.isArray(r.centro_custo) && r.centro_custo.length > 0) {
+          for (const linha of r.centro_custo) {
+            const idLinha = String(linha.id_centro_custos || '');
+            const info = (idLinha && idLinha !== '0') ? infoPorCCId[idLinha] : null;
+            if (!info) continue;
+            recebidoOPPPorProjeto[info.idProjeto] = (recebidoOPPPorProjeto[info.idProjeto] || 0) + parseFloat(linha.valor || 0);
+          }
+          return;
+        }
         const info = infoProjetoDeReceita(r);
         if (!info) return;
         recebidoOPPPorProjeto[info.idProjeto] = (recebidoOPPPorProjeto[info.idProjeto] || 0) + parseFloat(r.valor_rec || 0);
