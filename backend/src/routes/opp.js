@@ -361,6 +361,91 @@ router.get('/debug-comissoes-projeto', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET /api/opp/debug-verificacao-rateio — DIAGNÓSTICO TEMPORÁRIO (pedido do Beto/chefe,
+// ClickUp, prazo 15/10). Confirma de uma vez, pra TODOS os planejamentos com status
+// "Aprovado" (os que realmente têm planejamento financeiro feito no Par — não os ~1141
+// projetos cadastrados, só esses), se o fix do rateio por centro de custo está
+// funcionando: pra cada um, diz se tem vínculo de centro de custo e, se tiver, quais
+// despesas rateadas desde ?desde (padrão 01/01/2026) bateram com ele. Sem authMiddleware
+// de propósito, igual as rotas acima. Remover depois de usar.
+router.get('/debug-verificacao-rateio', async (req, res, next) => {
+  try {
+    const db = process.env.USE_POSTGRES === 'true' ? require('../services/postgresService') : require('../services/googleSheetsService');
+    const [planejamentosAprovados, projetos] = await Promise.all([
+      db.findRows('Planejamentos', p => p.Status === 'Aprovado'),
+      db.findRows('Projetos_Contratos', () => true),
+    ]);
+    const projetoPorId = {};
+    for (const p of projetos) projetoPorId[p.ID_Projeto] = p;
+
+    const match = (prof, centroCustoTravado, centroCusto) => {
+      const p = (prof || '').trim().toLowerCase();
+      if (centroCustoTravado && p.includes(centroCustoTravado)) return true;
+      if (!centroCustoTravado && centroCusto && p.includes(centroCusto)) return true;
+      if (!centroCustoTravado && centroCusto && centroCusto.includes(p) && p.length > 4) return true;
+      return false;
+    };
+
+    const agora = new Date();
+    const inicio = req.query.desde ? new Date(req.query.desde) : new Date('2026-01-01');
+    const fmt = (d) => d.toISOString().split('T')[0];
+    const lista = await opp.listarDespesas({ data_inicio: fmt(inicio), data_fim: fmt(agora) });
+    const arr = Array.isArray(lista) ? lista : (lista?.data || []);
+
+    const planejamentosInfo = planejamentosAprovados.map(plan => {
+      const proj = projetoPorId[plan.ID_Projeto] || null;
+      const centroCustoTravado = (plan.Travado && plan.Nr_Contrato_OS) ? plan.Nr_Contrato_OS.trim().toLowerCase() : '';
+      const centroCusto = (proj?.Centro_Custo_OPP || '').trim().toLowerCase();
+      return {
+        idProjeto: plan.ID_Projeto,
+        nome: plan.Nome_Projeto || proj?.Nome || '(sem nome)',
+        temVinculo: !!(centroCustoTravado || centroCusto),
+        centroCustoTravado: plan.Nr_Contrato_OS || null,
+        _centroCustoTravado: centroCustoTravado,
+        _centroCusto: centroCusto,
+        despesasRateadasEncontradas: [],
+      };
+    });
+
+    let totalComRateio = 0, totalLinhasDeRateio = 0;
+    for (const d of arr) {
+      if (!Array.isArray(d.centro_custo) || d.centro_custo.length === 0) continue;
+      totalComRateio++;
+      for (const l of d.centro_custo) {
+        totalLinhasDeRateio++;
+        for (const pi of planejamentosInfo) {
+          if (!pi.temVinculo) continue;
+          if (match(l.desc_centro_custos, pi._centroCustoTravado, pi._centroCusto)) {
+            pi.despesasRateadasEncontradas.push({
+              id_conta_pag: d.id_conta_pag,
+              descricao: d.nome_conta || d.observacoes_pag,
+              fornecedor: d.nome_fornecedor,
+              vencimento: d.vencimento_pag,
+              textoCentroCustoNoOPP: l.desc_centro_custos,
+              valorDaFatia: parseFloat(l.valor || 0),
+            });
+          }
+        }
+      }
+    }
+
+    const resultado = planejamentosInfo.map(({ _centroCustoTravado, _centroCusto, ...resto }) => resto);
+    const comVinculo = resultado.filter(p => p.temVinculo);
+    const comDespesaRateadaEncontrada = resultado.filter(p => p.despesasRateadasEncontradas.length > 0);
+
+    res.json({
+      periodoVarrido: { desde: fmt(inicio), ate: fmt(agora) },
+      totalPlanejamentosAprovados: planejamentosAprovados.length,
+      totalComVinculoDeCentroDeCusto: comVinculo.length,
+      totalDespesasComRateioNoPeriodo: totalComRateio,
+      totalLinhasDeRateio,
+      resumo: `${comDespesaRateadaEncontrada.length} de ${comVinculo.length} planejamentos com vínculo tiveram alguma despesa rateada encontrada no período.`,
+      planejamentosComDespesaRateadaEncontrada: comDespesaRateadaEncontrada,
+      todosOsPlanejamentosAprovados: resultado,
+    });
+  } catch (err) { next(err); }
+});
+
 // ── GET /api/opp/os-para-vincular — projetos PAR + OS do OPP para tela de vínculo ──
 router.get('/os-para-vincular', authMiddleware, async (req, res, next) => {
   try {
